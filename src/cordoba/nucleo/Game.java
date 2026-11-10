@@ -8,10 +8,12 @@ import cordoba.graficos.GameRenderer;
 import cordoba.graficos.Particulas;
 import cordoba.interfaz.CodeEditor;
 import cordoba.interfaz.GameMenu;
+import cordoba.interfaz.PantallaRanking;
 import cordoba.interfaz.Ui;
 import cordoba.niveles.Level1;
 import cordoba.niveles.Level2;
 import cordoba.niveles.Level;
+import cordoba.ranking.Ranking;
 
 import java.awt.*;
 import java.awt.event.FocusAdapter;
@@ -19,6 +21,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
+import java.nio.file.Path;
 
 /**
  * Núcleo del juego: bucle principal, máquina de estados y cámara.
@@ -41,6 +44,8 @@ public class Game extends Canvas implements Runnable {
     private final GameMenu menu = new GameMenu(renderer);
     private final CodeEditor editor = new CodeEditor();
     private final Particulas particulas = new Particulas();
+    private final PantallaRanking pantallaRanking =
+            new PantallaRanking(renderer, new Ranking(Path.of("ranking.txt")));
 
     private GameState estado = GameState.MENU;
     private Level nivel;
@@ -122,13 +127,18 @@ public class Game extends Canvas implements Runnable {
 
     public void actualizar() {
         frame++;
-        if (input.pulsada(KeyEvent.VK_M)) Sonido.alternarSilencio();
+        // M silencia el sonido (salvo mientras se escribe el nombre, que podría llevar una M)
+        if (estado != GameState.JUEGO_COMPLETADO && input.pulsada(KeyEvent.VK_M)) Sonido.alternarSilencio();
 
         switch (estado) {
             case MENU:
                 switch (menu.actualizarInicio(input)) {
                     case JUGAR:  empezarPartida(1); break;
                     case NIVEL2: empezarPartida(2); break;
+                    case RANKING:
+                        pantallaRanking.verTabla();
+                        estado = GameState.RANKING;
+                        break;
                     case SALIR:  salir(); break;
                     default: break;
                 }
@@ -155,11 +165,11 @@ public class Game extends Canvas implements Runnable {
                 }
                 break;
             case JUEGO_COMPLETADO:
-                switch (menu.actualizarFinal(input)) {
-                    case MENU:  estado = GameState.MENU; break;
-                    case SALIR: salir(); break;
-                    default: break;
-                }
+                if (pantallaRanking.actualizarNombre(input, framesTotal, muertesTotal, compilacionesTotal))
+                    estado = GameState.RANKING;
+                break;
+            case RANKING:
+                if (pantallaRanking.actualizarTabla(input)) estado = GameState.MENU;
                 break;
             default:
                 break;
@@ -288,7 +298,12 @@ public class Game extends Canvas implements Runnable {
         framesTotal += framesNivel;
         muertesTotal += muertesNivel;
         compilacionesTotal += compilacionesNivel;
-        estado = nivel.getNumero() >= 2 ? GameState.JUEGO_COMPLETADO : GameState.NIVEL_COMPLETADO;
+        if (nivel.getNumero() >= 2) {
+            pantallaRanking.empezarNombre();
+            estado = GameState.JUEGO_COMPLETADO;
+        } else {
+            estado = GameState.NIVEL_COMPLETADO;
+        }
     }
 
     /** La cámara sigue a Coco con suavidad y mira un poco hacia donde avanza. */
@@ -325,7 +340,10 @@ public class Game extends Canvas implements Runnable {
                 menu.dibujarInicio(g, input, frame);
                 break;
             case JUEGO_COMPLETADO:
-                menu.dibujarFinal(g, input, framesTotal, muertesTotal, compilacionesTotal, frame);
+                pantallaRanking.dibujarNombre(g, input, framesTotal, muertesTotal, compilacionesTotal, frame);
+                break;
+            case RANKING:
+                pantallaRanking.dibujarTabla(g, input, frame);
                 break;
             default: {
                 int cx = Math.round(camX), cy = Math.round(camY);

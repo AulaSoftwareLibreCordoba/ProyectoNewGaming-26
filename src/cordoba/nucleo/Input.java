@@ -42,8 +42,24 @@ public class Input implements KeyListener, MouseListener, MouseMotionListener {
         if (c >= 0 && c < teclas.length) teclas[c] = false;
     }
 
+    /** Caracteres escritos en este fotograma (para introducir el nombre del ranking). */
+    private final StringBuilder escrito = new StringBuilder();
+
     @Override
-    public void keyTyped(KeyEvent e) { }
+    public synchronized void keyTyped(KeyEvent e) {
+        char c = e.getKeyChar();
+        if (c != KeyEvent.CHAR_UNDEFINED) escrito.append(c);
+    }
+
+    /**
+     * Devuelve lo escrito desde el último fotograma (incluye '\b' al borrar
+     * y '\n' al pulsar ENTER) y lo vacía.
+     */
+    public synchronized String tomarEscrito() {
+        String s = escrito.toString();
+        escrito.setLength(0);
+        return s;
+    }
 
     public synchronized boolean abajo(int codigo) {
         return teclas[codigo];
@@ -56,6 +72,7 @@ public class Input implements KeyListener, MouseListener, MouseMotionListener {
     /** Se llama al final de cada actualización para "olvidar" las pulsaciones. */
     public synchronized void finFrame() {
         java.util.Arrays.fill(pulsadas, false);
+        escrito.setLength(0);
         clic = false;
     }
 

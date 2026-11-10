@@ -28,3 +28,6 @@ desktop.ini
 *.log
 *.tmp
 *~
+
+# Récords locales del modo competición
+ranking.txt

@@ -10,18 +10,20 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 
 /**
- * Pantallas de menú: inicio, pausa, nivel completado y final de la demo.
+ * Pantallas de menú: inicio, pausa y nivel completado.
+ * (El final de la partida y el ranking están en PantallaRanking.)
  * Cada método actualizarX() devuelve la acción elegida por el jugador.
  */
 public class GameMenu {
 
-    public enum Accion { NINGUNA, JUGAR, SALIR, CONTINUAR, REINICIAR, MENU, NIVEL2 }
+    public enum Accion { NINGUNA, JUGAR, SALIR, CONTINUAR, REINICIAR, MENU, NIVEL2, RANKING }
 
     private final GameRenderer renderer;
 
     // Pantalla de inicio
-    private final Boton bJugar = new Boton(250, 236, 140, 24, "JUGAR", new Color(0x2E8B57));
-    private final Boton bSalir = new Boton(250, 268, 140, 24, "SALIR", new Color(0xB0413E));
+    private final Boton bJugar   = new Boton(250, 222, 140, 24, "JUGAR", new Color(0x2E8B57));
+    private final Boton bRanking = new Boton(250, 252, 140, 24, "RANKING", new Color(0xC08A1E));
+    private final Boton bSalir   = new Boton(250, 282, 140, 24, "SALIR", new Color(0xB0413E));
 
     // Pausa
     private final Boton bContinuar = new Boton(240, 150, 160, 22, "CONTINUAR", new Color(0x2E8B57));
@@ -32,9 +34,6 @@ public class GameMenu {
     private final Boton bSiguiente = new Boton(180, 262, 130, 24, "CONTINUAR", new Color(0x2E8B57));
     private final Boton bMenuVict  = new Boton(330, 262, 130, 24, "MENÚ", new Color(0x5A6070));
 
-    // Final
-    private final Boton bMenuFin  = new Boton(180, 270, 130, 24, "MENÚ", new Color(0x2E8B57));
-    private final Boton bSalirFin = new Boton(330, 270, 130, 24, "SALIR", new Color(0xB0413E));
 
     public GameMenu(GameRenderer renderer) {
         this.renderer = renderer;
@@ -46,6 +45,7 @@ public class GameMenu {
 
     public Accion actualizarInicio(Input in) {
         if (bJugar.clicado(in) || in.pulsada(KeyEvent.VK_ENTER) || in.pulsada(KeyEvent.VK_SPACE)) return Accion.JUGAR;
+        if (bRanking.clicado(in)) return Accion.RANKING;
         if (bSalir.clicado(in)) return Accion.SALIR;
         if (in.pulsada(KeyEvent.VK_2)) return Accion.NIVEL2;   // atajo para profesores
         return Accion.NINGUNA;
@@ -92,6 +92,7 @@ public class GameMenu {
         }
 
         bJugar.dibujar(g, in);
+        bRanking.dibujar(g, in);
         bSalir.dibujar(g, in);
 
         g.setFont(Ui.FUENTE_PEQ);
@@ -149,36 +150,6 @@ public class GameMenu {
         Ui.textoCentrado(g, "Siguiente: Nivel 2 — El desafío de la Mezquita", 320, 252, Ui.AMARILLO);
         bSiguiente.dibujar(g, in);
         bMenuVict.dibujar(g, in);
-    }
-
-    // =====================================================================
-    //  FINAL DE LA DEMO
-    // =====================================================================
-
-    public Accion actualizarFinal(Input in) {
-        if (bMenuFin.clicado(in) || in.pulsada(KeyEvent.VK_ENTER)) return Accion.MENU;
-        if (bSalirFin.clicado(in)) return Accion.SALIR;
-        return Accion.NINGUNA;
-    }
-
-    public void dibujarFinal(Graphics2D g, Input in, int frames, int muertes, int compilaciones, int frame) {
-        renderer.dibujarFondo(g, Level.Tema.MEZQUITA, frame / 3, 0, 544);
-        g.setColor(new Color(0, 0, 0, 120));
-        g.fillRect(0, 0, 640, 360);
-        Ui.panel(g, 130, 40, 380, 268, Ui.PANEL, Ui.BORDE);
-        g.setFont(Ui.FUENTE_GRANDE);
-        Ui.textoCentrado(g, "¡DEMO COMPLETADA!", 320, 74, Ui.BORDE);
-        g.setFont(Ui.FUENTE);
-        Ui.textoCentrado(g, "Coco ha llegado a la Mezquita-Catedral", 320, 94, Ui.TEXTO);
-        Ui.textoCentrado(g, "reprogramando las leyes de la física.", 320, 107, Ui.TEXTO);
-
-        BufferedImage coco = (frame / 12) % 2 == 0 ? Sprites.COCO_VICTORIA1 : Sprites.COCO_VICTORIA2;
-        int bote = (frame / 12) % 2 == 0 ? 0 : -8;
-        g.drawImage(coco, 290, 118 + bote, 60, 60, null);
-        dibujarEstadisticas(g, frames, muertes, compilaciones, 200);
-        Ui.textoCentrado(g, "¡Ahora modifica el código y crea más niveles!", 320, 256, Ui.AMARILLO);
-        bMenuFin.dibujar(g, in);
-        bSalirFin.dibujar(g, in);
     }
 
     private void dibujarEstadisticas(Graphics2D g, int frames, int muertes, int compilaciones, int y) {

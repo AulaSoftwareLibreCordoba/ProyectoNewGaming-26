@@ -67,6 +67,30 @@ para cambiar el valor (mantén pulsado para repetir) y **ENTER** para aplicar.
 
 ---
 
+## 2.1. Modo competición: ranking TOP 10
+
+Al terminar la partida, el jugador **escribe su nombre** (máx. 12 caracteres) y su resultado se guarda
+en el ranking. La tabla con los **10 mejores** sale justo después y también se puede consultar desde el
+botón **RANKING** del menú principal.
+
+| Columna | Significado |
+|---|---|
+| `#` | Puesto (oro, plata y bronce para el podio) |
+| `NOMBRE` | Nombre del jugador |
+| `TIEMPO` | Tiempo total de la partida (`m:ss.cc`) |
+| `CAÍDAS` | Veces que ha caído o se ha pinchado |
+| `COMPILACIONES` | Veces que ha aplicado cambios en la consola de código |
+
+* **Criterio:** gana quien tarde **menos**. Si hay empate, menos caídas; después, menos compilaciones;
+  y si aun así empatan, queda delante quien lo consiguió antes.
+* Mientras escribe el nombre, el jugador ve el puesto provisional que va a conseguir.
+* Los resultados se guardan en `ranking.txt`, en la carpeta desde la que se ejecuta el juego, con una línea por
+  partida (`nombre;fotogramas;caídas;compilaciones`). Se guardan **todas** las partidas, aunque solo se
+  muestran las 10 mejores. Para empezar una competición nueva basta con borrar ese fichero.
+* `ranking.txt` está en `.gitignore`: los récords de cada ordenador no se suben al repositorio.
+
+---
+
 ## 3. La mecánica principal: la consola de código
 
 Al pulsar **E** se abre un pequeño IDE que muestra `PhysicsConfig.java`:
@@ -140,7 +164,7 @@ CordobaCodigoSalvaje/
 │   ├── Main.java                   Punto de entrada; crea la ventana (y exporta assets con --exportar-assets)
 │   ├── nucleo/                     Bucle principal y entrada
 │   │   ├── Game.java               Bucle a 60 FPS fijos, máquina de estados, cámara, escalado pixel-perfect
-│   │   ├── GameState.java          MENU, JUGANDO, EDITOR, PAUSA, NIVEL_COMPLETADO, JUEGO_COMPLETADO
+│   │   ├── GameState.java          MENU, JUGANDO, EDITOR, PAUSA, NIVEL_COMPLETADO, JUEGO_COMPLETADO, RANKING
 │   │   └── Input.java              Teclado y ratón (pulsada / mantenida)
 │   ├── fisica/                     Física y colisiones
 │   │   ├── PhysicsConfig.java      ★ Variables físicas centralizadas y su conversión a píxeles
@@ -169,8 +193,12 @@ CordobaCodigoSalvaje/
 │   │   └── Particulas.java         Efectos visuales
 │   ├── interfaz/                   Menús y consola de código
 │   │   ├── CodeEditor.java         ★ La consola de código (IDE simulado)
-│   │   ├── GameMenu.java           Pantallas de inicio, pausa, victoria y final
+│   │   ├── GameMenu.java           Pantallas de inicio, pausa y victoria
+│   │   ├── PantallaRanking.java    Final de partida (escribir nombre) y tabla TOP 10
 │   │   └── Ui.java / Boton.java    Utilidades de interfaz
+│   ├── ranking/
+│   │   ├── Ranking.java            Carga, ordena y guarda las partidas en ranking.txt
+│   │   └── Puntuacion.java         Una partida: nombre, tiempo, caídas, compilaciones
 │   └── audio/
 │       └── Sonido.java             Efectos chiptune sintetizados (sin archivos de audio)
 ├── assets/                     PNG exportados (player, tiles, backgrounds, interface)
@@ -219,7 +247,7 @@ El cocodrilo está dibujado así en `Sprites.java` (cada letra es un color de la
 2. **Nuevo nivel** `Level3` (p. ej. el Patio de los Naranjos o la Calleja de las Flores) heredando de
    `Level` y usando `suelo()`, `agua()`, `pinchos()`, `farola()`, `cartel()`…
 3. **Escribir el valor** con el teclado en la consola en lugar de usar [+]/[-].
-4. Guardar récords (tiempo y caídas) en un fichero.
+4. ~~Guardar récords (tiempo y caídas) en un fichero.~~ ✅ Hecho: ver *Modo competición*.
 5. Un enemigo que patrulle usando su propia `PhysicsConfig`.
 6. Variables "trampa" que el jugador no debería tocar (p. ej. `tamañoCoco`).
 

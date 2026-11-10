@@ -10,5 +10,6 @@ public enum GameState {
     EDITOR,             // consola de código abierta (juego en "breakpoint")
     PAUSA,              // menú de pausa (ESC)
     NIVEL_COMPLETADO,   // pantalla de victoria entre niveles
-    JUEGO_COMPLETADO    // pantalla final de la demo
+    JUEGO_COMPLETADO,   // pantalla final: escribir el nombre para el ranking
+    RANKING             // tabla con el TOP 10
 }
