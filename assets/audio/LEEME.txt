@@ -1,0 +1,2 @@
+Los efectos de sonido se generan por código en src/Sonido.java (ondas cuadradas y ruido, estilo chiptune).
+No se necesita ningún archivo de audio. Si queréis usar .wav propios, cargadlos aquí con javax.sound.sampled.Clip.
