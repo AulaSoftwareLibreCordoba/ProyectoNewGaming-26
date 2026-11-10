@@ -5,6 +5,20 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 
 ---
 
+## ⭐ Lo más importante
+
+| Atajo | Dónde | Qué hace | Por qué importa |
+|---|---|---|---|
+| **2** | Menú principal | Empieza directamente en el **nivel 2** | Te saltas el nivel 1 entero: el tiempo total sale mucho más bajo y la partida **también entra en el ranking** |
+| **ESC** → **REINICIAR NIVEL** | Pausa | Vuelve al principio del nivel actual | **Borra el tiempo, las caídas y las compilaciones de ese nivel** (lo de niveles anteriores se mantiene) |
+| **E** | Jugando | Abre la consola de código | El juego queda en pausa y **el tiempo no corre**: puedes pensar los valores con calma, incluso en mitad de un salto |
+| **ESC** | Jugando | Pausa | Mientras estás en pausa, **el tiempo tampoco corre** |
+| **ENTER** | Consola de código | Aplica los cambios (compila) | Sin aplicar, los cambios no hacen nada |
+| **R** | Jugando | Vuelve a la última farola | Útil si te quedas atascado, pero **suma una caída** |
+| **M** | Siempre | Silencia / activa el sonido | Imprescindible si hay varios jugando a la vez en la misma sala |
+
+---
+
 ## 🌍 En cualquier momento
 
 | Tecla | Acción |
