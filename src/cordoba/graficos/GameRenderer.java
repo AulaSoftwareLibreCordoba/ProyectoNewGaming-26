@@ -1,10 +1,12 @@
 package cordoba.graficos;
 
 import cordoba.audio.Sonido;
+import cordoba.entidades.Fantasma;
 import cordoba.entidades.Player;
 import cordoba.fisica.PhysicsConfig;
 import cordoba.fisica.VariableFisica;
 import cordoba.interfaz.Ui;
+import cordoba.ranking.Puntuacion;
 import cordoba.niveles.Level;
 import cordoba.niveles.elementos.Cartel;
 import cordoba.niveles.elementos.Decoracion;
@@ -31,6 +33,15 @@ public class GameRenderer {
 
     public void dibujarEscenario(Graphics2D g, Level nivel, Player p, Particulas part,
                                  int camX, int camY, int frame) {
+        dibujarEscenario(g, nivel, p, part, null, 0, camX, camY, frame);
+    }
+
+    /**
+     * Igual que el anterior, pero dibujando también el FANTASMA del récord
+     * (detrás de Coco). frameNivel = fotogramas jugados en el nivel.
+     */
+    public void dibujarEscenario(Graphics2D g, Level nivel, Player p, Particulas part,
+                                 Fantasma fantasma, int frameNivel, int camX, int camY, int frame) {
         dibujarFondo(g, nivel.getTema(), camX, camY, nivel.getAltoPx());
         dibujarCorrientes(g, nivel, camX, camY, frame);
         dibujarDecoracion(g, nivel.getDecoraciones(), camX, camY);
@@ -42,6 +53,7 @@ public class GameRenderer {
         for (Farola f : nivel.getFarolas()) dibujarFarola(g, f, camX, camY, frame);
         for (PlataformaDinamica pl : nivel.getPlataformas()) pl.dibujar(g, camX, camY, frame);
         for (ObstaculoMovil o : nivel.getObstaculos()) o.dibujar(g, camX, camY, frame);
+        if (fantasma != null) dibujarFantasma(g, fantasma, frameNivel, camX, camY);
         dibujarJugador(g, p, camX, camY, frame);
         part.dibujar(g, camX, camY);
     }
@@ -301,6 +313,27 @@ public class GameRenderer {
         }
     }
 
+    /** Coco semitransparente con el nombre del récord encima. */
+    private void dibujarFantasma(Graphics2D g, Fantasma f, int frameNivel, int camX, int camY) {
+        int fx = f.x(frameNivel), fy = f.y(frameNivel);
+        int x = (f.miraDerecha(frameNivel) ? fx - 3 : fx - 5) - camX;
+        int y = fy + Player.ALTO - 20 - camY;
+        Composite antes = g.getComposite();
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.42f));
+        g.drawImage(f.dibujo(frameNivel), x, y, null);
+        g.setFont(Ui.FUENTE_PEQ);
+        String etiqueta = f.terminado(frameNivel) ? f.getNombre() + " ¡META!" : f.getNombre();
+        int w = g.getFontMetrics().stringWidth(etiqueta);
+        g.setColor(new Color(0xB8D8FF));
+        g.drawString(etiqueta, fx + Player.ANCHO / 2 - w / 2 - camX, y - 3);
+        g.setComposite(antes);
+    }
+
+    /** Coco por encima de todo (se usa con la consola de código abierta). */
+    public void dibujarJugadorEncima(Graphics2D g, Player p, int camX, int camY, int frame) {
+        dibujarJugador(g, p, camX, camY, frame);
+    }
+
     private void dibujarJugador(Graphics2D g, Player p, int camX, int camY, int frame) {
         BufferedImage img = p.fotogramaActual();
         int x = p.xDibujo() - camX, y = p.yDibujo() - camY;
@@ -319,7 +352,8 @@ public class GameRenderer {
 
     public void dibujarHUD(Graphics2D g, Level nivel, Player p, PhysicsConfig fisica,
                            int frame, int muertes, String aviso, Color colorAviso, int avisoTimer,
-                           boolean ayudaCompleta) {
+                           boolean ayudaCompleta, int framesPartida, int framesNivel,
+                           Fantasma fantasma, boolean fantasmaVisible) {
         // --- Nivel actual ---
         g.setFont(Ui.FUENTE);
         String titulo = "NIVEL " + nivel.getNumero() + " · " + nivel.getNombre();
@@ -327,6 +361,9 @@ public class GameRenderer {
         g.setColor(new Color(0, 0, 0, 140));
         g.fillRect(4, 4, tw + 12, 16);
         Ui.texto(g, titulo, 10, 16, Ui.BORDE);
+
+        // --- Cronómetro ---
+        dibujarCronometro(g, 4, 22, framesPartida, framesNivel, fantasma, fantasmaVisible);
 
         // --- Variables actuales (mini consola) ---
         g.setFont(Ui.FUENTE_PEQ);
@@ -344,7 +381,8 @@ public class GameRenderer {
         }
 
         // --- Ayuda de controles (completa al empezar; luego solo la consola) ---
-        String ayuda = "[E] Consola de código   [R] Reintentar   [ESC] Pausa   [M] Sonido" + (Sonido.isSilenciado() ? " (off)" : "");
+        String ayuda = "[E] Consola de código   [R] Reintentar   [ESC] Pausa   [M] Sonido" + (Sonido.isSilenciado() ? " (off)" : "")
+                + (fantasma != null ? "   [G] Fantasma" : "");
         if (!ayudaCompleta) ayuda = "[E] Consola de código";
         g.setColor(new Color(0, 0, 0, 140));
         g.fillRect(4, 342, g.getFontMetrics().stringWidth(ayuda) + 12, 14);
@@ -357,32 +395,9 @@ public class GameRenderer {
 
         // --- Mensaje de tutorial ---
         String msg = nivel.getMensaje();
-        if (msg != null) dibujarMensaje(g, msg, nivel.getMensajeTimer());
+        if (msg != null) dibujarMensaje(g, msg, nivel.getMensajeTimer(), 42);
 
-        // --- Avisos especiales ---
-        for (PlataformaDinamica pl : nivel.getPlataformas()) {
-            if (pl instanceof PuenteDerrumbe && ((PuenteDerrumbe) pl).estaCrujiendo()) {
-                PuenteDerrumbe pd = (PuenteDerrumbe) pl;
-                g.setFont(Ui.FUENTE);
-                String s = String.format("¡EL SUELO SE DERRUMBA!  %.1f s", pd.segundosRestantes());
-                Ui.textoCentrado(g, s, 320, 92, (frame / 6) % 2 == 0 ? Ui.ROJO : Ui.AMARILLO);
-                int bw = 160;
-                g.setColor(new Color(0, 0, 0, 160));
-                g.fillRect(320 - bw / 2, 97, bw, 5);
-                g.setColor(Ui.ROJO);
-                g.fillRect(320 - bw / 2, 97, (int) (bw * (1 - pd.getProgreso())), 5);
-            }
-        }
-        if (p.enCorriente && !p.muerto) {
-            float g1 = fisica.getValor(PhysicsConfig.GRAVEDAD);
-            float empuje = Level.FUERZA_CORRIENTE / PhysicsConfig.FACTOR_GRAVEDAD;
-            g.setFont(Ui.FUENTE);
-            String s = String.format("CORRIENTE DE AIRE: empuje %.1f  vs  gravedad %.1f", empuje, g1);
-            Ui.textoCentrado(g, s, 320, 92, g1 > empuje ? Ui.VERDE : Ui.AMARILLO);
-            String s2 = g1 > empuje ? "Pesas lo suficiente: ¡bajas!" : "La corriente te empuja hacia arriba...";
-            g.setFont(Ui.FUENTE_PEQ);
-            Ui.textoCentrado(g, s2, 320, 104, Ui.TEXTO);
-        }
+        dibujarAvisosEspeciales(g, nivel, p, fisica, frame, 106);
 
         // --- Aviso temporal (cambios aplicados, etc.) ---
         if (aviso != null && avisoTimer > 0) {
@@ -394,12 +409,75 @@ public class GameRenderer {
         }
     }
 
-    /** Caja de diálogo del tutorial en la parte superior. */
-    public void dibujarMensaje(Graphics2D g, String msg, int timer) {
+    /**
+     * Cronómetro de la partida. En el nivel 2, si hay fantasma, muestra
+     * también el tiempo del nivel frente al récord.
+     */
+    public void dibujarCronometro(Graphics2D g, int x, int y, int framesPartida, int framesNivel,
+                                  Fantasma fantasma, boolean fantasmaVisible) {
+        g.setFont(Ui.FUENTE);
+        String total = "TIEMPO " + Puntuacion.formatearTiempo(framesPartida);
+        String extra = "";
+        if (fantasma != null) {
+            extra = "  NIVEL " + Puntuacion.formatearTiempo(framesNivel)
+                    + "  RÉCORD " + Puntuacion.formatearTiempo(fantasma.getFramesNivel())
+                    + " " + fantasma.getNombre() + (fantasmaVisible ? "" : " (oculto)");
+        }
+        int w1 = g.getFontMetrics().stringWidth(total);
+        g.setFont(Ui.FUENTE_PEQ);
+        int w2 = g.getFontMetrics().stringWidth(extra);
+        g.setColor(new Color(0, 0, 0, 140));
+        g.fillRect(x, y, w1 + w2 + 22, 16);
+        // Reloj en pixel art
+        g.setColor(Ui.TEXTO);
+        g.drawRect(x + 4, y + 4, 7, 7);
+        g.fillRect(x + 7, y + 5, 1, 3);
+        g.fillRect(x + 8, y + 7, 2, 1);
+        g.setFont(Ui.FUENTE);
+        Ui.texto(g, total, x + 16, y + 12, Ui.TEXTO);
+        if (!extra.isEmpty()) {
+            g.setFont(Ui.FUENTE_PEQ);
+            boolean ganando = framesNivel <= fantasma.getFramesNivel();
+            Ui.texto(g, extra, x + 16 + w1, y + 12, ganando ? new Color(0xB8D8FF) : Ui.ROJO);
+        }
+    }
+
+    /** Cuenta atrás del suelo que se derrumba y estado de la corriente de aire (a partir de y0). */
+    public void dibujarAvisosEspeciales(Graphics2D g, Level nivel, Player p, PhysicsConfig fisica,
+                                        int frame, int y0) {
+        // --- Avisos especiales ---
+        for (PlataformaDinamica pl : nivel.getPlataformas()) {
+            if (pl instanceof PuenteDerrumbe && ((PuenteDerrumbe) pl).estaCrujiendo()) {
+                PuenteDerrumbe pd = (PuenteDerrumbe) pl;
+                g.setFont(Ui.FUENTE);
+                String s = String.format("¡EL SUELO SE DERRUMBA!  %.1f s", pd.segundosRestantes());
+                Ui.textoCentrado(g, s, 320, y0, (frame / 6) % 2 == 0 ? Ui.ROJO : Ui.AMARILLO);
+                int bw = 160;
+                g.setColor(new Color(0, 0, 0, 160));
+                g.fillRect(320 - bw / 2, y0 + 5, bw, 5);
+                g.setColor(Ui.ROJO);
+                g.fillRect(320 - bw / 2, y0 + 5, (int) (bw * (1 - pd.getProgreso())), 5);
+            }
+        }
+        if (p.enCorriente && !p.muerto) {
+            float g1 = fisica.getValor(PhysicsConfig.GRAVEDAD);
+            float empuje = Level.FUERZA_CORRIENTE / PhysicsConfig.FACTOR_GRAVEDAD;
+            g.setFont(Ui.FUENTE);
+            String s = String.format("CORRIENTE DE AIRE: empuje %.1f  vs  gravedad %.1f", empuje, g1);
+            Ui.textoCentrado(g, s, 320, y0, g1 > empuje ? Ui.VERDE : Ui.AMARILLO);
+            String s2 = g1 > empuje ? "Pesas lo suficiente: ¡bajas!" : "La corriente te empuja hacia arriba...";
+            g.setFont(Ui.FUENTE_PEQ);
+            Ui.textoCentrado(g, s2, 320, y0 + 12, Ui.TEXTO);
+        }
+    }
+
+    /** Caja de diálogo del tutorial en la altura y (si y es negativo, pegada abajo). */
+    public void dibujarMensaje(Graphics2D g, String msg, int timer, int y) {
         g.setFont(Ui.FUENTE);
         List<String> lineas = Ui.ajustar(g, msg, 520);
         int h = lineas.size() * 13 + 12;
-        int w = 560, x = 40, y = 24;
+        int w = 560, x = 40;
+        if (y < 0) y = 360 - h - 4;
         Composite antes = g.getComposite();
         if (timer < 30) g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, Math.max(0, timer / 30f)));
         Ui.panel(g, x, y, w, h, new Color(0x2B1D12), new Color(0xE0B040));

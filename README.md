@@ -59,9 +59,13 @@ java -cp out cordoba.Main
 | R | Reintentar desde la última farola |
 | ESC | Pausa (o cerrar la consola) |
 | M | Activar / silenciar el sonido |
+| G | Mostrar / ocultar el fantasma del récord (nivel 2) |
 
-Dentro de la consola también puedes usar el teclado: **W/S** (o ↑/↓) para elegir variable, **A/D** (o ←/→)
-para cambiar el valor (mantén pulsado para repetir) y **ENTER** para aplicar.
+Con la consola abierta **el juego sigue en marcha**: Coco se mueve con **← / →** y salta con **ESPACIO** (o ↑),
+mientras que la consola usa **W/S** para elegir variable, **A/D** para cambiar el valor (mantén pulsado para
+repetir), los **números** para escribirlo directamente y **ENTER** para aplicar.
+
+Todos los atajos, pantalla por pantalla, están en [ATAJOS.md](ATAJOS.md).
 
 > Atajo para profesores: en el menú principal pulsa **2** para ir directamente al nivel 2.
 
@@ -81,13 +85,32 @@ botón **RANKING** del menú principal.
 | `CAÍDAS` | Veces que ha caído o se ha pinchado |
 | `COMPILACIONES` | Veces que ha aplicado cambios en la consola de código |
 
+La tabla tiene tres pestañas (se cambian con **← / →** o con el ratón):
+
+* **GENERAL**: el ranking de la competición, con el criterio de abajo.
+* **NIVEL 1** y **NIVEL 2**: los mejores tiempos de cada nivel por separado (solo cuenta el tiempo).
+  Las partidas que empezaron con el atajo **2** no aparecen en el nivel 1.
+
 * **Criterio:** gana quien tarde **menos**. Si hay empate, menos caídas; después, menos compilaciones;
   y si aun así empatan, queda delante quien lo consiguió antes.
-* Mientras escribe el nombre, el jugador ve el puesto provisional que va a conseguir.
+* Mientras juega, el **cronómetro** de la partida se ve arriba a la izquierda (también con la consola abierta).
+* Mientras escribe el nombre, el jugador ve el puesto provisional que va a conseguir y si ha batido algún récord de nivel.
 * Los resultados se guardan en `ranking.txt`, en la carpeta desde la que se ejecuta el juego, con una línea por
-  partida (`nombre;fotogramas;caídas;compilaciones`). Se guardan **todas** las partidas, aunque solo se
-  muestran las 10 mejores. Para empezar una competición nueva basta con borrar ese fichero.
-* `ranking.txt` está en `.gitignore`: los récords de cada ordenador no se suben al repositorio.
+  partida (`nombre;fotogramas;caídas;compilaciones;fotogramasNivel1;fotogramasNivel2`). Se guardan **todas**
+  las partidas, aunque solo se muestran las 10 mejores. Para empezar una competición nueva basta con borrar
+  ese fichero (y `fantasma.dat`).
+
+### El fantasma del récord
+
+En el **nivel 2** aparece un Coco **semitransparente** con el nombre del récord encima: es la partida más
+rápida de ese nivel, repetida fotograma a fotograma. El HUD muestra el tiempo del nivel frente al récord
+(en rojo si vas por detrás). Con **G** se oculta o se muestra.
+
+* Se graba la **posición** de Coco en cada fotograma (no las teclas), así el fantasma es exacto aunque el
+  récord cambiara la física a mitad de partida.
+* Cuando alguien bate el récord del nivel 2 y guarda su nombre, su partida pasa a ser el nuevo fantasma
+  (`fantasma.dat`). Si se borra `ranking.txt`, el fantasma antiguo deja de salir.
+* `ranking.txt` y `fantasma.dat` están en `.gitignore`: los récords de cada ordenador no se suben al repositorio.
 
 ---
 
@@ -108,14 +131,17 @@ public class PhysicsConfig {
 ```
 
 * Cada variable muestra su nombre, su valor, una explicación y su rango permitido.
-* Los botones **[-] / [+]** cambian el valor (en pasos de 0.5) **solo en el editor**.
+* Los botones **[-] / [+]** (o **A/D**) cambian el valor en pasos de 0.5 **solo en el editor**.
+* También se puede **escribir el valor** con los números (`4.5`, `4,5`, `13`…): sale en blanco con un
+  cursor, **ENTER** lo compila, **RETROCESO** borra y **ESC** cancela. Si se sale del rango, se ajusta al límite.
 * Los cambios pendientes salen en amarillo con `// * sin aplicar`.
 * **APLICAR CAMBIOS** "compila": copia los valores a `PhysicsConfig` y la salida muestra
   `BUILD SUCCESSFUL` con la lista de cambios. Si cierras sin aplicar, el juego te avisa de que no se ha compilado nada.
 * **RESTAURAR** carga los valores por defecto en el editor.
 * Las variables `final` están **bloqueadas** (en el tutorial se van desbloqueando).
-* Mientras la consola está abierta el juego queda en pausa (como un *breakpoint*), así que puedes
-  cambiar la física **en mitad de un salto**.
+* **El juego no se pausa**: la consola aparece arriba, Coco se sigue moviendo con las flechas y el
+  cronómetro sigue corriendo. Es como programar "en caliente" con el programa en marcha, así que hay que
+  decidir rápido… o abrir la pausa (ESC) para pensar.
 
 Los cambios afectan de verdad al cocodrilo: `Player` lee `PhysicsConfig` en **cada fotograma**.
 
@@ -171,7 +197,8 @@ CordobaCodigoSalvaje/
 │   │   ├── VariableFisica.java     Una variable editable: valor, límites, paso, bloqueo
 │   │   └── CollisionManager.java   Colisiones por ejes separados + detección de peligros
 │   ├── entidades/
-│   │   └── Player.java             Coco: movimiento, salto, gravedad, animaciones
+│   │   ├── Player.java             Coco: movimiento, salto, gravedad, animaciones
+│   │   └── Fantasma.java           Graba, guarda y reproduce el fantasma del récord del nivel 2
 │   ├── niveles/                    Definición de niveles
 │   │   ├── Level.java              Clase base: mapa de tiles, objetos, farolas, carteles, eventos
 │   │   ├── Level1.java             Nivel 1 (tutorial)
@@ -192,13 +219,13 @@ CordobaCodigoSalvaje/
 │   │   ├── Fondos.java             Fondos con parallax: Puente Romano, Mezquita, casas encaladas…
 │   │   └── Particulas.java         Efectos visuales
 │   ├── interfaz/                   Menús y consola de código
-│   │   ├── CodeEditor.java         ★ La consola de código (IDE simulado)
+│   │   ├── CodeEditor.java         ★ La consola de código (IDE simulado, en vivo)
 │   │   ├── GameMenu.java           Pantallas de inicio, pausa y victoria
-│   │   ├── PantallaRanking.java    Final de partida (escribir nombre) y tabla TOP 10
+│   │   ├── PantallaRanking.java    Final de partida (escribir nombre) y TOP 10 (general / nivel 1 / nivel 2)
 │   │   └── Ui.java / Boton.java    Utilidades de interfaz
 │   ├── ranking/
 │   │   ├── Ranking.java            Carga, ordena y guarda las partidas en ranking.txt
-│   │   └── Puntuacion.java         Una partida: nombre, tiempo, caídas, compilaciones
+│   │   └── Puntuacion.java         Una partida: nombre, tiempos (total y por nivel), caídas, compilaciones
 │   └── audio/
 │       └── Sonido.java             Efectos chiptune sintetizados (sin archivos de audio)
 ├── assets/                     PNG exportados (player, tiles, backgrounds, interface)
@@ -216,6 +243,7 @@ Game.actualizar()
       ├─ CollisionManager.tocaPeligro() → morir / reaparecer en la farola
       └─ ¿meta? → celebración → pantalla de victoria
  └─ EDITOR → CodeEditor.actualizar() → APLICAR copia los valores a PhysicsConfig
+            └─ Game.paso() con las flechas (el juego sigue en marcha)
 Game.renderizar() → imagen 640x360 → escalado sin suavizado a la ventana
 ```
 
@@ -246,7 +274,7 @@ El cocodrilo está dibujado así en `Sprites.java` (cada letra es un color de la
    úsala en `Player` en lugar de `CONTROL_SUELO`.
 2. **Nuevo nivel** `Level3` (p. ej. el Patio de los Naranjos o la Calleja de las Flores) heredando de
    `Level` y usando `suelo()`, `agua()`, `pinchos()`, `farola()`, `cartel()`…
-3. **Escribir el valor** con el teclado en la consola en lugar de usar [+]/[-].
+3. ~~**Escribir el valor** con el teclado en la consola en lugar de usar [+]/[-].~~ ✅ Hecho.
 4. ~~Guardar récords (tiempo y caídas) en un fichero.~~ ✅ Hecho: ver *Modo competición*.
 5. Un enemigo que patrulle usando su propia `PhysicsConfig`.
 6. Variables "trampa" que el jugador no debería tocar (p. ej. `tamañoCoco`).

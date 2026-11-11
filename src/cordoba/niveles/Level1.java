@@ -103,10 +103,10 @@ public class Level1 extends Level {
         boolean velocidadLibre = !fisica.getVariable(PhysicsConfig.VELOCIDAD).isBloqueada();
         if (!velocidadLibre && !ayudaGravedadMostrada) {
             ayudaGravedadMostrada = true;
-            mostrarEvento("El juego está en pausa. Pulsa [-] en 'gravedad' hasta 5.0 o menos y luego APLICAR CAMBIOS.");
+            mostrarEvento("¡Ojo: el juego NO se pausa! Baja 'gravedad' a 5.0 o menos con [-] (o escribe 5) y pulsa ENTER para compilar.");
         } else if (velocidadLibre && !ayudaVelocidadMostrada) {
             ayudaVelocidadMostrada = true;
-            mostrarEvento("Pulsa [+] en 'velocidad' hasta 6.5 o más y luego APLICAR CAMBIOS.");
+            mostrarEvento("Elige 'velocidad' con W/S, súbela a 6.5 o más (con [+] o escribiendo el número) y pulsa ENTER.");
         }
     }
 

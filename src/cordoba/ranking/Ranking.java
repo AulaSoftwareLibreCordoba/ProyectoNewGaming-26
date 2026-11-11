@@ -16,8 +16,10 @@ import java.util.List;
  * después, menos compilaciones; y si aun así empatan, quien lo logró antes.
  *
  * Se guardan TODAS las partidas en un fichero de texto (UTF-8, una por línea):
- *     nombre;fotogramas;caidas;compilaciones
+ *     nombre;fotogramas;caidas;compilaciones;fotogramasNivel1;fotogramasNivel2
  * pero en pantalla solo se muestran las {@link #TOP} mejores.
+ *
+ * Además del ranking general hay un ranking por nivel (solo por tiempo).
  */
 public class Ranking {
 
@@ -56,14 +58,36 @@ public class Ranking {
         return List.copyOf(partidas.subList(0, Math.min(TOP, partidas.size())));
     }
 
+    /** Las 10 mejores partidas en un nivel concreto (solo las que jugaron ese nivel). */
+    public List<Puntuacion> mejoresNivel(int nivel) {
+        List<Puntuacion> lista = new ArrayList<>();
+        for (Puntuacion p : partidas) if (p.framesNivel(nivel) > 0) lista.add(p);
+        // Orden estable: en empate queda delante quien lo consiguió antes (orden del fichero)
+        lista.sort(Comparator.comparingInt(p -> p.framesNivel(nivel)));
+        return List.copyOf(lista.subList(0, Math.min(TOP, lista.size())));
+    }
+
+    /** Récord de un nivel, o null si nadie lo ha jugado todavía. */
+    public Puntuacion mejorNivel(int nivel) {
+        List<Puntuacion> lista = mejoresNivel(nivel);
+        return lista.isEmpty() ? null : lista.get(0);
+    }
+
     /** Puesto (empezando en 1) que tendría una partida con estos datos. */
     public int posicionPara(int frames, int muertes, int compilaciones) {
-        Puntuacion nueva = new Puntuacion("?", frames, muertes, compilaciones);
+        Puntuacion nueva = new Puntuacion("?", frames, muertes, compilaciones, 0, 0);
         int pos = 1;
         for (Puntuacion p : partidas) {
             if (ORDEN.compare(p, nueva) <= 0) pos++;   // en empate, la antigua va delante
         }
         return pos;
+    }
+
+    /** ¿Ese tiempo batiría el récord del nivel? (empatar no basta) */
+    public boolean esRecordNivel(int nivel, int framesNivel) {
+        if (framesNivel <= 0) return false;
+        Puntuacion mejor = mejorNivel(nivel);
+        return mejor == null || framesNivel < mejor.framesNivel(nivel);
     }
 
     /** Añade la partida, guarda el fichero y devuelve el puesto obtenido. */

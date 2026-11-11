@@ -169,6 +169,12 @@ public class Player {
 
     /** Devuelve el fotograma de animación adecuado al estado actual. */
     public BufferedImage fotogramaActual() {
+        BufferedImage img = fotogramaBase();
+        return mirandoDerecha ? img : Sprites.volteada(img);
+    }
+
+    /** El dibujo actual sin voltear (mirando a la derecha). Lo usa también el fantasma. */
+    public BufferedImage fotogramaBase() {
         BufferedImage img;
         if (muerto) {
             img = Sprites.COCO_HERIDO;
@@ -183,7 +189,7 @@ public class Player {
             // parpadeo de vez en cuando
             img = (tiempoQuieto % 180) > 170 ? Sprites.COCO_PARPADEO : Sprites.COCO_QUIETO;
         }
-        return mirandoDerecha ? img : Sprites.volteada(img);
+        return img;
     }
 
     /** Posición X donde dibujar el sprite de 20 px para que cuadre con la caja de 12 px. */

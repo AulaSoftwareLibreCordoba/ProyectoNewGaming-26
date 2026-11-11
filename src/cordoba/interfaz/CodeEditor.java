@@ -13,25 +13,27 @@ import java.awt.event.KeyEvent;
  * CONSOLA DE CÓDIGO integrada en el juego.
  *
  * Simula un pequeño IDE que muestra PhysicsConfig.java. El jugador cambia los
- * valores con los botones [-] y [+] (o con el teclado) y pulsa APLICAR CAMBIOS
- * para "compilar". Solo al aplicar se modifican de verdad las físicas.
+ * valores con los botones [-] y [+], con A/D o ESCRIBIENDO el número, y pulsa
+ * APLICAR CAMBIOS para "compilar". Solo al aplicar se modifican las físicas.
  *
- * Mientras la consola está abierta el juego está en pausa (como un breakpoint
- * del depurador), así que nunca bloquea al jugador de forma permanente.
+ * ¡El juego NO se pausa! Mientras la consola está abierta Coco se sigue
+ * moviendo (con las flechas y ESPACIO) y el cronómetro sigue corriendo:
+ * como programar "en caliente" con el programa en marcha.
  *
- * Controles: ratón · W/S o flechas arriba/abajo para elegir variable ·
- *            A/D o flechas izquierda/derecha para cambiar el valor ·
- *            ENTER para aplicar · E o ESC para cerrar.
+ * Controles: ratón · W/S para elegir variable · A/D para cambiar el valor ·
+ *            números para escribirlo · ENTER para aplicar · E o ESC para cerrar.
  */
 public class CodeEditor {
 
     /** Lo que ha pasado en este fotograma (Game reacciona a ello). */
     public enum Resultado { NADA, APLICADO, CERRAR }
 
-    // Posición del panel (resolución interna 640x360)
-    private static final int PX = 60, PY = 74, PW = 520, PH = 272;
+    // Posición del panel (resolución interna 640x360). Va ARRIBA para que se vea a Coco.
+    private static final int PX = 60, PY = 4, PW = 520;
     private static final int LINEA = 13;
-    private static final int Y_CODIGO = PY + 32;
+    private static final int Y_CODIGO = PY + 34;
+    private static final int MAX_ESCRITURA = 5;
+    private int ph;   // alto: depende de cuántas variables haya
 
     // Colores de "resaltado de sintaxis"
     private static final Color C_COMENTARIO = new Color(0x6A9955);
@@ -40,15 +42,15 @@ public class CodeEditor {
     private static final Color C_NUMERO     = new Color(0xF78C6C);
     private static final Color C_SIMBOLO    = new Color(0xD4D4D4);
     private static final Color C_BLOQUEADO  = new Color(0x6C6C80);
+    private static final Color FONDO        = new Color(0x1E, 0x1E, 0x2E, 232);   // un poco transparente
 
     private PhysicsConfig fisica;
     private Level nivel;
     private int[] borrador;       // valores en edición (todavía sin aplicar)
     private int seleccion;
+    private String escritura;     // número que se está tecleando (null = no se está escribiendo)
 
-    private final Boton botonAplicar  = new Boton(PX + 14,  PY + PH - 34, 160, 22, "APLICAR CAMBIOS", new Color(0x2E8B57));
-    private final Boton botonDefecto  = new Boton(PX + 184, PY + PH - 34, 110, 22, "RESTAURAR", new Color(0x5A6070));
-    private final Boton botonCerrar   = new Boton(PX + PW - 124, PY + PH - 34, 110, 22, "CERRAR [E]", new Color(0xB0413E));
+    private Boton botonAplicar, botonDefecto, botonCerrar;
     private Boton[] botonesMenos, botonesMas;
 
     // Mensajes de la "salida del compilador"
@@ -76,38 +78,73 @@ public class CodeEditor {
             botonesMenos[i] = new Boton(PX + PW - 84, y, 30, 13, "-", new Color(0x8C3B3B));
             botonesMas[i]   = new Boton(PX + PW - 48, y, 30, 13, "+", new Color(0x2E7D4F));
         }
+        // Alto del panel: código + salida del compilador + botones
+        int finCodigo = Y_CODIGO + (totalLineas() - 1) * LINEA;
+        ph = finCodigo - PY + 64;
+        botonAplicar = new Boton(PX + 14,  PY + ph - 30, 160, 22, "APLICAR CAMBIOS", new Color(0x2E8B57));
+        botonDefecto = new Boton(PX + 184, PY + ph - 30, 110, 22, "RESTAURAR", new Color(0x5A6070));
+        botonCerrar  = new Boton(PX + PW - 124, PY + ph - 30, 110, 22, "CERRAR [E]", new Color(0xB0413E));
+
         if (fisica.getVariable(seleccion).isBloqueada()) seleccion = 0;
-        salida1 = "> Consola lista. Modifica los valores y pulsa APLICAR CAMBIOS.";
-        salida2 = "";
+        escritura = null;
+        salida1 = "> W/S elige variable · A/D o escribe un número · ENTER compila · E cierra";
+        salida2 = "  ¡El juego sigue! Mueve a Coco con las flechas y salta con ESPACIO.";
         colorSalida = Ui.GRIS;
         destello = 0;
         nivel.alAbrirEditor();
     }
 
+    /** Parte inferior del panel (para colocar cosas debajo). */
+    public int getAbajo() {
+        return PY + ph;
+    }
+
+    private int totalLineas() {
+        // "public class ... {", 2 líneas por variable (comentario + declaración) y "}"
+        return 2 + borrador.length * 2;
+    }
+
     /** Línea (y base del texto) de la declaración de la variable i. */
     private int yLineaCodigo(int i) {
-        // 0-2 cabecera, 3 vacía, después 2 líneas por variable + 1 vacía
-        return Y_CODIGO + (4 + i * 3 + 1) * LINEA;
+        return Y_CODIGO + (2 + i * 2) * LINEA;
     }
 
     public Resultado actualizar(Input in) {
         if (destello > 0) destello--;
         for (int i = 0; i < cambioPorFrame.length; i++) if (cambioPorFrame[i] > 0) cambioPorFrame[i]--;
 
-        // ----- Teclado -----
-        if (in.pulsada(KeyEvent.VK_E) || in.pulsada(KeyEvent.VK_ESCAPE)) return Resultado.CERRAR;
-        if (in.pulsada(KeyEvent.VK_UP) || in.pulsada(KeyEvent.VK_W)) {
+        // ----- Escribir el valor con el teclado -----
+        for (char c : in.tomarEscrito().toCharArray()) {
+            if (Character.isDigit(c) || c == '.' || c == ',') teclear(c);
+            else if (c == '\b' && escritura != null) {
+                escritura = escritura.isEmpty() ? null : escritura.substring(0, escritura.length() - 1);
+            }
+        }
+
+        // ----- Teclado (las FLECHAS quedan libres para mover a Coco) -----
+        if (in.pulsada(KeyEvent.VK_ESCAPE) && escritura != null) {
+            escritura = null;
+            salida1 = "> Escritura cancelada.";
+            salida2 = "";
+            colorSalida = Ui.GRIS;
+        } else if (in.pulsada(KeyEvent.VK_E) || in.pulsada(KeyEvent.VK_ESCAPE)) {
+            confirmarEscritura();
+            return Resultado.CERRAR;
+        }
+        if (in.pulsada(KeyEvent.VK_W)) {
+            confirmarEscritura();
             seleccion = (seleccion + borrador.length - 1) % borrador.length;
             Sonido.clic();
         }
-        if (in.pulsada(KeyEvent.VK_DOWN) || in.pulsada(KeyEvent.VK_S)) {
+        if (in.pulsada(KeyEvent.VK_S)) {
+            confirmarEscritura();
             seleccion = (seleccion + 1) % borrador.length;
             Sonido.clic();
         }
-        boolean izq = in.abajo(KeyEvent.VK_LEFT) || in.abajo(KeyEvent.VK_A);
-        boolean der = in.abajo(KeyEvent.VK_RIGHT) || in.abajo(KeyEvent.VK_D);
-        boolean izqP = in.pulsada(KeyEvent.VK_LEFT) || in.pulsada(KeyEvent.VK_A);
-        boolean derP = in.pulsada(KeyEvent.VK_RIGHT) || in.pulsada(KeyEvent.VK_D);
+        boolean izq = in.abajo(KeyEvent.VK_A);
+        boolean der = in.abajo(KeyEvent.VK_D);
+        boolean izqP = in.pulsada(KeyEvent.VK_A);
+        boolean derP = in.pulsada(KeyEvent.VK_D);
 
         // ----- Ratón -----
         int mx = in.getRatonX(), my = in.getRatonY();
@@ -117,9 +154,10 @@ public class CodeEditor {
             botonesMenos[i].activo = !bloqueada;
             botonesMas[i].activo = !bloqueada;
             if (in.clic()) {
-                if (botonesMenos[i].contiene(mx, my)) { seleccion = i; cambiar(i, -1); }
-                else if (botonesMas[i].contiene(mx, my)) { seleccion = i; cambiar(i, +1); }
-                else if (my > yLineaCodigo(i) - 2 * LINEA && my <= yLineaCodigo(i) + 3 && mx > PX && mx < PX + PW) {
+                if (botonesMenos[i].contiene(mx, my)) { confirmarEscritura(); seleccion = i; cambiar(i, -1); }
+                else if (botonesMas[i].contiene(mx, my)) { confirmarEscritura(); seleccion = i; cambiar(i, +1); }
+                else if (my > yLineaCodigo(i) - LINEA - 9 && my <= yLineaCodigo(i) + 3 && mx > PX && mx < PX + PW) {
+                    if (i != seleccion) confirmarEscritura();
                     seleccion = i;
                 }
             }
@@ -130,6 +168,7 @@ public class CodeEditor {
         }
 
         // ----- Cambios con teclado (con repetición si se mantiene) -----
+        if (izqP || derP) confirmarEscritura();
         if (izqP) cambiar(seleccion, -1);
         if (derP) cambiar(seleccion, +1);
 
@@ -146,9 +185,12 @@ public class CodeEditor {
 
         // ----- Botones inferiores -----
         if (botonAplicar.clicado(in) || in.pulsada(KeyEvent.VK_ENTER)) {
+            boolean escrito = escritura != null;
+            if (!confirmarEscritura() && escrito) return Resultado.NADA;   // número no válido
             return aplicar() ? Resultado.APLICADO : Resultado.NADA;
         }
         if (botonDefecto.clicado(in)) {
+            escritura = null;
             for (int i = 0; i < borrador.length; i++) {
                 if (!fisica.getVariable(i).isBloqueada()) borrador[i] = fisica.getVariable(i).getPorDefecto();
             }
@@ -157,8 +199,70 @@ public class CodeEditor {
             colorSalida = Ui.AMARILLO;
             Sonido.clic();
         }
-        if (botonCerrar.clicado(in)) return Resultado.CERRAR;
+        if (botonCerrar.clicado(in)) {
+            confirmarEscritura();
+            return Resultado.CERRAR;
+        }
         return Resultado.NADA;
+    }
+
+    /** Añade un carácter al número que se está escribiendo en la variable seleccionada. */
+    private void teclear(char c) {
+        VariableFisica v = fisica.getVariable(seleccion);
+        if (v.isBloqueada()) {
+            salida1 = "> error: '" + v.getNombre() + "' es final (BLOQUEADA en esta zona).";
+            salida2 = "";
+            colorSalida = Ui.ROJO;
+            Sonido.error();
+            return;
+        }
+        if (c == ',') c = '.';
+        if (escritura == null) escritura = "";
+        if (c == '.' && escritura.contains(".")) return;
+        if (escritura.length() >= MAX_ESCRITURA) return;
+        escritura += c;
+        Sonido.clic();
+        salida1 = "> Escribiendo " + v.getNombre() + " [" + VariableFisica.formatear(v.getMinimo()) + " - "
+                + VariableFisica.formatear(v.getMaximo()) + "]...";
+        salida2 = "  ENTER = compilar · RETROCESO = borrar · ESC = cancelar";
+        colorSalida = Ui.AMARILLO;
+    }
+
+    /**
+     * Pasa el número escrito al borrador (sin compilar todavía).
+     * Si se sale del rango, se ajusta al límite. Devuelve false si no era un número válido.
+     */
+    private boolean confirmarEscritura() {
+        if (escritura == null) return true;
+        String txt = escritura;
+        escritura = null;
+        VariableFisica v = fisica.getVariable(seleccion);
+        float valor;
+        try {
+            valor = Float.parseFloat(txt);
+        } catch (NumberFormatException e) {
+            salida1 = "> error: '" + txt + "' no es un número válido.";
+            salida2 = "";
+            colorSalida = Ui.ROJO;
+            Sonido.error();
+            return false;
+        }
+        int decimas = Math.round(valor * 10);
+        int ajustado = v.limitar(decimas);
+        borrador[seleccion] = ajustado;
+        cambioPorFrame[seleccion] = 10;
+        if (ajustado != decimas) {
+            salida1 = "> aviso: " + v.getNombre() + " debe estar entre " + VariableFisica.formatear(v.getMinimo())
+                    + " y " + VariableFisica.formatear(v.getMaximo()) + ": se ajusta a " + VariableFisica.formatear(ajustado) + ".";
+            salida2 = "";
+            colorSalida = Ui.AMARILLO;
+            Sonido.error();
+        } else if (hayCambiosPendientes()) {
+            salida1 = "* Hay cambios sin aplicar. Pulsa APLICAR CAMBIOS (o ENTER) para compilar.";
+            salida2 = "";
+            colorSalida = Ui.AMARILLO;
+        }
+        return true;
     }
 
     /** Sube (+1) o baja (-1) el valor en borrador de la variable i. */
@@ -236,13 +340,10 @@ public class CodeEditor {
     //  Dibujo
     // =====================================================================
 
-    public void dibujar(Graphics2D g, Input in, int frame) {
-        // Oscurecer el juego (está en pausa)
-        g.setColor(new Color(0, 0, 0, 110));
-        g.fillRect(0, 0, 640, 360);
-
+    /** @param tiempo cronómetro de la partida (sigue corriendo con la consola abierta) */
+    public void dibujar(Graphics2D g, Input in, int frame, String tiempo) {
         Color borde = destello > 0 && (destello / 4) % 2 == 0 ? Ui.VERDE : new Color(0x5C5C80);
-        Ui.panel(g, PX, PY, PW, PH, Ui.PANEL, borde);
+        Ui.panel(g, PX, PY, PW, ph, FONDO, borde);
 
         // Barra de título estilo IDE
         g.setColor(Ui.PANEL_2);
@@ -252,31 +353,35 @@ public class CodeEditor {
         g.setColor(new Color(0x27C93F)); g.fillRect(PX + 26, PY + 8, 6, 6);
         g.setFont(Ui.FUENTE_PEQ);
         Ui.texto(g, "PhysicsConfig.java  -  Nivel " + nivel.getNumero(), PX + 40, PY + 15, Ui.TEXTO);
-        String pausa = (frame / 30) % 2 == 0 ? "|| EJECUCIÓN EN PAUSA (breakpoint)" : "   EJECUCIÓN EN PAUSA (breakpoint)";
-        Ui.texto(g, pausa, PX + PW - 230, PY + 15, Ui.AMARILLO);
+        // Indicador "en vivo": el programa sigue ejecutándose
+        String vivo = "EN EJECUCIÓN · " + tiempo;
+        int vw = g.getFontMetrics().stringWidth(vivo);
+        int vx = PX + PW - 12 - vw;
+        if ((frame / 30) % 2 == 0) {
+            g.setColor(Ui.ROJO);
+            g.fillRect(vx - 9, PY + 8, 5, 5);
+        }
+        Ui.texto(g, vivo, vx, PY + 15, Ui.AMARILLO);
 
         // Números de línea
         g.setFont(Ui.FUENTE_CODIGO);
-        int totalLineas = 4 + borrador.length * 3;
-        g.setColor(new Color(0x252536));
+        int totalLineas = totalLineas();
+        g.setColor(new Color(0x25, 0x25, 0x36, 232));
         g.fillRect(PX + 4, Y_CODIGO - 10, 24, totalLineas * LINEA + 4);
         for (int i = 0; i < totalLineas; i++) {
             Ui.texto(g, String.format("%2d", i + 1), PX + 7, Y_CODIGO + i * LINEA, new Color(0x5C5C78));
         }
 
         int x0 = PX + 34;
-        int y = Y_CODIGO;
-        segmentos(g, x0, y, new String[] { "// CONFIGURACIÓN FÍSICA DEL NIVEL" }, new Color[] { C_COMENTARIO });
-        y += LINEA;
-        segmentos(g, x0, y, new String[] { "// El juego espera tus cambios: edita y compila." }, new Color[] { C_COMENTARIO });
-        y += LINEA;
-        segmentos(g, x0, y, new String[] { "public class ", "PhysicsConfig", " {" }, new Color[] { C_CLAVE, C_NOMBRE, C_SIMBOLO });
+        segmentos(g, x0, Y_CODIGO, new String[] { "public class ", "PhysicsConfig", " {", "   // ¡Edita y compila en caliente!" },
+                new Color[] { C_CLAVE, C_NOMBRE, C_SIMBOLO, C_COMENTARIO });
 
         for (int i = 0; i < borrador.length; i++) {
             VariableFisica v = fisica.getVariable(i);
             int yc = yLineaCodigo(i);
             boolean bloqueada = v.isBloqueada();
             boolean pendiente = borrador[i] != v.getDecimas();
+            boolean escribiendo = escritura != null && i == seleccion;
 
             // Resaltado de la línea seleccionada
             if (i == seleccion) {
@@ -294,6 +399,12 @@ public class CodeEditor {
             String valor = VariableFisica.formatear(borrador[i]) + "f";
             Color colValor = pendiente ? Ui.AMARILLO : C_NUMERO;
             if (cambioPorFrame[i] > 0) colValor = Color.WHITE;
+            String nota = pendiente ? "  // * sin aplicar" : "";
+            if (escribiendo) {
+                valor = escritura + ((frame / 15) % 2 == 0 ? "_" : " ");
+                colValor = Color.WHITE;
+                nota = "  // ENTER = compilar";
+            }
             if (bloqueada) {
                 segmentos(g, x0, yc,
                         new String[] { "    final float ", v.getNombre(), " = ", valor, ";", "  // BLOQUEADA" },
@@ -301,7 +412,7 @@ public class CodeEditor {
                 dibujarCandado(g, PX + PW - 64, yc - 10);
             } else {
                 segmentos(g, x0, yc,
-                        new String[] { "    float ", v.getNombre(), " = ", valor, ";", pendiente ? "  // * sin aplicar" : "" },
+                        new String[] { "    float ", v.getNombre(), " = ", valor, ";", nota },
                         new Color[] { C_CLAVE, C_NOMBRE, C_SIMBOLO, colValor, C_SIMBOLO, Ui.AMARILLO });
                 botonesMenos[i].dibujar(g, in);
                 botonesMas[i].dibujar(g, in);
@@ -312,9 +423,9 @@ public class CodeEditor {
         segmentos(g, x0, yFin, new String[] { "}" }, new Color[] { C_SIMBOLO });
 
         // Salida del compilador
-        int ys = PY + PH - 62;
+        int ys = PY + ph - 50;
         g.setColor(new Color(0x15151F));
-        g.fillRect(PX + 6, ys - 10, PW - 12, 26);
+        g.fillRect(PX + 6, ys - 10, PW - 12, 24);
         g.setFont(Ui.FUENTE_PEQ);
         Ui.texto(g, recortar(g, salida1, PW - 20), PX + 10, ys, colorSalida);
         Ui.texto(g, recortar(g, salida2, PW - 20), PX + 10, ys + 11, colorSalida);
