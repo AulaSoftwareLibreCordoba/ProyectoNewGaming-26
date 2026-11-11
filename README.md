@@ -63,7 +63,7 @@ java -cp out cordoba.Main
 
 Con la consola abierta **el juego sigue en marcha**: Coco se mueve con **← / →** y salta con **ESPACIO** (o ↑),
 mientras que la consola usa **W/S** para elegir variable, **A/D** para cambiar el valor (mantén pulsado para
-repetir), los **números** para escribirlo directamente y **ENTER** para aplicar.
+repetir), los **números** para escribirlo directamente y **ENTER** (o **Ctrl+S**) para aplicar.
 
 Todos los atajos, pantalla por pantalla, están en [ATAJOS.md](ATAJOS.md).
 
@@ -133,7 +133,7 @@ public class PhysicsConfig {
 * Cada variable muestra su nombre, su valor, una explicación y su rango permitido.
 * Los botones **[-] / [+]** (o **A/D**) cambian el valor en pasos de 0.5 **solo en el editor**.
 * También se puede **escribir el valor** con los números (`4.5`, `4,5`, `13`…): sale en blanco con un
-  cursor, **ENTER** lo compila, **RETROCESO** borra y **ESC** cancela. Si se sale del rango, se ajusta al límite.
+  cursor, **ENTER** (o **Ctrl+S**) lo compila, **RETROCESO** borra y **ESC** cancela. Si se sale del rango, se ajusta al límite.
 * Los cambios pendientes salen en amarillo con `// * sin aplicar`.
 * **APLICAR CAMBIOS** "compila": copia los valores a `PhysicsConfig` y la salida muestra
   `BUILD SUCCESSFUL` con la lista de cambios. Si cierras sin aplicar, el juego te avisa de que no se ha compilado nada.

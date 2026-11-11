@@ -21,7 +21,7 @@ import java.awt.event.KeyEvent;
  * como programar "en caliente" con el programa en marcha.
  *
  * Controles: ratón · W/S para elegir variable · A/D para cambiar el valor ·
- *            números para escribirlo · ENTER para aplicar · E o ESC para cerrar.
+ *            números para escribirlo · ENTER o Ctrl+S para aplicar · E o ESC para cerrar.
  */
 public class CodeEditor {
 
@@ -81,13 +81,13 @@ public class CodeEditor {
         // Alto del panel: código + salida del compilador + botones
         int finCodigo = Y_CODIGO + (totalLineas() - 1) * LINEA;
         ph = finCodigo - PY + 64;
-        botonAplicar = new Boton(PX + 14,  PY + ph - 30, 160, 22, "APLICAR CAMBIOS", new Color(0x2E8B57));
+        botonAplicar = new Boton(PX + 14,  PY + ph - 30, 160, 22, "APLICAR [Ctrl+S]", new Color(0x2E8B57));
         botonDefecto = new Boton(PX + 184, PY + ph - 30, 110, 22, "RESTAURAR", new Color(0x5A6070));
         botonCerrar  = new Boton(PX + PW - 124, PY + ph - 30, 110, 22, "CERRAR [E]", new Color(0xB0413E));
 
         if (fisica.getVariable(seleccion).isBloqueada()) seleccion = 0;
         escritura = null;
-        salida1 = "> W/S elige variable · A/D o escribe un número · ENTER compila · E cierra";
+        salida1 = "> W/S elige variable · A/D o escribe un número · ENTER o Ctrl+S compila · E cierra";
         salida2 = "  ¡El juego sigue! Mueve a Coco con las flechas y salta con ESPACIO.";
         colorSalida = Ui.GRIS;
         destello = 0;
@@ -136,7 +136,9 @@ public class CodeEditor {
             seleccion = (seleccion + borrador.length - 1) % borrador.length;
             Sonido.clic();
         }
-        if (in.pulsada(KeyEvent.VK_S)) {
+        boolean ctrl = in.abajo(KeyEvent.VK_CONTROL);
+        boolean guardar = ctrl && in.pulsada(KeyEvent.VK_S);   // Ctrl+S = aplicar, como en un IDE
+        if (in.pulsada(KeyEvent.VK_S) && !ctrl) {
             confirmarEscritura();
             seleccion = (seleccion + 1) % borrador.length;
             Sonido.clic();
@@ -184,7 +186,7 @@ public class CodeEditor {
         }
 
         // ----- Botones inferiores -----
-        if (botonAplicar.clicado(in) || in.pulsada(KeyEvent.VK_ENTER)) {
+        if (botonAplicar.clicado(in) || in.pulsada(KeyEvent.VK_ENTER) || guardar) {
             boolean escrito = escritura != null;
             if (!confirmarEscritura() && escrito) return Resultado.NADA;   // número no válido
             return aplicar() ? Resultado.APLICADO : Resultado.NADA;
@@ -258,7 +260,7 @@ public class CodeEditor {
             colorSalida = Ui.AMARILLO;
             Sonido.error();
         } else if (hayCambiosPendientes()) {
-            salida1 = "* Hay cambios sin aplicar. Pulsa APLICAR CAMBIOS (o ENTER) para compilar.";
+            salida1 = "* Hay cambios sin aplicar. Pulsa APLICAR CAMBIOS (ENTER o Ctrl+S) para compilar.";
             salida2 = "";
             colorSalida = Ui.AMARILLO;
         }
@@ -288,7 +290,7 @@ public class CodeEditor {
         cambioPorFrame[i] = 10;
         Sonido.clic();
         if (hayCambiosPendientes()) {
-            salida1 = "* Hay cambios sin aplicar. Pulsa APLICAR CAMBIOS (o ENTER) para compilar.";
+            salida1 = "* Hay cambios sin aplicar. Pulsa APLICAR CAMBIOS (ENTER o Ctrl+S) para compilar.";
             salida2 = "";
             colorSalida = Ui.AMARILLO;
         }

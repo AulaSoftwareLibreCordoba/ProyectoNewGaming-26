@@ -14,6 +14,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | **E** | Jugando | Abre la consola de código | **El juego NO se pausa**: Coco se sigue moviendo con las flechas y **el tiempo corre**. Hay que programar rápido |
 | **ESC** | Jugando | Pausa | Mientras estás en pausa **el tiempo no corre**: es el único sitio para pensar con calma |
 | **Números** + **ENTER** | Consola de código | Escribe el valor y lo compila de golpe | Mucho más rápido que pulsar [+]/[-] varias veces (`4,5` ENTER) |
+| **Ctrl+S** | Consola de código | Guarda y aplica los cambios (igual que ENTER) | El atajo de "guardar" de cualquier IDE |
 | **G** | Nivel 2 | Muestra / oculta el fantasma del récord | El fantasma enseña por dónde va el más rápido… o te distrae |
 | **R** | Jugando | Vuelve a la última farola | Útil si te quedas atascado, pero **suma una caída** |
 | **M** | Siempre | Silencia / activa el sonido | Imprescindible si hay varios jugando a la vez en la misma sala |
@@ -83,7 +84,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | *Mantener* **A/D** | Repetir el cambio rápidamente |
 | **0-9**, **.** o **,** | Escribir el valor de la variable seleccionada (ej.: `4,5`) |
 | **RETROCESO** | Borrar mientras escribes |
-| **ENTER** | **APLICAR CAMBIOS** (compilar), incluido lo que estés escribiendo |
+| **ENTER** o **Ctrl+S** | **APLICAR CAMBIOS** (compilar), incluido lo que estés escribiendo |
 | **ESC** | Cancelar lo que estás escribiendo (o cerrar la consola si no escribes nada) |
 | **E** | Cerrar la consola |
 
@@ -92,7 +93,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | Clic en **[-]** / **[+]** | Bajar / subir el valor de esa variable |
 | *Mantener pulsado* **[-]** / **[+]** | Repetir el cambio rápidamente |
 | Clic en una línea de código | Seleccionar esa variable |
-| Botón **APLICAR CAMBIOS** | Compilar los valores |
+| Botón **APLICAR [Ctrl+S]** | Compilar los valores |
 | Botón **RESTAURAR** | Cargar los valores por defecto en el editor (hay que aplicarlos después) |
 | Botón **CERRAR [E]** | Cerrar la consola |
 
