@@ -37,15 +37,15 @@ public class PantallaRanking {
     private int puesto;             // su puesto en el ranking general
     private int pestana;            // 0 = general, 1 = nivel 1, 2 = nivel 2
 
-    private final Boton bGuardar = new Boton(255, 278, 130, 22, "GUARDAR", new Color(0x2E8B57));
-    private final Boton bMenu    = new Boton(255, 300, 130, 22, "MENÚ", new Color(0x2E8B57));
+    private final Boton bGuardar = new Boton(255, 278, 130, 22, "GUARDAR", Andalusi.BOTON_VERDE).andalusi();
+    private final Boton bMenu    = new Boton(255, 300, 130, 22, "MENÚ", Andalusi.BOTON_VERDE).andalusi();
     private final Boton[] bPestanas = new Boton[PESTANAS.length];
 
     public PantallaRanking(GameRenderer renderer, Ranking ranking) {
         this.renderer = renderer;
         this.ranking = ranking;
         for (int i = 0; i < PESTANAS.length; i++) {
-            bPestanas[i] = new Boton(170 + i * 102, 68, 96, 16, PESTANAS[i], new Color(0x5A6070));
+            bPestanas[i] = new Boton(170 + i * 102, 68, 96, 16, PESTANAS[i], new Color(0x5A6070)).andalusi();
         }
     }
 
@@ -207,7 +207,7 @@ public class PantallaRanking {
 
         // Pestañas
         for (int i = 0; i < bPestanas.length; i++) {
-            bPestanas[i].color = i == pestana ? new Color(0xC08A1E) : new Color(0x3A3A50);
+            bPestanas[i].color = i == pestana ? Andalusi.BOTON_ALBERO : new Color(0x3A3A50);
             bPestanas[i].dibujar(g, in);
         }
 

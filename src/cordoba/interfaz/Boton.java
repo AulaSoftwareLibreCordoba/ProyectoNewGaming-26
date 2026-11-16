@@ -15,6 +15,8 @@ public class Boton {
     public String texto;
     public Color color;
     public boolean activo = true;
+    /** Estética andalusí (menús). Si es false, botón sencillo (consola de código). */
+    public boolean andalusi;
 
     public Boton(int x, int y, int w, int h, String texto, Color color) {
         this.x = x;
@@ -23,6 +25,12 @@ public class Boton {
         this.h = h;
         this.texto = texto;
         this.color = color;
+    }
+
+    /** Activa la estética andalusí (ver {@link Andalusi#boton}). */
+    public Boton andalusi() {
+        andalusi = true;
+        return this;
     }
 
     public boolean contiene(int mx, int my) {
@@ -40,6 +48,10 @@ public class Boton {
     }
 
     public void dibujar(Graphics2D g, boolean encima) {
+        if (andalusi) {
+            Andalusi.boton(g, x, y, w, h, texto, color, encima, activo);
+            return;
+        }
         Color base = activo ? color : new Color(0x55556A);
         Color cara = encima ? base.brighter() : base;
         int dy = encima && activo ? -1 : 0;
