@@ -69,7 +69,9 @@ public class GameMenu {
 
         // ---- Fondo: el río con nubes y agua animadas, y rayos de sol ----
         renderer.dibujarFondo(g, Level.Tema.RIO, frame / 2, 0, 368, true);   // con orilla de arena
+        dibujarResplandorSol(g, 502, 70, t);
         dibujarRayosSol(g, 502, 70, t);
+        dibujarPajaros(g, t);
         for (int x = 0; x < 640; x += 16) {
             g.drawImage(Sprites.tile(Level.Tema.RIO, '#', (x / 16) % 2, true, false), x, 312, null);
             g.drawImage(Sprites.tile(Level.Tema.RIO, '#', (x / 16 + 1) % 2, false, false), x, 328, null);
@@ -82,9 +84,6 @@ public class GameMenu {
         // ---- Pétalos de azahar y motas de luz que flotan ----
         dibujarPetalos(g, t);
 
-        // ---- Título en una placa con arquería, como la Mezquita ----
-        dibujarPlacaTitulo(g, frame);
-
         // ---- Coco caminando (escala x4) ----
         BufferedImage coco = (frame / 40) % 4 == 3 ? Sprites.COCO_VICTORIA1
                 : Sprites.COCO_ANDAR[(frame / 8) % Sprites.COCO_ANDAR.length];
@@ -92,6 +91,9 @@ public class GameMenu {
         g.setColor(new Color(0, 0, 0, 70));
         g.fillOval(116, 306, 72, 8);
         g.drawImage(coco, 110, 232 + bote, 80, 80, null);
+
+        // ---- Título en una placa con arquería, como la Mezquita ----
+        dibujarPlacaTitulo(g, frame);
 
         // ---- Panel de código que se "edita" solo ----
         dibujarCodigo(g, frame);
@@ -122,6 +124,33 @@ public class GameMenu {
         if (frame < 45) {
             g.setColor(new Color(0, 0, 0, Math.max(0, 255 - frame * 255 / 45)));
             g.fillRect(0, 0, 640, 360);
+        }
+    }
+
+    /** Halo cálido alrededor del sol que "respira" despacio. */
+    private void dibujarResplandorSol(Graphics2D g, int cx, int cy, double t) {
+        int r = 150 + (int) (8 * Math.sin(t * 0.8));
+        g.setPaint(new RadialGradientPaint(cx, cy, r, new float[] { 0f, 0.25f, 1f },
+                new Color[] { new Color(255, 244, 200, 110), new Color(255, 200, 120, 45), new Color(255, 170, 90, 0) }));
+        g.fillOval(cx - r, cy - r, r * 2, r * 2);
+    }
+
+    /** Bandadas de vencejos que cruzan el cielo aleteando. */
+    private void dibujarPajaros(Graphics2D g, double t) {
+        g.setColor(new Color(0x3A2418));
+        for (int i = 0; i < 6; i++) {
+            double vel = 14 + (i % 3) * 5;
+            int x = (int) Math.floorMod((long) (i * 137 + t * vel), 760) - 60;
+            int y = 40 + (i * 23) % 70 + (int) (Math.sin(t * 0.9 + i) * 6);
+            boolean arriba = ((int) (t * 7 + i * 3)) % 2 == 0;
+            int ala = i % 3 == 0 ? 4 : 3;
+            if (arriba) {
+                g.drawLine(x - ala, y - 2, x, y);
+                g.drawLine(x, y, x + ala, y - 2);
+            } else {
+                g.drawLine(x - ala, y + 1, x, y);
+                g.drawLine(x, y, x + ala, y + 1);
+            }
         }
     }
 

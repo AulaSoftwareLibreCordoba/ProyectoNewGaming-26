@@ -8,6 +8,7 @@ import cordoba.fisica.VariableFisica;
 import cordoba.graficos.ambiente.Agua;
 import cordoba.graficos.ambiente.Ambiente;
 import cordoba.graficos.luz.Iluminacion;
+import cordoba.graficos.luz.PrimerPlano;
 import cordoba.graficos.luz.Profundidad;
 import cordoba.graficos.luz.SalaProfunda;
 import cordoba.interfaz.Ui;
@@ -70,7 +71,19 @@ public class GameRenderer {
         dibujarJugador(g, p, camX, camY, frame);
         iluminacion.aplicar(g, nivel, p, camX, camY, frame);
         part.dibujar(g, camX, camY);
+        // Objetos entre Coco y la cámara (desenfocados): dan profundidad
+        Rectangle coco = new Rectangle(Math.round(p.x) - camX, Math.round(p.y) - camY, Player.ANCHO, Player.ALTO);
+        PrimerPlano.dibujar(g, nivel.getTema(), camX, interiorMezquita(nivel.getTema(), camY), coco, frame);
         iluminacion.vineta(g, nivel.getTema());
+    }
+
+    /**
+     * Cuánto se está dentro de la Mezquita: 0 = fuera, 1 = en la sala de columnas.
+     * Es la misma cuenta con la que aparece la sala de columnas en el fondo.
+     */
+    private static float interiorMezquita(Level.Tema tema, int camY) {
+        if (tema != Level.Tema.MEZQUITA) return 0f;
+        return Math.max(0f, Math.min(1f, (camY - 110) / 60f));
     }
 
     /** Fondo por capas. Las más lejanas se desplazan menos (parallax). */
@@ -90,7 +103,7 @@ public class GameRenderer {
             if (tema == Level.Tema.RIO) dy = -camY / 4;
             if (tema == Level.Tema.MEZQUITA && i == 3) {
                 // La sala de columnas aparece al bajar al interior de la Mezquita
-                alfa = Math.max(0f, Math.min(1f, (camY - 110) / 60f));
+                alfa = interiorMezquita(tema, camY);
                 if (alfa <= 0) continue;
                 dy = 90;
             }

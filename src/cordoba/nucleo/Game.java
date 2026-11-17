@@ -9,6 +9,7 @@ import cordoba.graficos.GameRenderer;
 import cordoba.graficos.Particulas;
 import cordoba.interfaz.CodeEditor;
 import cordoba.interfaz.GameMenu;
+import cordoba.interfaz.Introduccion;
 import cordoba.interfaz.PantallaRanking;
 import cordoba.interfaz.Ui;
 import cordoba.niveles.Level1;
@@ -45,6 +46,7 @@ public class Game extends Canvas implements Runnable {
     private final PhysicsConfig fisica = new PhysicsConfig();
     private final GameRenderer renderer = new GameRenderer();
     private final GameMenu menu = new GameMenu(renderer);
+    private final Introduccion intro = new Introduccion(renderer);
     private final CodeEditor editor = new CodeEditor();
     private final Particulas particulas = new Particulas();
     private final Ranking ranking = new Ranking(Path.of("ranking.txt"));
@@ -145,7 +147,10 @@ public class Game extends Canvas implements Runnable {
         switch (estado) {
             case MENU:
                 switch (menu.actualizarInicio(input)) {
-                    case JUGAR:  empezarPartida(1); break;
+                    case JUGAR:
+                        intro.reiniciar();
+                        estado = GameState.INTRO;
+                        break;
                     case NIVEL2: empezarPartida(2); break;
                     case RANKING:
                         pantallaRanking.verTabla();
@@ -154,6 +159,9 @@ public class Game extends Canvas implements Runnable {
                     case SALIR:  salir(); break;
                     default: break;
                 }
+                break;
+            case INTRO:
+                if (intro.actualizar(input)) empezarPartida(1);
                 break;
             case JUGANDO:
                 actualizarPartida();
@@ -395,6 +403,9 @@ public class Game extends Canvas implements Runnable {
         switch (estado) {
             case MENU:
                 menu.dibujarInicio(g, input, frame);
+                break;
+            case INTRO:
+                intro.dibujar(g);
                 break;
             case JUEGO_COMPLETADO:
                 pantallaRanking.dibujarNombre(g, input, framesTotal, muertesTotal, compilacionesTotal,

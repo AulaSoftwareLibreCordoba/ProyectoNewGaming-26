@@ -6,6 +6,7 @@ package cordoba.nucleo;
  */
 public enum GameState {
     MENU,               // pantalla de inicio
+    INTRO,              // cinemática: Coco sale de la alcantarilla
     JUGANDO,            // partida en marcha
     EDITOR,             // consola de código abierta (juego en "breakpoint")
     PAUSA,              // menú de pausa (ESC)
