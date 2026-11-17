@@ -166,8 +166,7 @@ public class GameMenu {
         g.fillRect(0, 326, 640, 34);
         Andalusi.cenefa(g, 0, 322, 640);
         g.setFont(Ui.FUENTE_PEQ);
-        Ui.textoCentrado(g, "A/D o flechas: mover  ·  ESPACIO: saltar  ·  E/ENTER: consola  ·  ESC: pausa", 320, 341, Ui.TEXTO);
-        Ui.textoCentrado(g, "Demo para 2.º DAM · Java + Swing", 320, 355, Andalusi.ORO_CLARO);
+        Ui.textoCentrado(g, "A/D o flechas: mover  ·  ESPACIO: saltar  ·  E/ENTER: consola  ·  ESC: pausa", 320, 347, Ui.TEXTO);
 
         // fundido al arrancar
         if (frame < 45) {
@@ -258,10 +257,8 @@ public class GameMenu {
 
         // misma base y espaciado que las métricas de la fuente
         g.setFont(Ui.FUENTE_TITULO);
-        tituloCentrado(g, "CÓRDOBA:", 82, new Color(0xF2D27A), new Color(0x3A1E0E));
-        tituloCentrado(g, "CÓDIGO SALVAJE", 116, new Color(0x7BE07B), new Color(0x0E2A14));
-        g.setFont(Ui.FUENTE);
-        Ui.textoCentrado(g, "Un plataformas donde programas las leyes de la física", 320, 133, Andalusi.CREMA);
+        tituloCentrado(g, "AULA DE SOFTWARE LIBRE FP:", 88, new Color(0xF2D27A), new Color(0x3A1E0E));
+        tituloCentrado(g, "CÓDIGO SALVAJE", 122, new Color(0x7BE07B), new Color(0x0E2A14));
     }
 
     private void tituloCentrado(Graphics2D g, String s, int y, Color color, Color contorno) {

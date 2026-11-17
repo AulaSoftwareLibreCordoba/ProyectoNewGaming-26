@@ -352,31 +352,9 @@ public class GameRenderer {
                            int frame, int muertes,
                            boolean ayudaCompleta, int framesPartida, int framesNivel,
                            Fantasma fantasma, boolean fantasmaVisible) {
-        dibujarCronometro(g, 4, 22, framesPartida, framesNivel, fantasma, fantasmaVisible);
+        dibujarCronometro(g, 4, 4,framesPartida, framesNivel, fantasma, fantasmaVisible);
 
-        // mini consola con las variables actuales
-        g.setFont(Ui.FUENTE_PEQ);
-        int x = 636;
-        for (int i = fisica.getCantidad() - 1; i >= 0; i--) {
-            VariableFisica v = fisica.getVariable(i);
-            String etiqueta = v.getNombre() + "=";
-            String valor = VariableFisica.formatear(v.getDecimas());
-            int w = g.getFontMetrics().stringWidth(etiqueta) + 5 * Ui.CELDA_NUMERO + 8;
-            x -= w + 2;
-            g.setColor(new Color(0x1E1E2E));
-            g.fillRect(x, 22, w, 17);
-            g.setColor(v.isBloqueada() ? new Color(0x7D8195) : new Color(0x82AAFF));
-            g.drawRect(x, 22, w - 1, 16);
-            Ui.dato(g, etiqueta, valor, x + 4, 35, v.isBloqueada() ? Ui.GRIS : Ui.TEXTO);
-        }
-
-        // el título va en su zona y los indicadores siempre tienen su hueco
-        g.setFont(Ui.FUENTE_HUD);
-        String titulo = Ui.recortar(g, "NIVEL " + nivel.getNumero() + " · " + nivel.getNombre(), 616);
-        int tw = g.getFontMetrics().stringWidth(titulo);
-        g.setColor(Ui.PANEL);
-        g.fillRect(4, 4, tw + 12, 16);
-        Ui.texto(g, titulo, 10, 16, Ui.AMARILLO);
+        // HUD limpio: sin variables de física ni nombre del nivel (se ven en la consola)
         g.setFont(Ui.FUENTE_PEQ);
 
         // ayuda de controles (completa al principio, luego solo la consola)

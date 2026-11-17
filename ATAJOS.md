@@ -84,7 +84,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | Clic en **[-]** / **[+]** | Bajar / subir el valor de esa variable |
 | *Mantener pulsado* **[-]** / **[+]** | Repetir el cambio rápidamente |
 | Clic en una línea de código | Seleccionar esa variable |
-| Botón **RESTAURAR** | Cargar los valores por defecto en el editor (se guardan al cerrar) |
+| **R** o botón **RESTAURAR [R]** | Cargar los valores por defecto en el editor (se guardan al cerrar) |
 | Botón **CERRAR [ENTER]** | Guardar y cerrar la consola |
 
 > ⚠️ Los cambios se guardan solos al cerrar con **ENTER** (no hay botón de aplicar).

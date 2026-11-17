@@ -70,13 +70,13 @@ public class CodeEditor {
         // alto = código + salida del compilador + botones
         int finCodigo = Y_CODIGO + (totalLineas() - 1) * LINEA;
         ph = finCodigo - PY + 76;
-        botonDefecto = new Boton(PX + 14, PY + ph - 30, 110, 22, "RESTAURAR", new Color(0x5A6070));
+        botonDefecto = new Boton(PX + 14, PY + ph - 30, 140, 22, "RESTAURAR [R]",new Color(0x5A6070));
         botonCerrar  = new Boton(PX + PW - 164, PY + ph - 30, 150, 22, "CERRAR [ENTER]", new Color(0x2E8B57));
 
         if (fisica.getVariable(seleccion).isBloqueada()) seleccion = 0;
         escritura = null;
         salida1 = "> W/S o ↑/↓ elige · A/D o ←/→ cambia (o escribe el número)";
-        salida2 = "  ENTER guarda y cierra. ¡Ojo, el tiempo sigue corriendo!";
+        salida2 = "  R restaura valores · ENTER guarda y cierra. ¡Ojo, el tiempo corre!";
         colorSalida = Ui.GRIS;
     }
 
@@ -166,7 +166,7 @@ public class CodeEditor {
             if (!confirmarEscritura()) return Resultado.NADA;   // no era un número válido: no cierra
             return aplicar() ? Resultado.APLICADO : Resultado.CERRAR;
         }
-        if (botonDefecto.clicado(in)) {
+        if (botonDefecto.clicado(in) || in.pulsada(KeyEvent.VK_R)) {
             escritura = null;
             for (int i = 0; i < borrador.length; i++) {
                 if (!fisica.getVariable(i).isBloqueada()) borrador[i] = fisica.getVariable(i).getPorDefecto();
