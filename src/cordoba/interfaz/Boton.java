@@ -68,7 +68,7 @@ public class Boton {
         // texto
         g.setFont(h >= 18 ? Ui.FUENTE : Ui.FUENTE_PEQ);
         int tw = g.getFontMetrics().stringWidth(texto);
-        int ty = y + dy + h / 2 + g.getFontMetrics().getAscent() / 2 - 2;
-        Ui.texto(g, texto, x + (w - tw) / 2, ty, activo ? Color.WHITE : new Color(0xA0A0B0));
+        int ty = Ui.baseCentrada(g, y + dy, h);
+        Ui.texto(g, texto, x + (w - tw) / 2, ty, activo ? Ui.TEXTO : Ui.GRIS);
     }
 }

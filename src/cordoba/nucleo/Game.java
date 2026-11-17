@@ -204,6 +204,7 @@ public class Game extends Canvas implements Runnable {
             return;
         }
         if (input.pulsada(KeyEvent.VK_ESCAPE)) {
+            menu.abrirPausa(input);
             estado = GameState.PAUSA;
             return;
         }
@@ -338,6 +339,7 @@ public class Game extends Canvas implements Runnable {
             pantallaRanking.empezarNombre();
             estado = GameState.JUEGO_COMPLETADO;
         } else {
+            menu.abrirVictoria(input);
             estado = GameState.NIVEL_COMPLETADO;
         }
     }
@@ -390,8 +392,7 @@ public class Game extends Canvas implements Runnable {
     /** Dibuja el estado actual sobre la imagen interna de 640x360. */
     public BufferedImage renderizar() {
         Graphics2D g = lienzo.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+        Ui.preparar(g);
         switch (estado) {
             case MENU:
                 menu.dibujarInicio(g, input, frame);
@@ -438,9 +439,7 @@ public class Game extends Canvas implements Runnable {
         }
         renderizar();
         int w = getWidth(), h = getHeight();
-        double escala = Math.min(w / (double) ANCHO, h / (double) ALTO);
-        // Escala entera si queda bien (píxeles perfectos); si no, fraccionaria
-        if (escala >= 1 && Math.floor(escala) / escala >= 0.85) escala = Math.floor(escala);
+        double escala = Ui.escalaVentana(w, h);
         int dw = (int) (ANCHO * escala), dh = (int) (ALTO * escala);
         int ox = (w - dw) / 2, oy = (h - dh) / 2;
         input.setTransformacion(escala, ox, oy);

@@ -342,8 +342,7 @@ public class GameRenderer {
         g.setFont(Ui.FUENTE_PEQ);
         String etiqueta = f.terminado(frameNivel) ? f.getNombre() + " ¡META!" : f.getNombre();
         int w = g.getFontMetrics().stringWidth(etiqueta);
-        g.setColor(new Color(0xB8D8FF));
-        g.drawString(etiqueta, fx + Player.ANCHO / 2 - w / 2 - camX, y - 3);
+        Ui.texto(g, etiqueta, fx + Player.ANCHO / 2 - w / 2 - camX, y - 3, new Color(0xB8D8FF));
         g.setComposite(antes);
     }
 
@@ -372,14 +371,6 @@ public class GameRenderer {
                            int frame, int muertes, String aviso, Color colorAviso, int avisoTimer,
                            boolean ayudaCompleta, int framesPartida, int framesNivel,
                            Fantasma fantasma, boolean fantasmaVisible) {
-        // --- Nivel actual ---
-        g.setFont(Ui.FUENTE);
-        String titulo = "NIVEL " + nivel.getNumero() + " · " + nivel.getNombre();
-        int tw = g.getFontMetrics().stringWidth(titulo);
-        g.setColor(new Color(0, 0, 0, 140));
-        g.fillRect(4, 4, tw + 12, 16);
-        Ui.texto(g, titulo, 10, 16, Ui.BORDE);
-
         // --- Cronómetro ---
         dibujarCronometro(g, 4, 22, framesPartida, framesNivel, fantasma, fantasmaVisible);
 
@@ -388,34 +379,46 @@ public class GameRenderer {
         int x = 636;
         for (int i = fisica.getCantidad() - 1; i >= 0; i--) {
             VariableFisica v = fisica.getVariable(i);
-            String s = v.getNombre() + "=" + VariableFisica.formatear(v.getDecimas());
-            int w = g.getFontMetrics().stringWidth(s) + 8;
+            String etiqueta = v.getNombre() + "=";
+            String valor = VariableFisica.formatear(v.getDecimas());
+            int w = g.getFontMetrics().stringWidth(etiqueta) + 5 * Ui.CELDA_NUMERO + 8;
             x -= w + 2;
             g.setColor(new Color(0x1E1E2E));
-            g.fillRect(x, 4, w, 14);
-            g.setColor(v.isBloqueada() ? new Color(0x44445A) : new Color(0x82AAFF));
-            g.drawRect(x, 4, w - 1, 13);
-            Ui.texto(g, s, x + 4, 14, v.isBloqueada() ? Ui.GRIS : Ui.TEXTO);
+            g.fillRect(x, 22, w, 17);
+            g.setColor(v.isBloqueada() ? new Color(0x7D8195) : new Color(0x82AAFF));
+            g.drawRect(x, 22, w - 1, 16);
+            Ui.dato(g, etiqueta, valor, x + 4, 35, v.isBloqueada() ? Ui.GRIS : Ui.TEXTO);
         }
 
+        // Título en su propia zona; los indicadores siempre conservan su espacio.
+        g.setFont(Ui.FUENTE_HUD);
+        String titulo = Ui.recortar(g, "NIVEL " + nivel.getNumero() + " · " + nivel.getNombre(), 616);
+        int tw = g.getFontMetrics().stringWidth(titulo);
+        g.setColor(Ui.PANEL);
+        g.fillRect(4, 4, tw + 12, 16);
+        Ui.texto(g, titulo, 10, 16, Ui.AMARILLO);
+        g.setFont(Ui.FUENTE_PEQ);
+
         // --- Ayuda de controles (completa al empezar; luego solo la consola) ---
-        String ayuda = "[E] Consola de código   [R] Reintentar   [ESC] Pausa   [M] Sonido" + (Sonido.isSilenciado() ? " (off)" : "")
+        String ayuda = "[E] Código   [R] Reintentar   [ESC] Pausa   [M] Sonido" + (Sonido.isSilenciado() ? " (off)" : "")
                 + (fantasma != null ? "   [G] Fantasma" : "");
-        if (!ayudaCompleta) ayuda = "[E] Consola de código";
-        g.setColor(new Color(0, 0, 0, 140));
-        g.fillRect(4, 342, g.getFontMetrics().stringWidth(ayuda) + 12, 14);
+        if (!ayudaCompleta) ayuda = "[E] Código";
+        String cont = String.valueOf(muertes);
+        int cw = Ui.anchoDato(g, "Caídas: ", cont);
+        ayuda = Ui.recortar(g, ayuda, 610 - cw);
+        g.setColor(Ui.PANEL);
+        g.fillRect(4, 340, g.getFontMetrics().stringWidth(ayuda) + 12, 18);
         boolean resaltar = ayudaCompleta && (frame / 25) % 2 == 0;
-        Ui.texto(g, "[E] Consola de código", 10, 352, resaltar ? Ui.AMARILLO : Ui.TEXTO);
-        int ancho = g.getFontMetrics().stringWidth("[E] Consola de código");
-        Ui.texto(g, ayuda.substring("[E] Consola de código".length()), 10 + ancho, 352, Ui.TEXTO);
-        String cont = "Caídas: " + muertes;
-        Ui.texto(g, cont, 636 - g.getFontMetrics().stringWidth(cont), 352, Ui.TEXTO);
+        Ui.texto(g, ayuda, 10, 352, resaltar ? Ui.AMARILLO : Ui.TEXTO);
+        g.setColor(Ui.PANEL);
+        g.fillRect(630 - cw, 340, cw + 10, 18);
+        Ui.dato(g, "Caídas: ", cont, 635 - cw, 353, Ui.TEXTO);
 
         // --- Mensaje de tutorial ---
         String msg = nivel.getMensaje();
-        if (msg != null) dibujarMensaje(g, msg, nivel.getMensajeTimer(), 42);
+        if (msg != null) dibujarMensaje(g, msg, nivel.getMensajeTimer(), fantasma != null ? 62 : 42);
 
-        dibujarAvisosEspeciales(g, nivel, p, fisica, frame, 106);
+        dibujarAvisosEspeciales(g, nivel, p, fisica, frame, fantasma != null ? 126 : 106);
 
         // --- Aviso temporal (cambios aplicados, etc.) ---
         if (aviso != null && avisoTimer > 0) {
@@ -433,30 +436,27 @@ public class GameRenderer {
      */
     public void dibujarCronometro(Graphics2D g, int x, int y, int framesPartida, int framesNivel,
                                   Fantasma fantasma, boolean fantasmaVisible) {
-        g.setFont(Ui.FUENTE);
-        String total = "TIEMPO " + Puntuacion.formatearTiempo(framesPartida);
-        String extra = "";
-        if (fantasma != null) {
-            extra = "  NIVEL " + Puntuacion.formatearTiempo(framesNivel)
-                    + "  RÉCORD " + Puntuacion.formatearTiempo(fantasma.getFramesNivel())
-                    + " " + fantasma.getNombre() + (fantasmaVisible ? "" : " (oculto)");
-        }
-        int w1 = g.getFontMetrics().stringWidth(total);
-        g.setFont(Ui.FUENTE_PEQ);
-        int w2 = g.getFontMetrics().stringWidth(extra);
-        g.setColor(new Color(0, 0, 0, 140));
-        g.fillRect(x, y, w1 + w2 + 22, 16);
+        g.setColor(Ui.PANEL);
+        g.fillRect(x, y, Ui.ANCHO_CRONOMETRO, 17);
         // Reloj en pixel art
         g.setColor(Ui.TEXTO);
         g.drawRect(x + 4, y + 4, 7, 7);
         g.fillRect(x + 7, y + 5, 1, 3);
         g.fillRect(x + 8, y + 7, 2, 1);
-        g.setFont(Ui.FUENTE);
-        Ui.texto(g, total, x + 16, y + 12, Ui.TEXTO);
-        if (!extra.isEmpty()) {
-            g.setFont(Ui.FUENTE_PEQ);
+        g.setFont(Ui.FUENTE_HUD);
+        Ui.texto(g, "TIEMPO", x + 16, y + 13, Ui.AMARILLO);
+        Ui.tiempo(g, Puntuacion.formatearTiempo(framesPartida), x + Ui.X_TIEMPO_HUD, y + 13, Ui.TEXTO);
+        if (fantasma != null) {
+            g.setColor(Ui.PANEL);
+            g.fillRect(x, y + 20, 632, 17);
+            g.setFont(Ui.FUENTE);
             boolean ganando = framesNivel <= fantasma.getFramesNivel();
-            Ui.texto(g, extra, x + 16 + w1, y + 12, ganando ? new Color(0xB8D8FF) : Ui.ROJO);
+            Ui.texto(g, "NIVEL", x + 6, y + 33, Ui.GRIS);
+            Ui.tiempo(g, Puntuacion.formatearTiempo(framesNivel), x + 43, y + 33,
+                    ganando ? new Color(0xB8D8FF) : Ui.ROJO);
+            Ui.texto(g, "RÉCORD", x + 151, y + 33, Ui.GRIS);
+            Ui.tiempo(g, Puntuacion.formatearTiempo(fantasma.getFramesNivel()), x + 200, y + 33, Ui.TEXTO);
+            Ui.texto(g, fantasma.getNombre() + (fantasmaVisible ? "" : " (oculto)"), x + 312, y + 33, Ui.GRIS);
         }
     }
 
@@ -493,7 +493,7 @@ public class GameRenderer {
     public void dibujarMensaje(Graphics2D g, String msg, int timer, int y) {
         g.setFont(Ui.FUENTE);
         List<String> lineas = Ui.ajustar(g, msg, 520);
-        int h = lineas.size() * 13 + 12;
+        int h = lineas.size() * Ui.INTERLINEADO + 12;
         int w = 560, x = 40;
         if (y < 0) y = 360 - h - 4;
         Composite antes = g.getComposite();
@@ -502,7 +502,7 @@ public class GameRenderer {
         // retrato de Coco
         g.drawImage(Sprites.COCO_QUIETO, x + 6, y + (h - 20) / 2, null);
         for (int i = 0; i < lineas.size(); i++) {
-            Ui.texto(g, lineas.get(i), x + 32, y + 16 + i * 13, Ui.TEXTO);
+            Ui.texto(g, lineas.get(i), x + 32, y + 16 + i * Ui.INTERLINEADO, Ui.TEXTO);
         }
         g.setComposite(antes);
     }

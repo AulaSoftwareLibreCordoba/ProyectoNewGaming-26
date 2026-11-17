@@ -212,7 +212,7 @@ public final class Andalusi {
         FontMetrics fm = g.getFontMetrics();
         int tw = fm.stringWidth(texto);
         int cy = y + h / 2 + (grande ? 1 : 0);
-        int ty = cy + fm.getAscent() / 2 - 2;
+        int ty = Ui.baseCentrada(g, y, h);
         Ui.texto(g, texto, x + (w - tw) / 2, ty, activo ? (encima ? ORO_CLARO : CREMA) : new Color(0xA0A0B0));
 
         // estrellas a los lados (laten cuando el ratón está encima)
