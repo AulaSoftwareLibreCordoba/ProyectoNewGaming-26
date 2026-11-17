@@ -30,18 +30,18 @@ public class CodeEditor {
 
     // Posición del panel (resolución interna 640x360). Va ARRIBA para que se vea a Coco.
     private static final int PX = 60, PY = 4, PW = 520;
-    private static final int LINEA = 13;
+    private static final int LINEA = Ui.INTERLINEADO;
     private static final int Y_CODIGO = PY + 34;
     private static final int MAX_ESCRITURA = 5;
     private int ph;   // alto: depende de cuántas variables haya
 
     // Colores de "resaltado de sintaxis"
-    private static final Color C_COMENTARIO = new Color(0x6A9955);
+    private static final Color C_COMENTARIO = new Color(0xA6C98A);
     private static final Color C_CLAVE      = new Color(0xC792EA);
     private static final Color C_NOMBRE     = new Color(0x82AAFF);
     private static final Color C_NUMERO     = new Color(0xF78C6C);
     private static final Color C_SIMBOLO    = new Color(0xD4D4D4);
-    private static final Color C_BLOQUEADO  = new Color(0x6C6C80);
+    private static final Color C_BLOQUEADO  = new Color(0xB0B4C4);
     private static final Color FONDO        = new Color(0x1E, 0x1E, 0x2E, 232);   // un poco transparente
 
     private PhysicsConfig fisica;
@@ -80,7 +80,7 @@ public class CodeEditor {
         }
         // Alto del panel: código + salida del compilador + botones
         int finCodigo = Y_CODIGO + (totalLineas() - 1) * LINEA;
-        ph = finCodigo - PY + 64;
+        ph = finCodigo - PY + 76;
         botonAplicar = new Boton(PX + 14,  PY + ph - 30, 160, 22, "APLICAR [Ctrl+S]", new Color(0x2E8B57));
         botonDefecto = new Boton(PX + 184, PY + ph - 30, 110, 22, "RESTAURAR", new Color(0x5A6070));
         botonCerrar  = new Boton(PX + PW - 124, PY + ph - 30, 110, 22, "CERRAR [E]", new Color(0xB0413E));
@@ -356,22 +356,23 @@ public class CodeEditor {
         g.setFont(Ui.FUENTE_PEQ);
         Ui.texto(g, "PhysicsConfig.java  -  Nivel " + nivel.getNumero(), PX + 40, PY + 15, Ui.TEXTO);
         // Indicador "en vivo": el programa sigue ejecutándose
-        String vivo = "EN EJECUCIÓN · " + tiempo;
-        int vw = g.getFontMetrics().stringWidth(vivo);
-        int vx = PX + PW - 12 - vw;
+        int tx = PX + PW - 12 - Ui.ANCHO_TIEMPO;
+        int vx = tx - 103;
         if ((frame / 30) % 2 == 0) {
             g.setColor(Ui.ROJO);
             g.fillRect(vx - 9, PY + 8, 5, 5);
         }
-        Ui.texto(g, vivo, vx, PY + 15, Ui.AMARILLO);
+        g.setFont(Ui.FUENTE_HUD);
+        Ui.texto(g, "EN EJECUCIÓN", vx, PY + 15, Ui.AMARILLO);
+        Ui.tiempo(g, tiempo, tx, PY + 15, Ui.TEXTO);
 
         // Números de línea
-        g.setFont(Ui.FUENTE_CODIGO);
+        g.setFont(Ui.FUENTE_MONO);
         int totalLineas = totalLineas();
         g.setColor(new Color(0x25, 0x25, 0x36, 232));
         g.fillRect(PX + 4, Y_CODIGO - 10, 24, totalLineas * LINEA + 4);
         for (int i = 0; i < totalLineas; i++) {
-            Ui.texto(g, String.format("%2d", i + 1), PX + 7, Y_CODIGO + i * LINEA, new Color(0x5C5C78));
+            Ui.texto(g, String.format("%2d", i + 1), PX + 7, Y_CODIGO + i * LINEA, Ui.GRIS);
         }
 
         int x0 = PX + 34;
@@ -425,12 +426,12 @@ public class CodeEditor {
         segmentos(g, x0, yFin, new String[] { "}" }, new Color[] { C_SIMBOLO });
 
         // Salida del compilador
-        int ys = PY + ph - 50;
+        int ys = PY + ph - 57;
         g.setColor(new Color(0x15151F));
-        g.fillRect(PX + 6, ys - 10, PW - 12, 24);
+        g.fillRect(PX + 6, ys - 12, PW - 12, 29);
         g.setFont(Ui.FUENTE_PEQ);
-        Ui.texto(g, recortar(g, salida1, PW - 20), PX + 10, ys, colorSalida);
-        Ui.texto(g, recortar(g, salida2, PW - 20), PX + 10, ys + 11, colorSalida);
+        Ui.texto(g, Ui.recortar(g, salida1, PW - 20), PX + 10, ys, colorSalida);
+        Ui.texto(g, Ui.recortar(g, salida2, PW - 20), PX + 10, ys + 14, colorSalida);
 
         botonAplicar.dibujar(g, in);
         botonDefecto.dibujar(g, in);
@@ -440,10 +441,11 @@ public class CodeEditor {
     /** Dibuja una línea de código con trozos de distintos colores. */
     private void segmentos(Graphics2D g, int x, int y, String[] partes, Color[] colores) {
         g.setFont(Ui.FUENTE_CODIGO);
-        FontMetrics fm = g.getFontMetrics();
         for (int i = 0; i < partes.length; i++) {
+            g.setFont(!partes[i].isEmpty() && Character.isDigit(partes[i].charAt(0))
+                    ? Ui.FUENTE_MONO : Ui.FUENTE_CODIGO);
             Ui.texto(g, partes[i], x, y, colores[i]);
-            x += fm.stringWidth(partes[i]);
+            x += g.getFontMetrics().stringWidth(partes[i]);
         }
     }
 
@@ -468,10 +470,4 @@ public class CodeEditor {
         g.fillRect(x + 5, y + 7, 1, 3);
     }
 
-    private String recortar(Graphics2D g, String s, int w) {
-        FontMetrics fm = g.getFontMetrics();
-        if (fm.stringWidth(s) <= w) return s;
-        while (s.length() > 3 && fm.stringWidth(s + "...") > w) s = s.substring(0, s.length() - 1);
-        return s + "...";
-    }
 }

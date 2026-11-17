@@ -1,0 +1,16 @@
+{
+  "family": "Pixel Operator",
+  "author": "Jayvee Enaguas (HarvettFox96)",
+  "version": "2018.10.04-1",
+  "author_publication": "https://www.dafont.com/pixel-operator.font",
+  "download": "https://dl.dafont.com/dl/?f=pixel_operator",
+  "source_repository": "https://notabug.org/HarvettFox96/ttf-pixeloperator",
+  "license": "CC0-1.0",
+  "license_file": "PixelOperator-LICENSE.txt",
+  "archive_sha256": "95b33667e4884f5714db33d8324472df28f9d5ffed49108824c5819c1a217dad",
+  "files": {
+    "PixelOperator.ttf": "8d805274eaf227855147153182a96a86ff395ddbc7d2d378095af8831b764a3e",
+    "PixelOperator-Bold.ttf": "c1963fa21043a357212e0a9e8ae1986bc375c1759e68bd3533c4f71b164614b0",
+    "PixelOperatorMono.ttf": "e171000f12d196e7a8a1a91c1a429ef3264a0ff007d5f62fa3dc44ef8df51226"
+  }
+}

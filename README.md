@@ -330,3 +330,71 @@ El cocodrilo está dibujado así en `Sprites.java` (cada letra es un color de la
 
 Al ser un proyecto de software libre, cualquiera puede estudiar el código, modificarlo y proponer mejoras
 mediante *issues* o *pull requests* en este repositorio.
+
+### Tipografía de la interfaz: Pixel Operator
+
+La interfaz utiliza **Pixel Operator** para lectura, **Pixel Operator Bold** para títulos,
+estados y cabeceras, y **Pixel Operator Mono** para relojes, contadores y valores numéricos.
+Los tres TTF se incorporan sin modificar desde el [paquete publicado por su autor,
+Jayvee Enaguas (HarvettFox96)](https://www.dafont.com/pixel-operator.font).
+La licencia **CC0 1.0 Universal** original está en `assets/fonts/PixelOperator-LICENSE.txt`.
+`assets/fonts/PixelOperator-source.json` registra procedencia, versión y hashes SHA-256.
+Los archivos Pixelify anteriores permanecen para facilitar la reversión, pero no se cargan.
+
+`src/cordoba/interfaz/Ui.java` centraliza las fuentes, tamaño nativo de 16 píxeles, títulos
+de 32, interlineado, colores, contornos y sombras. Las fuentes se cargan una única vez,
+sin instalar nada en el sistema y sin conexión durante la partida. Al empaquetar un JAR,
+incluir `assets/fonts/` en su raíz; los lanzadores existentes los leen desde la carpeta
+del proyecto. Las flechas y ordinales º/ª, ausentes en esta familia, se dibujan como
+símbolos pixelados; las tildes, ñ, ü y signos ¿/¡ son glifos de Pixel Operator.
+
+**Relojes fijos:** anteriormente la consola recalculaba su posición con el ancho del texto
+y el HUD recalculaba la caja según la lectura. Ahora el estado y los relojes tienen
+coordenadas y contenedores fijos. `Ui.tiempo` dibuja caracteres de Pixel Operator Mono en
+celdas enteras de 8 píxeles. Reserva seis celdas para minutos alineados a la derecha, dos
+para segundos, dos para centésimas y dos separadores inamovibles; cubre todo el rango de
+fotogramas int. Los espacios iniciales no se dibujan; la lectura sigue siendo `0:49.26`.
+Esto estabiliza también los pasos a 10, 100 y más minutos, sin truncar el tiempo.
+El cálculo del tiempo y el formato de los récords no se han modificado.
+
+El nombre del nivel ocupa una fila propia; la segunda reúne reloj e indicadores. Cuando
+hay fantasma, su comparación ocupa otra fila. La consola tiene mayor interlineado y salida
+más alta. Se han ajustado las columnas del ranking para los nombres de doce caracteres.
+
+Se conserva el lienzo de 640×360, sin antialiasing ni métricas fraccionarias. La presentación
+usa nearest-neighbor y escalas enteras: 1280×720 usa escala 2; 960×540 usa escala 1 con
+márgenes. La transformación del ratón conserva esa misma escala y esos mismos márgenes.
+
+**Comprobaciones reproducibles** (PowerShell desde la raíz, JDK 17+):
+
+```powershell
+javac -encoding UTF-8 --release 17 -d out -sourcepath src src/cordoba/Main.java
+javac -encoding UTF-8 --release 17 -cp out -d .typography-check .typography-check/VerificarTipografia.java .typography-check/VerificarTemporizador.java .typography-check/VerificarVentana.java
+java '-Djava.awt.headless=true' -cp 'out;.typography-check' VerificarTipografia
+java '-Djava.awt.headless=true' -cp 'out;.typography-check' VerificarTemporizador
+java -cp 'out;.typography-check' VerificarVentana
+```
+
+Las pruebas comprueban familia, caracteres españoles, anchuras y transformación del ratón
+en seis resoluciones. Generan ocho pantallas, dos tablas completas con nombres de doce
+caracteres y una muestra de `a e g m ñ 0 1 6 8`.
+El test del reloj compara píxeles de 7.200 fotogramas y trece transiciones, incluyendo
+9→10 segundos, 59→60, 9→10 minutos, 99→100 y el máximo int. Comprueba que los separadores,
+el estado EN EJECUCIÓN y los límites de la caja no cambian de posición.
+La prueba con ventana ejecuta el bucle real en menú, partida y consola a 640×360, 960×540,
+1280×720 y 1000×600. Guarda capturas en `.typography-check/` y cierra la ventana al terminar.
+No guarda partidas ni cambia el ranking o el fantasma existentes.
+
+**Revertir esta segunda mejora:** los archivos previos a Pixel Operator están conservados
+en `.pixel-operator-backup-20261117-104631/`; la primera copia `.typography-backup/` sigue
+intacta. Estos comandos restauran los cinco archivos Java, pruebas y README de esta copia
+y recompilan; también reemplazan cualquier edición posterior en esos mismos archivos:
+
+```powershell
+Copy-Item -Path '.pixel-operator-backup-20261117-104631\src\cordoba' -Destination '.\src' -Recurse -Force
+Copy-Item -Path '.pixel-operator-backup-20261117-104631\.typography-check\*' -Destination '.\.typography-check' -Force
+Copy-Item -LiteralPath '.pixel-operator-backup-20261117-104631\README.md' -Destination '.\README.md' -Force
+.\ejecutar.bat
+```
+
+Los archivos nuevos de Pixel Operator pueden conservarse: el código anterior no los carga.
