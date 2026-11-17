@@ -413,9 +413,8 @@ public class Game extends Canvas implements Runnable {
                 Fantasma f = fantasmaVisible ? fantasmaNivel : null;
                 renderer.dibujarEscenario(g, nivel, jugador, particulas, f, framesNivel, cx, cy, nivel.getFrames());
                 if (estado == GameState.EDITOR) {
-                    // consola arriba y Coco encima para no perderlo de vista
+                    // consola arriba, por encima de Coco
                     editor.dibujar(g, input, frame, Puntuacion.formatearTiempo(framesTotal + framesNivel));
-                    renderer.dibujarJugadorEncima(g, jugador, cx, cy, nivel.getFrames());
                     renderer.dibujarAvisosEspeciales(g, nivel, jugador, fisica, frame, editor.getAbajo() + 16);
                     String msg = nivel.getMensaje();
                     if (msg != null) renderer.dibujarMensaje(g, msg, nivel.getDesbloqueo(), Math.max(31, nivel.getMensajeTimer()), -1);

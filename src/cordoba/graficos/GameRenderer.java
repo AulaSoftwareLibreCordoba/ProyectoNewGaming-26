@@ -340,11 +340,6 @@ public class GameRenderer {
         g.setComposite(antes);
     }
 
-    // Coco por encima de todo (con la consola abierta)
-    public void dibujarJugadorEncima(Graphics2D g, Player p, int camX, int camY, int frame) {
-        dibujarJugador(g, p, camX, camY, frame);
-    }
-
     private void dibujarJugador(Graphics2D g, Player p, int camX, int camY, int frame) {
         BufferedImage img = p.fotogramaActual();
         int x = p.xDibujo() - camX, y = p.yDibujo() - camY;
