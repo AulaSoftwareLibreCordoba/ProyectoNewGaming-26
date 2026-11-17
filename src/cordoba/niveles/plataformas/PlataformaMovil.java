@@ -6,7 +6,7 @@ import cordoba.niveles.Level;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-// Plataforma que va y viene en horizontal. Si Coco está encima, se lo lleva (ver CollisionManager).
+// Plataforma que va y viene en horizontal y lleva a Coco.
 public class PlataformaMovil extends PlataformaDinamica {
 
     private final float xMin, xMax, velocidad;

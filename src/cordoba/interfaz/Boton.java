@@ -14,6 +14,8 @@ public class Boton {
     public boolean activo = true;
     // estilo andalusí (menús); si es false, botón sencillo (consola)
     public boolean andalusi;
+    // píxeles al doble de tamaño (pantalla de título)
+    public boolean grande;
 
     public Boton(int x, int y, int w, int h, String texto, Color color) {
         this.x = x;
@@ -27,6 +29,13 @@ public class Boton {
     // activa el estilo andalusí
     public Boton andalusi() {
         andalusi = true;
+        return this;
+    }
+
+    // estilo andalusí con píxeles x2
+    public Boton grande() {
+        andalusi = true;
+        grande = true;
         return this;
     }
 
@@ -45,6 +54,10 @@ public class Boton {
     }
 
     public void dibujar(Graphics2D g, boolean encima) {
+        if (grande) {
+            Andalusi.botonGrande(g, x, y, w, h, texto, color, encima, activo);
+            return;
+        }
         if (andalusi) {
             Andalusi.boton(g, x, y, w, h, texto, color, encima, activo);
             return;

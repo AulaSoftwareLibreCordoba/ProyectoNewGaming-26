@@ -9,8 +9,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-// Ranking de la competición. Gana quien tarde menos; si empatan, menos caídas, luego menos compilaciones
-// y luego quien lo hizo antes. Se guardan TODAS las partidas en ranking.txt pero solo se enseñan 10.
+// Ranking: menos tiempo, luego menos caídas, menos compilaciones y antes. Se enseñan 10.
 // También hay ranking por nivel (solo por tiempo).
 public class Ranking {
 

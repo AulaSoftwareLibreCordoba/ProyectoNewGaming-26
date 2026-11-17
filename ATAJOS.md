@@ -16,7 +16,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | **Números** + **ENTER** | Consola de código | Escribe el valor y lo compila de golpe | Mucho más rápido que pulsar [+]/[-] varias veces (`4,5` ENTER) |
 | **G** | Nivel 2 | Muestra / oculta el fantasma del récord | El fantasma enseña por dónde va el más rápido… o te distrae |
 | **R** | Jugando | Vuelve a la última farola | Útil si te quedas atascado, pero **suma una caída** |
-| **M** | Siempre | Silencia / activa el sonido | Imprescindible si hay varios jugando a la vez en la misma sala |
+| **M** | Siempre | Silencia / activa el sonido y la música | Imprescindible si hay varios jugando a la vez en la misma sala |
 
 ---
 
@@ -24,7 +24,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 
 | Tecla | Acción |
 |---|---|
-| **M** | Activar / silenciar el sonido *(no funciona mientras escribes tu nombre, para poder usar la letra M)* |
+| **M** | Activar / silenciar el sonido y la música *(no funciona mientras escribes tu nombre, para poder usar la letra M)* |
 | **F11** | Pantalla completa / volver a ventana |
 | **Ratón** | Pulsar cualquier botón de la pantalla |
 
@@ -74,6 +74,8 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | **A** / **←** | Bajar el valor (−0.5) |
 | **D** / **→** | Subir el valor (+0.5) |
 | *Mantener* **A/D** o **←/→** | Repetir el cambio rápidamente |
+| *Doble toque* **A/D** o **←/→** | **Modo rápido x2**: cambia de 1.0 en 1.0 (también al mantener) hasta que sueltas |
+| **R** | Restaurar los valores por defecto (se guardan al cerrar) |
 | **0-9**, **.** o **,** | Escribir el valor de la variable seleccionada (ej.: `4,5`) |
 | **RETROCESO** | Borrar mientras escribes |
 | **ENTER** | **Guardar y cerrar** la consola (incluido lo que estés escribiendo) |
@@ -83,12 +85,34 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 |---|---|
 | Clic en **[-]** / **[+]** | Bajar / subir el valor de esa variable |
 | *Mantener pulsado* **[-]** / **[+]** | Repetir el cambio rápidamente |
+| *Doble clic* en **[-]** / **[+]** | Modo rápido x2 |
 | Clic en una línea de código | Seleccionar esa variable |
 | **R** o botón **RESTAURAR [R]** | Cargar los valores por defecto en el editor (se guardan al cerrar) |
 | Botón **CERRAR [ENTER]** | Guardar y cerrar la consola |
 
 > ⚠️ Los cambios se guardan solos al cerrar con **ENTER** (no hay botón de aplicar).
 > Si escribes un número fuera de rango, se ajusta al límite. Todas las variables están desbloqueadas desde el principio.
+
+---
+
+## 🔊 Opciones de sonido (botón OPCIONES en el título y en la pausa)
+
+| Tecla | Acción |
+|---|---|
+| **W/S** o **↑/↓** | Elegir GENERAL, MÚSICA, EFECTOS o VOLVER |
+| **A/D** o **←/→** | Bajar / subir ese volumen (de 0 % a 100 %) |
+| *Clic* en la barra | Poner el volumen justo ahí (clic a la izquierda de la barra = 0 %) |
+| **ENTER** o **ESC** | Volver |
+
+El volumen **general** multiplica a los otros dos. Se guarda solo en `opciones.txt` y se recuerda al volver a abrir el juego.
+
+---
+
+## 🍽️ Coleccionables: comida cordobesa
+
+Cada nivel esconde un **salmorejo** y un **flamenquín**. Cada uno que cojas **resta 3 segundos** a tu tiempo del nivel (cuenta para el ranking).
+Están demasiado altos para el salto normal: tendrás que **subir `fuerzaSalto` (≈15) o bajar `gravedad` (≈6)** para alcanzarlos.
+Si Coco muere después de cogerlos, se quedan cogidos.
 
 ---
 

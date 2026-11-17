@@ -32,3 +32,9 @@ desktop.ini
 # Récords locales del modo competición
 ranking.txt
 fantasma.dat
+
+# Volúmenes elegidos en OPCIONES (de cada ordenador)
+opciones.txt
+
+# Música original en alta calidad (en el juego van las versiones en mono)
+musica_original/

@@ -1,5 +1,6 @@
 package cordoba.niveles;
 
+import cordoba.niveles.elementos.Coleccionable;
 import cordoba.niveles.elementos.Decoracion;
 import cordoba.niveles.elementos.ObstaculoMovil;
 import cordoba.niveles.plataformas.PlataformaMovil;
@@ -94,6 +95,10 @@ public class Level2 extends Level {
         farola(115, BAJO);
         farola(151, COL);
 
+
+        // comida
+        coleccionable(Coleccionable.Tipo.SALMOREJO, 15, CALLE - 7);   // encima del segundo foso
+        coleccionable(Coleccionable.Tipo.FLAMENQUIN, 151, COL - 8);   // en lo alto, antes de la puerta
 
         // decoración
         decoracion(Decoracion.Tipo.NARANJO, 1, CALLE, 0);

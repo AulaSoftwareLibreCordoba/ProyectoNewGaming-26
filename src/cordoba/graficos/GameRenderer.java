@@ -14,6 +14,7 @@ import cordoba.graficos.luz.SalaProfunda;
 import cordoba.interfaz.Ui;
 import cordoba.ranking.Puntuacion;
 import cordoba.niveles.Level;
+import cordoba.niveles.elementos.Coleccionable;
 import cordoba.niveles.elementos.Decoracion;
 import cordoba.niveles.elementos.Farola;
 import cordoba.niveles.elementos.ObstaculoMovil;
@@ -51,6 +52,7 @@ public class GameRenderer {
         dibujarTiles(g, nivel, camX, camY, frame);
         profundidad.volumen(g, nivel, camX, camY);
         for (Farola f : nivel.getFarolas()) dibujarFarola(g, f, nivel.getTema(), camX, camY, frame);
+        for (Coleccionable c : nivel.getColeccionables()) dibujarColeccionable(g, c, camX, camY, frame);
         for (PlataformaDinamica pl : nivel.getPlataformas()) pl.dibujar(g, camX, camY, frame);
         for (ObstaculoMovil o : nivel.getObstaculos()) o.dibujar(g, camX, camY, frame);
         if (fantasma != null) dibujarFantasma(g, fantasma, frameNivel, camX, camY);
@@ -63,7 +65,7 @@ public class GameRenderer {
         iluminacion.vineta(g, nivel.getTema());
     }
 
-    // cuánto se está dentro de la Mezquita (0 fuera, 1 en la sala de columnas); misma cuenta que el fondo
+    // 0 fuera de la Mezquita, 1 dentro
     private static float interiorMezquita(Level.Tema tema, int camY) {
         if (tema != Level.Tema.MEZQUITA) return 0f;
         return Math.max(0f, Math.min(1f, (camY - 110) / 60f));
@@ -221,6 +223,28 @@ public class GameRenderer {
         }
     }
 
+    // comida flotando con un brillo
+    private void dibujarColeccionable(Graphics2D g, Coleccionable c, int camX, int camY, int frame) {
+        if (c.recogido) return;
+        int cx = Math.round(c.x) - camX;
+        int cy = Math.round(c.y) - camY + (int) Math.round(Math.sin(frame * 0.08 + c.x * 0.1) * 2);
+        if (cx < -20 || cx > 660 || cy < -20 || cy > 380) return;
+        int r = 11 + (frame / 12) % 2;
+        g.setColor(new Color(255, 226, 122, 40));
+        g.fillOval(cx - r, cy - r, r * 2, r * 2);
+        g.setColor(new Color(255, 240, 180, 55));
+        g.fillOval(cx - 7, cy - 7, 14, 14);
+        BufferedImage img = c.tipo == Coleccionable.Tipo.SALMOREJO ? Sprites.salmorejo() : Sprites.flamenquin();
+        g.drawImage(img, cx - 8, cy - 8, null);
+        // destello
+        int fase = (frame + (int) c.x) % 120;
+        if (fase < 8) {
+            g.setColor(new Color(255, 255, 255, 200));
+            g.fillRect(cx - 6 + fase * 2, cy - 5, 1, 1);
+            g.fillRect(cx - 7 + fase * 2, cy - 4, 1, 1);
+        }
+    }
+
     private void dibujarFarola(Graphics2D g, Farola f, Level.Tema tema, int camX, int camY, int frame) {
         int x = (int) f.x - 6 - camX, y = (int) f.ySuelo - 36 - camY;
         Profundidad.sombraContacto(g, tema, (int) f.x - camX, (int) f.ySuelo - camY, 10);
@@ -236,6 +260,20 @@ public class GameRenderer {
     }
 
     // meta: la Calahorra (nivel 1) o la puerta de la Mezquita (nivel 2)
+    // bandera de Andalucía; base = pie del mástil
+    private void dibujarBandera(Graphics2D g, int fx, int base, int frame) {
+        int arriba = base - 20;
+        g.setColor(new Color(0x3A2A1A));
+        g.fillRect(fx, arriba, 1, 20);
+        int ondula = (frame / 10) % 2;
+        g.setColor(new Color(0x1E8E3E));
+        g.fillRect(fx + 1, arriba + ondula, 12, 3);
+        g.setColor(Color.WHITE);
+        g.fillRect(fx + 1, arriba + 3 + ondula, 12, 3);
+        g.setColor(new Color(0x1E8E3E));
+        g.fillRect(fx + 1, arriba + 6 + ondula, 12, 3);
+    }
+
     private void dibujarMeta(Graphics2D g, Level nivel, int camX, int camY, int frame) {
         Rectangle m = nivel.getMeta();
         int x = m.x - camX, y = m.y - camY;
@@ -265,17 +303,7 @@ public class GameRenderer {
             }
             g.fillRect(bx + 8, suelo - 92, 6, 10);
             g.fillRect(bx + w - 16, suelo - 92, 6, 10);
-            // bandera verde y blanca
-            int fx = bx + 10;
-            g.setColor(new Color(0x3A2A1A));
-            g.fillRect(fx, suelo - 128, 1, 20);
-            int ondula = (frame / 10) % 2;
-            g.setColor(new Color(0x1E8E3E));
-            g.fillRect(fx + 1, suelo - 128 + ondula, 12, 3);
-            g.setColor(Color.WHITE);
-            g.fillRect(fx + 1, suelo - 125 + ondula, 12, 3);
-            g.setColor(new Color(0x1E8E3E));
-            g.fillRect(fx + 1, suelo - 122 + ondula, 12, 3);
+            dibujarBandera(g, bx + 10, suelo - 108, frame);
             // puerta
             g.setColor(new Color(0x3A2416));
             g.fillRect(x, y, m.width, m.height);
@@ -288,6 +316,8 @@ public class GameRenderer {
             g.setColor(new Color(0xF6E7C4));
             g.fillRect(x - 18, suelo - 76, m.width + 36, 2);
             for (int i = 0; i < m.width + 36; i += 6) g.fillRect(x - 18 + i, suelo - 80, 4, 4);
+            // bandera
+            dibujarBandera(g, x - 18 + 10, suelo - 80, frame);
             // alfiz
             g.setColor(new Color(0xB89660));
             g.drawRect(x - 12, suelo - 70, m.width + 23, 70);
@@ -351,8 +381,19 @@ public class GameRenderer {
     public void dibujarHUD(Graphics2D g, Level nivel, Player p, PhysicsConfig fisica,
                            int frame, int muertes,
                            boolean ayudaCompleta, int framesPartida, int framesNivel,
-                           Fantasma fantasma, boolean fantasmaVisible) {
-        dibujarCronometro(g, 4, 4,framesPartida, framesNivel, fantasma, fantasmaVisible);
+                           Fantasma fantasma, boolean fantasmaVisible, int timerBonus) {
+        dibujarCronometro(g, 4, 4, framesPartida, framesNivel, fantasma, fantasmaVisible);
+
+        // "-3s" al coger comida
+        if (timerBonus > 0 && (timerBonus > 30 || (timerBonus / 4) % 2 == 0)) {
+            g.setFont(Ui.FUENTE_HUD);
+            String txt = "-" + Coleccionable.BONUS_FRAMES / 60 + "s";
+            int w = g.getFontMetrics().stringWidth(txt) + 10;
+            int bx = 4 + Ui.ANCHO_CRONOMETRO + 3;
+            g.setColor(Ui.PANEL);
+            g.fillRect(bx, 4, w, 17);
+            Ui.texto(g, txt, bx + 5, 17, new Color(0x7BE07B));
+        }
 
         // HUD limpio: sin variables de física ni nombre del nivel (se ven en la consola)
         g.setFont(Ui.FUENTE_PEQ);
@@ -373,6 +414,12 @@ public class GameRenderer {
         Ui.dato(g, "Caídas: ", cont, 635 - cw, 353, Ui.TEXTO);
     }
 
+    // diferencia en fotogramas -> "-12.3s" / "+3.1s"
+    static String diferencia(int frames) {
+        int decimas = Math.round(Math.abs(frames) / 6f);
+        return (frames > 0 ? "+" : "-") + decimas / 10 + "." + decimas % 10 + "s";
+    }
+
     // cronómetro; en el nivel 2 con fantasma, también tu tiempo del nivel contra el récord
     public void dibujarCronometro(Graphics2D g, int x, int y, int framesPartida, int framesNivel,
                                   Fantasma fantasma, boolean fantasmaVisible) {
@@ -391,12 +438,14 @@ public class GameRenderer {
             g.fillRect(x, y + 20, 632, 17);
             g.setFont(Ui.FUENTE);
             boolean ganando = framesNivel <= fantasma.getFramesNivel();
+            Color colorNivel = ganando ? new Color(0xB8D8FF) : Ui.ROJO;
             Ui.texto(g, "NIVEL", x + 6, y + 33, Ui.GRIS);
-            Ui.tiempo(g, Puntuacion.formatearTiempo(framesNivel), x + 43, y + 33,
-                    ganando ? new Color(0xB8D8FF) : Ui.ROJO);
-            Ui.texto(g, "RÉCORD", x + 151, y + 33, Ui.GRIS);
-            Ui.tiempo(g, Puntuacion.formatearTiempo(fantasma.getFramesNivel()), x + 200, y + 33, Ui.TEXTO);
-            Ui.texto(g, fantasma.getNombre() + (fantasmaVisible ? "" : " (oculto)"), x + 312, y + 33, Ui.GRIS);
+            Ui.tiempo(g, Puntuacion.formatearTiempo(framesNivel), x + 43, y + 33, colorNivel);
+            // diferencia con el récord (con signo, no solo color)
+            Ui.texto(g, diferencia(framesNivel - fantasma.getFramesNivel()), x + 43 + Ui.ANCHO_TIEMPO + 6, y + 33, colorNivel);
+            Ui.texto(g, "RÉCORD", x + 210, y + 33, Ui.GRIS);
+            Ui.tiempo(g, Puntuacion.formatearTiempo(fantasma.getFramesNivel()), x + 259, y + 33, Ui.TEXTO);
+            Ui.texto(g, fantasma.getNombre() + (fantasmaVisible ? "" : " (oculto)"), x + 371, y + 33, Ui.GRIS);
         }
     }
 }

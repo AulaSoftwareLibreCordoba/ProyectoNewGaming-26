@@ -2,11 +2,7 @@ package cordoba.graficos.luz;
 
 import cordoba.niveles.Level;
 
-/*
- * ★ Panel de control del arte ★
- * Aquí están todos los valores de luz y profundidad de cada tema. Para cambiar el aspecto
- * basta con tocar estos números. Colores 0xRRGGBB, intensidades de 0 a 1, distancias en px (640x360).
- */
+// Valores de luz y profundidad de cada tema. Colores 0xRRGGBB, intensidades de 0 a 1, distancias en px.
 public final class EstiloVisual {
 
     // ---- profundidad ----
@@ -38,7 +34,7 @@ public final class EstiloVisual {
     // penumbra dentro de la Mezquita
     public int colorInterior;
     public float oscuridadInterior;
-    // niebla de cada plano de la sala de columnas, de lejos a cerca (más niebla = más oscuro = más lejos)
+    // niebla de cada plano de la sala, de lejos a cerca
     public float[] nieblaSala = new float[3];
     public int colorNieblaSala;
 

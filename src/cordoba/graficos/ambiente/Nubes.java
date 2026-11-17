@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-// Nubes con viento en tres capas: las de lejos pequeñas, pálidas y lentas; las de cerca grandes y rápidas.
+// Nubes en tres capas (las de cerca más grandes y rápidas).
 // Las nubes que venían pintadas en el cielo se borran al cargar para que no haya nubes congeladas.
 public final class Nubes {
 

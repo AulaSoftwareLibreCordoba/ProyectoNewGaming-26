@@ -1,12 +1,7 @@
 package cordoba.fisica;
 
-/*
- * Todas las variables que se pueden tocar en la consola. Player no tiene números mágicos: siempre pregunta aquí.
- * El jugador ve "unidades del juego" (9.8, 5.0...) y los métodos ...Px() las pasan a píxeles por fotograma.
- *
- * Para añadir una variable (p. ej. friccion): ponle un índice, métela en el array y úsala en Player.
- * La consola la enseña sola.
- */
+// Variables de la consola. El jugador ve unidades del juego (9.8, 5.0...) y ...Px() las pasa a píxeles.
+// Para añadir una: índice nuevo, meterla en el array y usarla en Player.
 public class PhysicsConfig {
 
     // de unidades del juego a píxeles/fotograma

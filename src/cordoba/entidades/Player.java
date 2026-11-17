@@ -11,7 +11,7 @@ import cordoba.niveles.plataformas.PlataformaDinamica;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 
-// Coco, el prota. Toda su física sale de PhysicsConfig, así que lo que cambies en la consola se nota al momento.
+// Coco. Su física sale de PhysicsConfig.
 public class Player {
 
     // caja de colisión (el dibujo es un poco más grande)
@@ -22,8 +22,8 @@ public class Player {
     private static final float CONTROL_AIRE  = 0.08f;
 
     // ayudas para que saltar no sea frustrante (en fotogramas)
-    private static final int TIEMPO_COYOTE = 6;   // aún puedes saltar justo después de salir del borde
-    private static final int BUFFER_SALTO  = 6;   // si pulsas un pelín antes de tocar el suelo, salta igual
+    private static final int TIEMPO_COYOTE = 6;   // saltar justo después del borde
+    private static final int BUFFER_SALTO  = 6;   // saltar pulsando un poco antes de tocar suelo
 
     // en píxeles y píxeles/fotograma
     public float x, y, vx, vy;
@@ -113,7 +113,7 @@ public class Player {
         enCorriente = nivel.esCorriente(x + ANCHO / 2f, y + ALTO / 2f);
         if (enCorriente) {
             vy -= Level.FUERZA_CORRIENTE;
-            vy *= Level.ROZAMIENTO_CORRIENTE;   // el aire frena: no vale colarse cayendo desde muy alto
+            vy *= Level.ROZAMIENTO_CORRIENTE;   // el aire frena
             if (vy < -2.5f) vy = -2.5f;
         }
         if (vy > PhysicsConfig.CAIDA_MAXIMA) vy = PhysicsConfig.CAIDA_MAXIMA;

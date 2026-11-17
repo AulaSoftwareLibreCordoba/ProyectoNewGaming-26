@@ -109,7 +109,7 @@ public class CollisionManager {
         return false;
     }
 
-    // ¿toca algo que mata? Las cajas de peligro son algo más pequeñas que el tile para que sea justo.
+    // ¿toca algo que mata? (cajas algo más pequeñas que el tile)
     public boolean tocaPeligro(Player p) {
         float x1 = p.x + 2, x2 = p.x + Player.ANCHO - 2;
         float y1 = p.y + 2, y2 = p.y + Player.ALTO - 1;

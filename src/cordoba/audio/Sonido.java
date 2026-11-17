@@ -10,14 +10,8 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/*
- * Sonidos chiptune generados por código, sin archivos. Si no hay audio, se desactiva y ya.
- *
- * Cómo va lo de los hilos:
- * - Cualquier hilo pide un sonido (salto(), muerte()...): solo genera los bytes y los mete en la cola "nuevas".
- * - Solo el hilo "HiloSonido" toca la línea de audio y la lista de voces, así que esa lista no necesita cerrojos.
- * - Los sonidos se suman (mezclan) por bloques, así suenan a la vez en vez de hacer cola.
- */
+// Efectos chiptune generados por código. Se piden desde cualquier hilo (van a la cola "nuevas")
+// y solo el hilo HiloSonido los mezcla y los manda a la tarjeta.
 public final class Sonido {
 
     private static final float FRECUENCIA_MUESTREO = 22050f;
@@ -62,7 +56,7 @@ public final class Sonido {
                 // Sin sonidos escribimos silencio en vez de dormir: así no hay "pops".
                 // linea.write espera a que haya hueco, así que no se come la CPU.
                 nuevas.drainTo(activas);
-                while (activas.size() > MAX_VOCES) activas.remove(0);   // si hay demasiados, fuera los más viejos
+                while (activas.size() > MAX_VOCES) activas.remove(0);   // fuera los más viejos
 
                 Arrays.fill(mezcla, 0);
                 for (Voz v : activas) {
@@ -84,9 +78,11 @@ public final class Sonido {
         }
     }
 
-    // tono que va de f1 a f2 en "ms" milisegundos (ruido = explosiones, derrumbes; retraso = para encadenar notas)
+    // tono de f1 a f2 en ms milisegundos (ruido para golpes, retraso para encadenar notas)
     private static void tono(float f1, float f2, int ms, float volumen, boolean ruido, int retrasoMs) {
         if (!disponible || silenciado) return;
+        volumen *= Volumen.factorEfectos();   // volumen de opciones
+        if (volumen <= 0f) return;
         iniciar();
         int n = (int) (FRECUENCIA_MUESTREO * ms / 1000);
         int retraso = (int) (FRECUENCIA_MUESTREO * retrasoMs / 1000);
@@ -111,8 +107,9 @@ public final class Sonido {
 
     // antirrebote: el mismo sonido no se puede repetir demasiado seguido
     private static final int SALTO = 0, ATERRIZAR = 1, APLICAR = 2, ERROR = 3, CLIC = 4,
-                             MUERTE = 5, CHECKPOINT = 6, CRUJIDO = 7, DERRUMBE = 8, VICTORIA = 9;
-    private static final long[] ultimo = new long[10];          // cuándo sonó cada uno por última vez
+                             MUERTE = 5, CHECKPOINT = 6, CRUJIDO = 7, DERRUMBE = 8, VICTORIA = 9,
+                             RECOGER = 10;
+    private static final long[] ultimo = new long[11];         // última vez que sonó cada uno
     private static final Object cerrojoAntirrebote = new Object();
 
     private static boolean permitir(int id, int minMs) {
@@ -137,6 +134,12 @@ public final class Sonido {
     public static void checkpoint()  { if (permitir(CHECKPOINT, 300)) tono(660, 990, 140, 0.3f, false); }
     public static void crujido()     { if (permitir(CRUJIDO, 250))    tono(140, 110, 200, 0.35f, true); }
     public static void derrumbe()    { if (permitir(DERRUMBE, 300))   tono(200, 40, 350, 0.45f, true); }
+    // coger comida: dos notas que suben
+    public static void recoger()     {
+        if (!permitir(RECOGER, 150)) return;
+        tono(880, 880, 60, 0.3f, false);
+        tono(1320, 1760, 120, 0.3f, false, 60);
+    }
     public static void victoria()    {
         if (!permitir(VICTORIA, 1000)) return;
         tono(523, 523, 120, 0.35f, false);

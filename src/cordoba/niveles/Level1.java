@@ -1,5 +1,6 @@
 package cordoba.niveles;
 
+import cordoba.niveles.elementos.Coleccionable;
 import cordoba.niveles.elementos.Decoracion;
 import cordoba.niveles.plataformas.PuenteDerrumbe;
 
@@ -55,6 +56,10 @@ public class Level1 extends Level {
         farola(63, S);
         farola(82, S);
 
+
+        // comida: hay que subir fuerzaSalto o bajar gravedad
+        coleccionable(Coleccionable.Tipo.SALMOREJO, 9, S - 7);      // en el primer tramo
+        coleccionable(Coleccionable.Tipo.FLAMENQUIN, 94, S - 7);    // sobre el agua
 
         // decoración
         decoracion(Decoracion.Tipo.PALMERA, 1, S, 0);

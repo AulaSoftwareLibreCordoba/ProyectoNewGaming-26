@@ -43,7 +43,7 @@ public record Puntuacion(String nombre, int frames, int muertes, int compilacion
                 String.valueOf(compilaciones), String.valueOf(framesN1), String.valueOf(framesN2));
     }
 
-    // null si la línea está mal (así un fichero roto no tumba el juego); acepta el formato viejo de 4 campos
+    // null si la línea está mal (acepta el formato viejo de 4 campos)
     static Puntuacion desdeLinea(String linea) {
         String[] partes = linea.split(SEPARADOR, -1);
         if (partes.length != 4 && partes.length != 6) return null;

@@ -13,7 +13,7 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
-// Pantallas de la competición: el final (escribir el nombre) y el TOP 10 con pestañas GENERAL / NIVEL 1 / NIVEL 2.
+// Pantalla final (nombre) y TOP 10.
 public class PantallaRanking {
 
     private static final Color ORO    = new Color(0xFFD54F);

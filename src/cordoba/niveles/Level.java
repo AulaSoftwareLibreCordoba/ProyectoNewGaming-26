@@ -4,6 +4,7 @@ import cordoba.audio.Sonido;
 import cordoba.entidades.Player;
 import cordoba.fisica.PhysicsConfig;
 import cordoba.graficos.Particulas;
+import cordoba.niveles.elementos.Coleccionable;
 import cordoba.niveles.elementos.Decoracion;
 import cordoba.niveles.elementos.Farola;
 import cordoba.niveles.elementos.ObstaculoMovil;
@@ -42,6 +43,7 @@ public abstract class Level {
     protected final List<ObstaculoMovil> obstaculos = new ArrayList<>();
     protected final List<Farola> farolas = new ArrayList<>();
     protected final List<Decoracion> decoraciones = new ArrayList<>();
+    protected final List<Coleccionable> coleccionables = new ArrayList<>();
     protected Rectangle meta = new Rectangle();
 
     private float inicioX, inicioY;
@@ -105,6 +107,11 @@ public abstract class Level {
 
     protected void decoracion(Decoracion.Tipo tipo, int col, int filaSuelo, int variante) {
         decoraciones.add(new Decoracion(tipo, col * TILE + TILE / 2f, filaSuelo * TILE, variante));
+    }
+
+    // comida flotando en el centro de esa casilla
+    protected void coleccionable(Coleccionable.Tipo tipo, int col, int fila) {
+        coleccionables.add(new Coleccionable(tipo, col * TILE + TILE / 2f, fila * TILE + TILE / 2f));
     }
 
     // rectángulo de anchoTiles x altoTiles apoyado en filaSuelo
@@ -187,4 +194,5 @@ public abstract class Level {
     public List<ObstaculoMovil> getObstaculos()      { return obstaculos; }
     public List<Farola> getFarolas()                 { return farolas; }
     public List<Decoracion> getDecoraciones()        { return decoraciones; }
+    public List<Coleccionable> getColeccionables()   { return coleccionables; }
 }

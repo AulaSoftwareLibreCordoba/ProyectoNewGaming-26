@@ -1,7 +1,7 @@
 package cordoba.fisica;
 
 // Una variable de la consola (gravedad, velocidad...).
-// Truco: se guarda en DÉCIMAS con un int (98 = 9.8) para que sumar 0.5 muchas veces no acumule errores de float.
+// Se guarda en décimas (98 = 9.8) para no acumular errores de float.
 public class VariableFisica {
 
     private final String nombre;        // tal cual sale en el "código"

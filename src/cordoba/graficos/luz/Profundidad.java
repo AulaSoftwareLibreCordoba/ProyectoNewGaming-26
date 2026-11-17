@@ -7,8 +7,7 @@ import java.awt.image.BufferedImage;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-// Sensación de profundidad sin tocar ningún sprite: neblina en el fondo lejano, sombra del terreno
-// sobre el fondo, bloques grandes más oscuros por dentro y sombras de contacto. Valores en EstiloVisual.
+// Profundidad: neblina al fondo, sombras del terreno y de contacto. Valores en EstiloVisual.
 public class Profundidad {
 
     private static final int T = Level.TILE;

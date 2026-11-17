@@ -10,9 +10,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 
-// Cinemática al pulsar JUGAR: Coco tiene hambre en la alcantarilla, huele comida arriba, sube la escalera
-// y sale por una tapa a las calles de Córdoba. Luego empieza el nivel 1.
-// Se salta con ENTER, ESPACIO o ESC. Todo va por fotogramas (60 por segundo).
+// Cinemática de entrada: Coco sale de la alcantarilla a buscar comida. Se salta con ENTER, ESPACIO o ESC.
 public class Introduccion {
 
     private static final int ANCHO = 640, ALTO = 360;
@@ -416,7 +414,7 @@ public class Introduccion {
         return salmorejo;
     }
 
-    // bocadillo de pensamiento con el salmorejo dentro, flotando y brillando. t = fotogramas desde que aparece
+    // bocadillo con el salmorejo (t = fotogramas desde que aparece)
     private void pensarEnSalmorejo(Graphics2D g, int cx, int yCabeza, int t) {
         Color borde = new Color(0x2A140A), relleno = new Color(0xFFF8EC);
         float aparecer = Math.min(1f, t / 12f);

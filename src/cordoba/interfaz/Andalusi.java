@@ -1,8 +1,10 @@
 package cordoba.interfaz;
 
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
 
-// Adornos andalusíes en pixel art para la interfaz: estrella de ocho puntas, dovelas, arcos, alicatado y botones.
+// Adornos andalusíes para la interfaz: estrellas, dovelas, arcos, alicatado y botones.
 public final class Andalusi {
 
     private Andalusi() { }
@@ -151,7 +153,7 @@ public final class Andalusi {
 
     // ---- botón ----
 
-    // botón andalusí: esquinas escalonadas, filete de oro, dovelas arriba, cenefa abajo y estrellas
+    // botón andalusí
     public static void boton(Graphics2D g, int x, int y, int w, int h, String texto,
                              Color base, boolean encima, boolean activo) {
         if (!activo) base = new Color(0x55556A);
@@ -217,6 +219,128 @@ public final class Andalusi {
                 if (px > x + 3 && px < x + w - 4) g.fillRect(px, y + 3, 1, h - 6);
             }
         }
+    }
+
+    // Texto un poco más bajo: se dibuja a 16 (a 14 la fuente se deforma) y se quita la 3.ª fila de las
+    // mayúsculas. Devuelve una máscara blanca recortada.
+    private static final Map<String, java.awt.image.BufferedImage> CACHE_TEXTO = new HashMap<>();
+
+    private static synchronized java.awt.image.BufferedImage textoBajo(String texto) {
+        return CACHE_TEXTO.computeIfAbsent(texto, t -> {
+            Graphics2D m = new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB).createGraphics();
+            m.setFont(Ui.FUENTE);
+            FontMetrics fm = m.getFontMetrics();
+            int w = fm.stringWidth(t) + 2, base = fm.getAscent(), h = base + fm.getDescent();
+            m.dispose();
+            java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = img.createGraphics();
+            Ui.preparar(g);
+            g.setFont(Ui.FUENTE);
+            g.setColor(Color.WHITE);
+            g.drawString(t, 0, base);
+            g.dispose();
+            int quitar = base - 7;   // 3.ª fila de las mayúsculas
+            // recorta lo vacío y se salta esa fila
+            int arriba = h, abajo = -1;
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                    if ((img.getRGB(x, y) >>> 24) > 0) { arriba = Math.min(arriba, y); abajo = Math.max(abajo, y); }
+            if (abajo < 0) return img;
+            int alto = abajo - arriba + 1 - (quitar >= arriba && quitar <= abajo ? 1 : 0);
+            java.awt.image.BufferedImage r = new java.awt.image.BufferedImage(w, alto, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            for (int y = arriba, yr = 0; y <= abajo; y++) {
+                if (y == quitar) continue;
+                for (int x = 0; x < w; x++) r.setRGB(x, yr, img.getRGB(x, y));
+                yr++;
+            }
+            return r;
+        });
+    }
+
+    // la máscara blanca pintada de un color
+    private static java.awt.image.BufferedImage tenido(java.awt.image.BufferedImage mascara, Color c) {
+        java.awt.image.BufferedImage r = new java.awt.image.BufferedImage(mascara.getWidth(), mascara.getHeight(),
+                java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        int rgb = c.getRGB() & 0xFFFFFF;
+        for (int y = 0; y < r.getHeight(); y++)
+            for (int x = 0; x < r.getWidth(); x++) {
+                int a = mascara.getRGB(x, y) >>> 24;
+                if (a > 0) r.setRGB(x, y, (a << 24) | rgb);
+            }
+        return r;
+    }
+
+    // botón de los menús con píxeles x2 (se pinta a media resolución y se escala). w y h pares
+    public static void botonGrande(Graphics2D g, int x, int y, int w, int h, String texto,
+                                   Color base, boolean encima, boolean activo) {
+        if (!activo) base = new Color(0x55556A);
+        int bw = w / 2, bh = h / 2;
+        double t = System.nanoTime() / 1e9;
+        Color cuerpo = encima ? mezclar(base, Color.WHITE, 0.15f) : base;
+        Color filete = encima ? ORO_CLARO : ORO;
+
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(bw, bh, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D b = img.createGraphics();
+        Ui.preparar(b);
+        // contorno con esquinas recortadas, filete de oro y cuerpo
+        b.setColor(MARRON);
+        b.fillRect(1, 0, bw - 2, bh);
+        b.fillRect(0, 1, bw, bh - 2);
+        b.setColor(filete);
+        b.fillRect(2, 1, bw - 4, bh - 2);
+        b.fillRect(1, 2, bw - 2, bh - 4);
+        b.setColor(cuerpo);
+        b.fillRect(2, 2, bw - 4, bh - 4);
+        // luz arriba, sombra abajo
+        b.setColor(mezclar(cuerpo, Color.WHITE, 0.25f));
+        b.fillRect(2, 2, bw - 4, 1);
+        b.setColor(mezclar(cuerpo, Color.BLACK, 0.30f));
+        b.fillRect(2, bh - 4, bw - 4, 2);
+        // brillo que recorre el botón con el ratón encima
+        if (encima && activo) {
+            int sx = 2 + (int) ((t * 45) % (bw + 10)) - 5;
+            b.setColor(new Color(255, 255, 255, 70));
+            for (int k = 0; k < 3; k++)
+                if (sx + k > 2 && sx + k < bw - 3) b.fillRect(sx + k, 3, 1, bh - 7);
+        }
+
+        // texto con sombra
+        java.awt.image.BufferedImage letras = textoBajo(texto);
+        int tx = (bw - letras.getWidth()) / 2;
+        int ty = (bh - 3 - letras.getHeight()) / 2 + 1;
+        b.drawImage(tenido(letras, MARRON), tx, ty + 1, null);
+        b.drawImage(tenido(letras, activo ? (encima ? ORO_CLARO : CREMA) : new Color(0xA0A0B0)), tx, ty, null);
+
+        // estrellitas a los lados (destellan con el ratón encima)
+        boolean destello = encima && ((int) (t * 4)) % 2 == 0;
+        Color relleno = destello ? Color.WHITE : filete;
+        Color centro = encima ? ROJO : cuerpo;
+        int cy = (bh - 3) / 2 + 1;
+        estrellaPequena(b, 6, cy, relleno, MARRON, centro);
+        estrellaPequena(b, bw - 7, cy, relleno, MARRON, centro);
+        b.dispose();
+
+        int dy = encima && activo ? -2 : 0;
+        // sombra en el suelo (también a 2x)
+        g.setColor(new Color(0, 0, 0, 120));
+        g.fillRect(x + 2, y + 4, w - 2, h - 2);
+        g.drawImage(img, x, y + dy, w, h, null);
+    }
+
+    // texto con píxeles x2, como el de los botones
+    public static void textoGrande(Graphics2D g, String texto, int x, int y, Color color) {
+        java.awt.image.BufferedImage letras = textoBajo(texto);
+        int w = letras.getWidth() * 2, h = letras.getHeight() * 2;
+        g.drawImage(tenido(letras, MARRON), x, y + 2, w, h, null);
+        g.drawImage(tenido(letras, color), x, y, w, h, null);
+    }
+
+    public static int anchoTextoGrande(String texto) {
+        return textoBajo(texto).getWidth() * 2;
+    }
+
+    public static int altoTextoGrande(String texto) {
+        return textoBajo(texto).getHeight() * 2;
     }
 
     static Color mezclar(Color a, Color b, float t) {

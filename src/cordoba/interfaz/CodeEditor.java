@@ -9,11 +9,7 @@ import cordoba.nucleo.Input;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
-/*
- * La consola de código: un mini IDE con PhysicsConfig.java. Cambias valores con [-]/[+], A/D, las flechas o
- * escribiendo el número. Al cerrar con ENTER se guardan solos ("compila" y cambia la física de verdad).
- * Coco se queda quieto mientras está abierta, pero el tiempo sigue corriendo.
- */
+// Consola de código: edita PhysicsConfig y al cerrar con ENTER se aplica. El tiempo sigue corriendo.
 public class CodeEditor {
 
     // qué ha pasado este fotograma (Game reacciona a esto). APLICADO = se cierra y había cambios
@@ -33,7 +29,7 @@ public class CodeEditor {
     private static final Color C_NUMERO     = new Color(0xF78C6C);
     private static final Color C_SIMBOLO    = new Color(0xD4D4D4);
     private static final Color C_BLOQUEADO  = new Color(0xB0B4C4);
-    private static final Color FONDO        = new Color(0x1E, 0x1E, 0x2E, 232);   // un poco transparente
+    private static final Color FONDO        = new Color(0x1E, 0x1E, 0x2E, 232);
 
     private PhysicsConfig fisica;
     private Level nivel;
@@ -51,6 +47,11 @@ public class CodeEditor {
     // repetir al mantener pulsado
     private int framesMantenido;
     private int[] cambioPorFrame;  // para resaltar el valor que acaba de cambiar
+
+    // doble toque = modo rápido (pasos dobles)
+    private static final int VENTANA_DOBLE = 15;   // fotogramas
+    private int framesDesdeToque = 99, ultimaDir, ultimaVar = -1;
+    private boolean rapido;
 
     // copia los valores actuales al borrador
     public void abrir(PhysicsConfig fisica, Level nivel) {
@@ -75,8 +76,11 @@ public class CodeEditor {
 
         if (fisica.getVariable(seleccion).isBloqueada()) seleccion = 0;
         escritura = null;
+        rapido = false;
+        framesDesdeToque = 99;
+        ultimaVar = -1;
         salida1 = "> W/S o ↑/↓ elige · A/D o ←/→ cambia (o escribe el número)";
-        salida2 = "  R restaura valores · ENTER guarda y cierra. ¡Ojo, el tiempo corre!";
+        salida2 = "  Doble toque = x2 · R restaura · ENTER guarda · ¡El tiempo corre!";
         colorSalida = Ui.GRIS;
     }
 
@@ -92,6 +96,7 @@ public class CodeEditor {
 
     public Resultado actualizar(Input in) {
         for (int i = 0; i < cambioPorFrame.length; i++) if (cambioPorFrame[i] > 0) cambioPorFrame[i]--;
+        if (framesDesdeToque < 99) framesDesdeToque++;
 
         // escribir el valor con el teclado
         for (char c : in.tomarEscrito().toCharArray()) {
@@ -132,8 +137,8 @@ public class CodeEditor {
             botonesMenos[i].activo = !bloqueada;
             botonesMas[i].activo = !bloqueada;
             if (in.clic()) {
-                if (botonesMenos[i].contiene(mx, my)) { confirmarEscritura(); seleccion = i; cambiar(i, -1); }
-                else if (botonesMas[i].contiene(mx, my)) { confirmarEscritura(); seleccion = i; cambiar(i, +1); }
+                if (botonesMenos[i].contiene(mx, my)) { confirmarEscritura(); seleccion = i; toque(i, -1); }
+                else if (botonesMas[i].contiene(mx, my)) { confirmarEscritura(); seleccion = i; toque(i, +1); }
                 else if (my > yLineaCodigo(i) - LINEA - 9 && my <= yLineaCodigo(i) + 3 && mx > PX && mx < PX + PW) {
                     if (i != seleccion) confirmarEscritura();
                     seleccion = i;
@@ -147,8 +152,8 @@ public class CodeEditor {
 
         // cambios con A/D o ←/→ (se repiten si mantienes)
         if (izqP || derP) confirmarEscritura();
-        if (izqP) cambiar(seleccion, -1);
-        if (derP) cambiar(seleccion, +1);
+        if (izqP) toque(seleccion, -1);
+        if (derP) toque(seleccion, +1);
 
         boolean algoMantenido = (izq || der) || mantenidoIndice >= 0;
         if (algoMantenido) {
@@ -159,11 +164,12 @@ public class CodeEditor {
             }
         } else {
             framesMantenido = 0;
+            if (framesDesdeToque > VENTANA_DOBLE) rapido = false;
         }
 
         // ENTER o CERRAR: guarda solo y cierra
         if (botonCerrar.clicado(in) || in.pulsada(KeyEvent.VK_ENTER)) {
-            if (!confirmarEscritura()) return Resultado.NADA;   // no era un número válido: no cierra
+            if (!confirmarEscritura()) return Resultado.NADA;   // número no válido
             return aplicar() ? Resultado.APLICADO : Resultado.CERRAR;
         }
         if (botonDefecto.clicado(in) || in.pulsada(KeyEvent.VK_R)) {
@@ -201,7 +207,7 @@ public class CodeEditor {
         colorSalida = Ui.AMARILLO;
     }
 
-    // pasa lo escrito al borrador (sin compilar); si se sale del rango, lo ajusta. false si no era un número
+    // pasa lo escrito al borrador; false si no es un número
     private boolean confirmarEscritura() {
         if (escritura == null) return true;
         String txt = escritura;
@@ -235,6 +241,15 @@ public class CodeEditor {
         return true;
     }
 
+    // dos toques seguidos al mismo lado activan el modo rápido
+    private void toque(int i, int dir) {
+        rapido = dir == ultimaDir && i == ultimaVar && framesDesdeToque <= VENTANA_DOBLE;
+        ultimaDir = dir;
+        ultimaVar = i;
+        framesDesdeToque = 0;
+        cambiar(i, dir);
+    }
+
     // +1 sube, -1 baja
     private void cambiar(int i, int dir) {
         VariableFisica v = fisica.getVariable(i);
@@ -246,6 +261,7 @@ public class CodeEditor {
             return;
         }
         int nuevo = dir > 0 ? v.siguienteArriba(borrador[i]) : v.siguienteAbajo(borrador[i]);
+        if (rapido && i == ultimaVar) nuevo = dir > 0 ? v.siguienteArriba(nuevo) : v.siguienteAbajo(nuevo);
         if (nuevo == borrador[i]) {
             salida1 = "> aviso: " + v.getNombre() + " ya está en su límite ("
                     + VariableFisica.formatear(v.getMinimo()) + " - " + VariableFisica.formatear(v.getMaximo()) + ").";
@@ -347,6 +363,7 @@ public class CodeEditor {
             Color colValor = pendiente ? Ui.AMARILLO : C_NUMERO;
             if (cambioPorFrame[i] > 0) colValor = Color.WHITE;
             String nota = pendiente ? "  // * sin guardar" : "";
+            if (rapido && i == ultimaVar) nota = "  // >> x2 RÁPIDO";
             if (escribiendo) {
                 valor = escritura + ((frame / 15) % 2 == 0 ? "_" : " ");
                 colValor = Color.WHITE;

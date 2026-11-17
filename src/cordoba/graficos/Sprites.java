@@ -155,11 +155,16 @@ public final class Sprites {
 
     // texto -> imagen con la paleta de Coco
     public static BufferedImage desdeTexto(String[] filas) {
+        return desdeTexto(filas, PALETA);
+    }
+
+    // texto -> imagen con la paleta que se le pase
+    public static BufferedImage desdeTexto(String[] filas, Map<Character, Integer> paleta) {
         int alto = filas.length, ancho = filas[0].length();
         BufferedImage img = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_ARGB);
         for (int y = 0; y < alto; y++) {
             for (int x = 0; x < ancho; x++) {
-                Integer c = PALETA.get(filas[y].charAt(x));
+                Integer c = paleta.get(filas[y].charAt(x));
                 if (c != null) img.setRGB(x, y, c);
             }
         }
@@ -202,7 +207,7 @@ public final class Sprites {
     // ---- tiles de 16x16 ----
     private static final Map<String, BufferedImage> CACHE_TILES = new HashMap<>();
 
-    // tipo = carácter del mapa ('#', 'S', '^', 'v', '~') · variante 0..3 para que no sean todos iguales
+    // tipo = carácter del mapa, variante 0..3
     public static synchronized BufferedImage tile(Level.Tema tema, char tipo, int variante,
                                                   boolean arribaLibre, boolean abajoLibre) {
         String clave = tema + "_" + tipo + "_" + variante + "_" + arribaLibre + "_" + abajoLibre;
@@ -545,6 +550,85 @@ public final class Sprites {
         });
     }
 
+    // ---- coleccionables: comida cordobesa (16x16) ----
+
+    private static final Map<Character, Integer> PALETA_COMIDA = new HashMap<>();
+    static {
+        PALETA_COMIDA.put('o', 0xFF2B1A0C); // contorno
+        // flamenquín: empanado y, en el corte, lomo enrollado con jamón
+        PALETA_COMIDA.put('L', 0xFFF2B85A); // empanado con luz
+        PALETA_COMIDA.put('B', 0xFFD98A2B); // empanado
+        PALETA_COMIDA.put('S', 0xFFA35A1E); // empanado en sombra
+        PALETA_COMIDA.put('c', 0xFF8A4A16); // miga tostada
+        PALETA_COMIDA.put('J', 0xFFD9566A); // jamón
+        PALETA_COMIDA.put('j', 0xFF8E1F2E); // jamón oscuro
+        PALETA_COMIDA.put('M', 0xFFF5DCC8); // lomo
+        // salmorejo: tomate con huevo, jamón y aceite en un cuenco con cenefa azul
+        PALETA_COMIDA.put('T', 0xFFE8573A); // tomate
+        PALETA_COMIDA.put('t', 0xFFC23E28); // tomate en sombra
+        PALETA_COMIDA.put('r', 0xFFF58A5A); // brillo del tomate
+        PALETA_COMIDA.put('e', 0xFFFFF8E8); // clara de huevo
+        PALETA_COMIDA.put('E', 0xFFFFD84A); // yema
+        PALETA_COMIDA.put('A', 0xFFC9C23A); // aceite de oliva
+        PALETA_COMIDA.put('W', 0xFFF2EEE4); // loza
+        PALETA_COMIDA.put('w', 0xFFC9C2B4); // loza en sombra
+        PALETA_COMIDA.put('H', 0xFFFFFFFF); // brillo de la loza
+        PALETA_COMIDA.put('U', 0xFF1E4FA8); // cenefa azul
+        PALETA_COMIDA.put('u', 0xFF4C7FE0); // cenefa azul clara
+    }
+
+    private static final String[] FLAMENQUIN = {
+        "................",
+        "...........ooo..",
+        "..........oLLBo.",
+        ".........oLJJjBo",
+        "........ooLJMJSo",
+        ".......oLoBjJJSo",
+        "......oLLcoBSSo.",
+        ".....oLBBBBooo..",
+        "....oLLBBBSSo...",
+        "...oLLBBBSSo....",
+        "..oLBBBBSSo.....",
+        "..oLBBcSSo......",
+        "..oBcBSSo.......",
+        "...oBSSo........",
+        "....ooo.........",
+        "................",
+    };
+
+    private static final String[] SALMOREJO = {
+        "................",
+        "................",
+        "................",
+        "....oooooooo....",
+        "..oowwwwwwwwoo..",
+        ".owTTrrTTTTTTwo.",
+        "oWTjeETTTAjTTTWo",
+        "oWtTTTjTTeETTtWo",
+        "ooWWWWWWWWWWWWoo",
+        ".owWHWWWWWWWWwo.",
+        ".oUuUUuUUuUUuUo.",
+        "..owWWWWWWWWwo..",
+        "...owwWWWWwwo...",
+        "....oooooooo....",
+        ".....owwwwo.....",
+        ".....oooooo.....",
+    };
+
+    public static BufferedImage flamenquin() {
+        return CACHE_OBJETOS.computeIfAbsent("flamenquin", k -> {
+            BufferedImage desdePng = leerPng("interface/" + k);
+            return desdePng != null ? desdePng : desdeTexto(FLAMENQUIN, PALETA_COMIDA);
+        });
+    }
+
+    public static BufferedImage salmorejo() {
+        return CACHE_OBJETOS.computeIfAbsent("salmorejo", k -> {
+            BufferedImage desdePng = leerPng("interface/" + k);
+            return desdePng != null ? desdePng : desdeTexto(SALMOREJO, PALETA_COMIDA);
+        });
+    }
+
     // guarda todo como PNG en assets/
     public static void exportarAssets() throws Exception {
         String[][] jugador = {
@@ -569,6 +653,8 @@ public final class Sprites {
         guardar(maceta(0), "tiles/maceta");
         guardar(palmera(), "tiles/palmera");
         guardar(naranjo(), "tiles/naranjo");
+        guardar(flamenquin(), "interface/flamenquin");
+        guardar(salmorejo(), "interface/salmorejo");
         for (Level.Tema tema : Level.Tema.values()) {
             BufferedImage[] capas = Fondos.generarCapas(tema);
             for (int i = 0; i < capas.length; i++)

@@ -9,9 +9,7 @@ import java.awt.image.DataBufferInt;
 import java.util.HashMap;
 import java.util.Map;
 
-// Primer plano: cosas ENTRE Coco y la cámara (palmeras, matorrales, columnas, lámparas...).
-// Se ven grandes, a contraluz y desenfocadas, y van más rápido que el escenario: dan profundidad.
-// Solo es decoración (sin colisión). Si Coco pasa por detrás, se vuelven medio transparentes.
+// Primer plano: objetos desenfocados delante de Coco que dan profundidad. Sin colisión.
 public final class PrimerPlano {
 
     private static final int ANCHO = 640, ALTO = 360;
@@ -25,10 +23,9 @@ public final class PrimerPlano {
     // opacidad normal y opacidad cuando Coco está detrás
     private static final float ALFA = 0.93f, ALFA_TAPANDO = 0.38f;
 
-    private enum Forma { PALMERA, MATORRAL, HOJAS_ARRIBA, COLUMNA, NARANJO, LAMPARA }
+    private enum Forma { PALMERA, MATORRAL, HOJAS_ARRIBA, NARANJO, LAMPARA }
 
-    // una pieza: forma, posición en la secuencia y si va en espejo. "dentro" = forma que la sustituye
-    // dentro de la Mezquita (null = la misma)
+    // dentro = forma que la sustituye dentro de la Mezquita (null = ninguna)
     private static final class Pieza {
         final Forma forma, dentro; final int x; final boolean espejo;
         Pieza(Forma forma, int x, boolean espejo) { this(forma, x, espejo, forma); }
@@ -38,16 +35,17 @@ public final class PrimerPlano {
     }
 
     private static final Pieza[] RIO = {
-        new Pieza(Forma.PALMERA, 40, false),
+        new Pieza(Forma.PALMERA, -40, false),
         new Pieza(Forma.MATORRAL, 520, false),
-        new Pieza(Forma.HOJAS_ARRIBA, 860, false),
+        new Pieza(Forma.HOJAS_ARRIBA, 780, false),
         new Pieza(Forma.MATORRAL, 1180, true),
     };
+    // fuera: palmeras y naranjos; dentro: arquería y lámparas
     private static final Pieza[] MEZQUITA = {
-        new Pieza(Forma.COLUMNA, 60, false),
-        new Pieza(Forma.NARANJO, 560, false, Forma.COLUMNA),   // dentro no hay naranjos: otra columna
-        new Pieza(Forma.LAMPARA, 900, false),
-        new Pieza(Forma.COLUMNA, 1230, true),
+        new Pieza(Forma.PALMERA, 0, false, null),
+        new Pieza(Forma.NARANJO, 560, false, null),
+        new Pieza(Forma.HOJAS_ARRIBA, 860, false, Forma.LAMPARA),
+        new Pieza(Forma.NARANJO, 1230, true, null),
     };
 
     private static final Map<String, BufferedImage> CACHE = new HashMap<>();
@@ -57,25 +55,44 @@ public final class PrimerPlano {
 
     // ---- dibujo ----
 
-    // se llama DESPUÉS de Coco y antes del HUD. jugador = rectángulo de Coco en pantalla (o null) para no taparlo
+    // después de Coco y antes del HUD
     public static void dibujar(Graphics2D g, Level.Tema tema, int camX, Rectangle jugador, int frame) {
         dibujar(g, tema, camX, 0f, jugador, frame);
     }
 
-    // interior: 0 fuera, 1 dentro de la Mezquita (las piezas de fuera se funden con las de dentro)
+    // interior: 0 fuera, 1 dentro de la Mezquita
     public static void dibujar(Graphics2D g, Level.Tema tema, int camX, float interior, Rectangle jugador, int frame) {
         dibujarBokeh(g, tema, camX, frame);
         Pieza[] piezas = tema == Level.Tema.RIO ? RIO : MEZQUITA;
         Composite antes = g.getComposite();
+        if (tema == Level.Tema.MEZQUITA && interior > 0f) dibujarArqueria(g, camX, jugador, interior);
         for (Pieza p : piezas) {
             if (p.dentro == p.forma) {
                 dibujarPieza(g, tema, p, p.forma, camX, jugador, 1f);
             } else {
                 if (interior < 1f) dibujarPieza(g, tema, p, p.forma, camX, jugador, 1f - interior);
-                if (interior > 0f) dibujarPieza(g, tema, p, p.dentro, camX, jugador, interior);
+                if (interior > 0f && p.dentro != null) dibujarPieza(g, tema, p, p.dentro, camX, jugador, interior);
             }
         }
         g.setComposite(antes);
+    }
+
+    // arquería: el mismo tramo repetido
+    private static void dibujarArqueria(Graphics2D g, int camX, Rectangle jugador, float opacidad) {
+        BufferedImage img = arqueria();
+        int w = img.getWidth();
+        for (int x = Math.floorMod(-Math.round(camX * PARALLAX), w) - w; x < ANCHO; x += w) {
+            float alfa = ALFA;
+            if (jugador != null) {
+                int ancho = ARQ_FUSTE + 24;
+                Rectangle r = new Rectangle(x + w / 2 - ancho / 2, ARQ_CAPITEL - 26, ancho, ALTO);
+                double dx = Math.max(0, Math.max(r.x - jugador.getMaxX(), jugador.x - r.getMaxX()));
+                double dy = Math.max(0, Math.max(r.y - jugador.getMaxY(), jugador.y - r.getMaxY()));
+                alfa = (float) (ALFA_TAPANDO + (ALFA - ALFA_TAPANDO) * Math.min(1, Math.hypot(dx, dy) / 40.0));
+            }
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, Math.max(0f, Math.min(1f, alfa * opacidad))));
+            g.drawImage(img, x, 0, null);
+        }
     }
 
     private static void dibujarPieza(Graphics2D g, Level.Tema tema, Pieza p, Forma forma, int camX,
@@ -87,23 +104,24 @@ public final class PrimerPlano {
         int y = arriba(forma) ? 0 : ALTO - img.getHeight() + hundido(forma);
         float alfa = ALFA;
         if (jugador != null) {
-            // Cuanto más cerca está Coco del objeto, más transparente se vuelve
-            Rectangle r = nucleo(forma, x, y, img);
-            if (p.espejo) r.x = 2 * x + img.getWidth() - r.x - r.width;
-            double dx = Math.max(0, Math.max(r.x - jugador.getMaxX(), jugador.x - r.getMaxX()));
-            double dy = Math.max(0, Math.max(r.y - jugador.getMaxY(), jugador.y - r.getMaxY()));
-            double d = Math.hypot(dx, dy);
+            // más transparente cuanto más cerca está Coco
+            double d = Double.MAX_VALUE;
+            for (Rectangle r : nucleos(forma, x, y, img)) {
+                if (p.espejo) r.x = 2 * x + img.getWidth() - r.x - r.width;
+                double dx = Math.max(0, Math.max(r.x - jugador.getMaxX(), jugador.x - r.getMaxX()));
+                double dy = Math.max(0, Math.max(r.y - jugador.getMaxY(), jugador.y - r.getMaxY()));
+                d = Math.min(d, Math.hypot(dx, dy));
+            }
             alfa = (float) (ALFA_TAPANDO + (ALFA - ALFA_TAPANDO) * Math.min(1, d / 40.0));
         }
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, Math.max(0f, Math.min(1f, alfa * opacidad * transparencia(forma)))));
         g.drawImage(img, x, y, null);
     }
 
-    // los setos anchos (matorral y naranjo) distraen si se ven enteros: se hunden bajo la pantalla
-    // para que solo asome la parte de arriba, y van más transparentes
+    // matorral y naranjo: solo asoma la parte de arriba
     private static int hundido(Forma f) {
         switch (f) {
-            case MATORRAL: return 55;
+            case MATORRAL: return 70;
             case NARANJO:  return 60;
             default:       return 0;
         }
@@ -118,18 +136,17 @@ public final class PrimerPlano {
         return f == Forma.HOJAS_ARRIBA || f == Forma.LAMPARA;
     }
 
-    // parte "maciza" del objeto, la que de verdad tapa a Coco
-    private static Rectangle nucleo(Forma f, int x, int y, BufferedImage img) {
+    // partes que tapan a Coco
+    private static Rectangle[] nucleos(Forma f, int x, int y, BufferedImage img) {
         int w = img.getWidth(), h = img.getHeight();
         switch (f) {
-            case PALMERA:  return new Rectangle(x + w / 6, y, w * 2 / 3, h);
-            case COLUMNA:  return new Rectangle(x + 10, y + 60, 64, h - 60);   // solo el fuste
-            case LAMPARA:  return new Rectangle(x, y + h / 2, w, h / 2);
-            default:       return new Rectangle(x, y + h / 4, w, h * 3 / 4);
+            case PALMERA:  return new Rectangle[] { new Rectangle(x + 150, y, 160, h) };   // tronco y copa
+            case LAMPARA:  return new Rectangle[] { new Rectangle(x, y + h / 2, w, h / 2) };
+            default:       return new Rectangle[] { new Rectangle(x, y + h / 4, w, h * 3 / 4) };
         }
     }
 
-    // destellos redondos desenfocados (como los de una cámara de cine) que flotan despacio
+    // destellos desenfocados (bokeh)
     private static void dibujarBokeh(Graphics2D g, Level.Tema tema, int camX, int frame) {
         BufferedImage bokeh = BOKEH.computeIfAbsent(tema,
                 t -> crearBokeh(t == Level.Tema.RIO ? 0xFFECB0 : 0xFFBE6E));
@@ -153,7 +170,6 @@ public final class PrimerPlano {
             for (int x = 0; x < n; x++) {
                 double d = Math.hypot(x - n / 2.0 + 0.5, y - n / 2.0 + 0.5) / (n / 2.0);
                 if (d > 1) continue;
-                // disco casi plano con el borde un poco más brillante y suave
                 double a = d > 0.85 ? (1 - d) / 0.15 : 0.7 + 0.3 * d;
                 img.setRGB(x, y, ((int) (a * 255) << 24) | rgb);
             }
@@ -161,7 +177,7 @@ public final class PrimerPlano {
         return img;
     }
 
-    // ---- generación de las imágenes (una vez, luego se guardan en caché) ----
+    // ---- imágenes (en caché) ----
 
     private static synchronized BufferedImage imagen(Level.Tema tema, Forma f, boolean espejo) {
         return CACHE.computeIfAbsent(tema + "_" + f + "_" + espejo, k -> {
@@ -178,7 +194,6 @@ public final class PrimerPlano {
             case PALMERA:      return palmera();
             case MATORRAL:     return matorral();
             case HOJAS_ARRIBA: return hojasArriba();
-            case COLUMNA:      return columna();
             case NARANJO:      return naranjo();
             default:           return lampara();
         }
@@ -191,15 +206,15 @@ public final class PrimerPlano {
         return g;
     }
 
-    // palmera enorme: el tronco sale por abajo y la copa queda arriba
+    // palmera enorme (con margen para que las frondas no se corten)
     private static BufferedImage palmera() {
-        BufferedImage img = new BufferedImage(300, ALTO, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage img = new BufferedImage(460, ALTO, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = lapiz(img);
         // tronco curvado con anillos
-        int copaX = 168, copaY = 52;
+        int base = 200, copaX = 248, copaY = 52;
         for (int y = ALTO; y > copaY; y -= 2) {
             double t = (ALTO - y) / (double) (ALTO - copaY);
-            double x = 120 + (copaX - 120) * Math.pow(t, 1.6);
+            double x = base + (copaX - base) * Math.pow(t, 1.6);
             double ancho = 30 - 12 * t;
             g.setColor(((y / 8) % 2 == 0) ? new Color(0x6B4E2E) : new Color(0x573E24));
             g.fill(new Rectangle.Double(x - ancho / 2, y - 2, ancho, 3));
@@ -218,21 +233,23 @@ public final class PrimerPlano {
 
     // hojas de palmera que cuelgan desde arriba de la pantalla
     private static BufferedImage hojasArriba() {
-        BufferedImage img = new BufferedImage(300, 170, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage img = new BufferedImage(480, 280, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = lapiz(img);
+        int ox = 200;
         double[][] frondas = { { 10, 220 }, { 30, 200 }, { 55, 170 }, { 80, 140 }, { 5, 250 } };
         for (double[] fr : frondas)
-            fronda(g, 120, -30, Math.toRadians(fr[0]), fr[1], fr[1] * 0.45, new Color(0x2B6128), new Color(0x3C8234));
+            fronda(g, ox, -30, Math.toRadians(fr[0]), fr[1], fr[1] * 0.45, new Color(0x2B6128), new Color(0x3C8234));
         for (double[] fr : frondas)
-            fronda(g, 120, -30, Math.toRadians(180 - fr[0] * 0.6), fr[1] * 0.6, fr[1] * 0.4, new Color(0x2B6128), new Color(0x3C8234));
+            fronda(g, ox, -30, Math.toRadians(180 - fr[0] * 0.6), fr[1] * 0.6, fr[1] * 0.4, new Color(0x2B6128), new Color(0x3C8234));
         g.dispose();
         return img;
     }
 
     // matorral de la orilla con cañas que asoman
     private static BufferedImage matorral() {
-        BufferedImage img = new BufferedImage(280, 130, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage img = new BufferedImage(330, 145, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = lapiz(img);
+        g.translate(25, 15);   // margen
         // cañas
         g.setStroke(new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         for (int i = 0; i < 9; i++) {
@@ -255,49 +272,93 @@ public final class PrimerPlano {
         return img;
     }
 
-    // columna de mármol con el arranque de un arco de dovelas rojas y blancas
-    private static BufferedImage columna() {
-        BufferedImage img = new BufferedImage(250, ALTO, BufferedImage.TYPE_INT_ARGB);
+    // Un tramo de la arquería. Se desenfocan 3 tramos y se recorta el del medio para que no haya costuras.
+    private static final int ARQ_ANCHO = 260, ARQ_FUSTE = 34, ARQ_CAPITEL = 232;
+
+    private static synchronized BufferedImage arqueria() {
+        return CACHE.computeIfAbsent("ARQUERIA", k -> {
+            BufferedImage tres = arqueriaAncha(3);
+            tenir(tres, Level.Tema.MEZQUITA);
+            BufferedImage borrosa = desenfocar(tres, DESENFOQUE);
+            BufferedImage tramo = new BufferedImage(ARQ_ANCHO, ALTO, BufferedImage.TYPE_INT_ARGB_PRE);
+            Graphics2D g = tramo.createGraphics();
+            g.drawImage(borrosa, -ARQ_ANCHO, 0, null);
+            g.dispose();
+            return tramo;
+        });
+    }
+
+    // n tramos seguidos
+    private static BufferedImage arqueriaAncha(int n) {
+        int w = ARQ_ANCHO;
+        BufferedImage img = new BufferedImage(w * n, ALTO, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = lapiz(img);
-        int cx = 42, fuste = 34, capitel = 92;
-        // arco (dovelas alternas) que sale de la columna hacia la derecha
-        double ra = 150, re = 110, ccx = cx + ra, ccy = capitel + 20;
-        for (int i = 0; i < 11; i++) {
-            double a1 = Math.toRadians(180 + i * 9), a2 = Math.toRadians(180 + (i + 1) * 9);
-            Path2D p = new Path2D.Double();
-            p.moveTo(ccx + Math.cos(a1) * ra, ccy + Math.sin(a1) * ra);
-            p.lineTo(ccx + Math.cos(a2) * ra, ccy + Math.sin(a2) * ra);
-            p.lineTo(ccx + Math.cos(a2) * re, ccy + Math.sin(a2) * re);
-            p.lineTo(ccx + Math.cos(a1) * re, ccy + Math.sin(a1) * re);
-            p.closePath();
-            g.setColor(i % 2 == 0 ? new Color(0x9E3326) : new Color(0xD8C49A));
-            g.fill(p);
-        }
-        // el muro encima del arco
+        int capitel = ARQ_CAPITEL;
+        double re = w / 2.0 - ARQ_FUSTE / 2.0 - 2;            // intradós
+        double ra = re + 24;                                    // trasdós
+        double cierre = Math.toRadians(22);                     // herradura
+        double ccy = capitel - 26 - Math.sin(cierre) * re;
+        double ini = Math.PI - cierre, fin = 2 * Math.PI + cierre;
+        int dovelas = 15;
+        int muroAbajo = (int) Math.round(ccy + 2);
+
+        // muro con moldura
         g.setColor(new Color(0x8E6E4C));
-        g.fillRect(0, 0, 250, (int) (ccy - ra) + 2);
-        // fuste con brillo lateral
-        g.setColor(new Color(0x7E6650));
-        g.fillRect(cx - fuste / 2, capitel, fuste, ALTO - capitel);
-        g.setColor(new Color(0xA48A6E));
-        g.fillRect(cx - fuste / 2 + 6, capitel, 6, ALTO - capitel);
-        g.setColor(new Color(0x5E4A38));
-        g.fillRect(cx + fuste / 2 - 7, capitel, 7, ALTO - capitel);
-        // capitel y cimacio
-        g.setColor(new Color(0xB89660));
-        g.fillRect(cx - fuste / 2 - 6, capitel - 16, fuste + 12, 16);
-        g.setColor(new Color(0x8C6B3B));
-        g.fillRect(cx - fuste / 2 - 12, capitel - 26, fuste + 24, 10);
+        g.fillRect(0, 0, w * n, muroAbajo);
         g.setColor(new Color(0x6E5232));
-        for (int i = 0; i < 4; i++) g.fillRect(cx - fuste / 2 - 2 + i * 10, capitel - 13, 4, 10);
+        g.fillRect(0, 14, w * n, 4);
+        g.setColor(new Color(0xA48A6E));
+        g.fillRect(0, 18, w * n, 2);
+        // huecos de los arcos
+        g.setComposite(AlphaComposite.Clear);
+        for (int k = 0; k <= n; k++) {
+            double cx = k * w;
+            g.fill(new java.awt.geom.Ellipse2D.Double(cx - re, ccy - re, re * 2, re * 2));
+            g.fillRect((int) (cx - re * Math.cos(cierre)), (int) ccy, (int) (2 * re * Math.cos(cierre)), muroAbajo);
+        }
+        g.setComposite(AlphaComposite.SrcOver);
+        // dovelas de cada arco
+        for (int k = 0; k <= n; k++) {
+            double cx = k * w;
+            for (int i = 0; i < dovelas; i++) {
+                double a1 = ini + (fin - ini) * i / dovelas, a2 = ini + (fin - ini) * (i + 1) / dovelas;
+                Path2D p = new Path2D.Double();
+                p.moveTo(cx + Math.cos(a1) * ra, ccy + Math.sin(a1) * ra);
+                p.lineTo(cx + Math.cos(a2) * ra, ccy + Math.sin(a2) * ra);
+                p.lineTo(cx + Math.cos(a2) * re, ccy + Math.sin(a2) * re);
+                p.lineTo(cx + Math.cos(a1) * re, ccy + Math.sin(a1) * re);
+                p.closePath();
+                g.setColor(i % 2 == 0 ? new Color(0x9E3326) : new Color(0xD8C49A));
+                g.fill(p);
+            }
+        }
+        for (int k = 0; k < n; k++) {
+            int cx = w / 2 + k * w;
+            int fuste = ARQ_FUSTE;
+            // fuste con brillo lateral
+            g.setColor(new Color(0x7E6650));
+            g.fillRect(cx - fuste / 2, capitel, fuste, ALTO - capitel);
+            g.setColor(new Color(0xA48A6E));
+            g.fillRect(cx - fuste / 2 + 6, capitel, 6, ALTO - capitel);
+            g.setColor(new Color(0x5E4A38));
+            g.fillRect(cx + fuste / 2 - 7, capitel, 7, ALTO - capitel);
+            // capitel y cimacio
+            g.setColor(new Color(0xB89660));
+            g.fillRect(cx - fuste / 2 - 6, capitel - 16, fuste + 12, 16);
+            g.setColor(new Color(0x8C6B3B));
+            g.fillRect(cx - fuste / 2 - 12, capitel - 26, fuste + 24, 10);
+            g.setColor(new Color(0x6E5232));
+            for (int i = 0; i < 4; i++) g.fillRect(cx - fuste / 2 - 2 + i * 10, capitel - 13, 4, 10);
+        }
         g.dispose();
         return img;
     }
 
     // copa de un naranjo muy cerca de la cámara
     private static BufferedImage naranjo() {
-        BufferedImage img = new BufferedImage(270, 140, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage img = new BufferedImage(310, 140, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = lapiz(img);
+        g.translate(20, 0);   // margen
         int[][] bolas = { { 10, 50, 110 }, { 70, 20, 130 }, { 150, 40, 115 }, { 60, 70, 120 } };
         for (int[] b : bolas) {
             g.setColor(new Color(0x24502A));
@@ -375,7 +436,7 @@ public final class PrimerPlano {
         g.dispose();
     }
 
-    // resplandor cálido de la lámpara (después de oscurecerla, para que brille)
+    // resplandor de la lámpara
     private static void luzLampara(BufferedImage img) {
         Graphics2D g = lapiz(img);
         int cx = img.getWidth() / 2, cy = 146;
@@ -393,8 +454,7 @@ public final class PrimerPlano {
         return r;
     }
 
-    // desenfoque casi gaussiano: tres pasadas de media de vecinos en horizontal y vertical.
-    // Con alfa premultiplicado para que los bordes no se pongan negros
+    // desenfoque: tres pasadas de media en horizontal y vertical (alfa premultiplicado)
     static BufferedImage desenfocar(BufferedImage origen, int radio) {
         int w = origen.getWidth(), h = origen.getHeight();
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB_PRE);

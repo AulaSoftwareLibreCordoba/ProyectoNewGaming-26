@@ -6,7 +6,7 @@ import cordoba.nucleo.Game;
 import javax.swing.*;
 import java.awt.*;
 
-// Arranca el juego. Con --exportar-assets guarda los gráficos como PNG en assets/ para poder editarlos.
+// Arranca el juego. Con --exportar-assets guarda los gráficos en assets/.
 public class Main {
 
     public static void main(String[] args) throws Exception {

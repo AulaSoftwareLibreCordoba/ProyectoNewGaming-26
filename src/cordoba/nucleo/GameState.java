@@ -9,5 +9,6 @@ public enum GameState {
     PAUSA,              // pausa (ESC)
     NIVEL_COMPLETADO,   // victoria entre niveles
     JUEGO_COMPLETADO,   // final: escribir el nombre
-    RANKING             // TOP 10
+    RANKING,            // TOP 10
+    OPCIONES            // volumen
 }

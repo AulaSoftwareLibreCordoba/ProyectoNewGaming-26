@@ -12,22 +12,24 @@ import java.awt.image.BufferedImage;
 // Menú de inicio, pausa y nivel completado. El final y el ranking están en PantallaRanking.
 public class GameMenu {
 
-    public enum Accion { NINGUNA, JUGAR, SALIR, CONTINUAR, REINICIAR, MENU, NIVEL2, RANKING }
+    public enum Accion { NINGUNA, JUGAR, SALIR, CONTINUAR, REINICIAR, MENU, NIVEL2, RANKING, OPCIONES }
 
     private final GameRenderer renderer;
 
     // inicio
-    private final Boton bJugar   = new Boton(245, 176, 150, 28, "JUGAR", Andalusi.BOTON_VERDE).andalusi();
-    private final Boton bRanking = new Boton(245, 212, 150, 28, "RANKING", Andalusi.BOTON_ALBERO).andalusi();
-    private final Boton bSalir   = new Boton(245, 248, 150, 28, "SALIR", Andalusi.BOTON_GRANATE).andalusi();
-    private final Boton[] botonesInicio = { bJugar, bRanking, bSalir };
+    private final Boton bJugar    = new Boton(240, 157, 160, 32, "JUGAR", Andalusi.BOTON_VERDE).grande();
+    private final Boton bRanking  = new Boton(240, 193, 160, 32, "RANKING", Andalusi.BOTON_ALBERO).grande();
+    private final Boton bOpciones = new Boton(240, 229, 160, 32, "OPCIONES", Andalusi.BOTON_AZUL).grande();
+    private final Boton bSalir    = new Boton(240, 265, 160, 32, "SALIR", Andalusi.BOTON_GRANATE).grande();
+    private final Boton[] botonesInicio = { bJugar, bRanking, bOpciones, bSalir };
     private final NavegacionMenu inicio = new NavegacionMenu(botonesInicio);
 
     // pausa
-    private final Boton bContinuar = new Boton(240, 150, 160, 22, "CONTINUAR", Andalusi.BOTON_VERDE).andalusi();
-    private final Boton bReiniciar = new Boton(240, 180, 160, 22, "REINICIAR NIVEL", Andalusi.BOTON_AZUL).andalusi();
-    private final Boton bMenuPausa = new Boton(240, 210, 160, 22, "MENÚ PRINCIPAL", Andalusi.BOTON_GRANATE).andalusi();
-    private final NavegacionMenu pausa = new NavegacionMenu(bContinuar, bReiniciar, bMenuPausa);
+    private final Boton bContinuar = new Boton(192, 140, 256, 34, "CONTINUAR", Andalusi.BOTON_VERDE).grande();
+    private final Boton bOpcPausa  = new Boton(192, 178, 256, 34, "OPCIONES", Andalusi.BOTON_ALBERO).grande();
+    private final Boton bReiniciar = new Boton(192, 216, 256, 34, "REINICIAR NIVEL", Andalusi.BOTON_AZUL).grande();
+    private final Boton bMenuPausa = new Boton(192, 254, 256, 34, "MENÚ PRINCIPAL", Andalusi.BOTON_GRANATE).grande();
+    private final NavegacionMenu pausa = new NavegacionMenu(bContinuar, bOpcPausa, bReiniciar, bMenuPausa);
 
     // selección en círculo; si el ratón no se mueve, no le quita el control al teclado
     static final class NavegacionMenu {
@@ -92,8 +94,8 @@ public class GameMenu {
     }
 
     // victoria
-    private final Boton bSiguiente = new Boton(180, 262, 130, 24, "CONTINUAR", Andalusi.BOTON_VERDE).andalusi();
-    private final Boton bMenuVict  = new Boton(330, 262, 130, 24, "MENÚ", Andalusi.BOTON_AZUL).andalusi();
+    private final Boton bSiguiente = new Boton(162, 258, 184, 36, "CONTINUAR", Andalusi.BOTON_VERDE).grande();
+    private final Boton bMenuVict  = new Boton(356, 258, 122, 36, "MENÚ", Andalusi.BOTON_AZUL).grande();
     private final NavegacionMenu victoria = new NavegacionMenu(bSiguiente, bMenuVict);
 
     // valores que va "escribiendo" el panel de código del menú
@@ -112,7 +114,8 @@ public class GameMenu {
         switch (inicio.activado(in, true)) {
             case 0: return Accion.JUGAR;
             case 1: return Accion.RANKING;
-            case 2: return Accion.SALIR;
+            case 2: return Accion.OPCIONES;
+            case 3: return Accion.SALIR;
             default: break;
         }
         if (in.pulsada(KeyEvent.VK_2)) return Accion.NIVEL2;   // atajo para profes
@@ -158,8 +161,8 @@ public class GameMenu {
         g.setFont(Ui.FUENTE_PEQ);
         String ayuda = "↑/↓ elegir · ENTER aceptar";
         int aw = g.getFontMetrics().stringWidth(ayuda) + 14;
-        Andalusi.escalonado(g, 320 - aw / 2, 284, aw, 14, 1, new Color(26, 12, 6, 170));
-        Ui.textoCentrado(g, ayuda, 320, 294, Andalusi.ORO_CLARO);
+        Andalusi.escalonado(g, 320 - aw / 2, 304, aw, 14, 1, new Color(26, 12, 6, 170));
+        Ui.textoCentrado(g, ayuda, 320, 314, Andalusi.ORO_CLARO);
 
         // pie con cenefa de alicatado
         g.setColor(new Color(20, 10, 6, 190));
@@ -310,8 +313,9 @@ public class GameMenu {
         pausa.actualizar(in);
         switch (pausa.activado(in, false)) {
             case 0: return Accion.CONTINUAR;
-            case 1: return Accion.REINICIAR;
-            case 2: return Accion.MENU;
+            case 1: return Accion.OPCIONES;
+            case 2: return Accion.REINICIAR;
+            case 3: return Accion.MENU;
             default: return Accion.NINGUNA;
         }
     }
@@ -319,9 +323,9 @@ public class GameMenu {
     public void dibujarPausa(Graphics2D g, Input in) {
         g.setColor(new Color(0, 0, 0, 150));
         g.fillRect(0, 0, 640, 360);
-        Andalusi.marco(g, 220, 100, 200, 148, Ui.PANEL, true);
+        Andalusi.marco(g, 180, 84, 280, 220, Ui.PANEL, true);
         g.setFont(Ui.FUENTE_GRANDE);
-        Ui.textoCentrado(g, "PAUSA", 320, 132, Andalusi.ORO_CLARO);
+        Ui.textoCentrado(g, "PAUSA", 320, 120, Andalusi.ORO_CLARO);
         pausa.dibujar(g);
     }
 
@@ -347,7 +351,7 @@ public class GameMenu {
                                 int compilaciones, int frame) {
         g.setColor(new Color(0, 0, 0, 160));
         g.fillRect(0, 0, 640, 360);
-        Andalusi.marco(g, 150, 60, 340, 240, Ui.PANEL, true);
+        Andalusi.marco(g, 150, 58, 340, 250, Ui.PANEL, true);
         Andalusi.frisoArcos(g, 160, 66, 320, 20, new Color(0x141420));
         g.setFont(Ui.FUENTE_GRANDE);
         Ui.textoCentrado(g, "¡NIVEL COMPLETADO!", 320, 104, Ui.VERDE);
@@ -358,8 +362,8 @@ public class GameMenu {
         int bote = (frame / 15) % 2 == 0 ? 0 : -6;
         g.drawImage(coco, 290, 128 + bote, 60, 60, null);
 
-        dibujarEstadisticas(g, frames, muertes, compilaciones, 206);
-        Ui.textoCentrado(g, "Siguiente: Nivel 2 — El desafío de la Mezquita", 320, 252, Ui.AMARILLO);
+        dibujarEstadisticas(g, frames, muertes, compilaciones, 204);
+        Ui.textoCentrado(g, "Siguiente: Nivel 2 — El desafío de la Mezquita", 320, 248, Ui.AMARILLO);
         victoria.dibujar(g);
     }
 
