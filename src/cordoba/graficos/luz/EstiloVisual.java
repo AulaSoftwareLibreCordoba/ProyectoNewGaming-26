@@ -2,80 +2,69 @@ package cordoba.graficos.luz;
 
 import cordoba.niveles.Level;
 
-/**
- * ★ PANEL DE CONTROL DEL ARTE ★
- *
- * Aquí están TODOS los valores de iluminación y profundidad de cada tema.
- * Para cambiar el aspecto del juego basta con tocar estos números: no hace
- * falta entender el resto del código.
- *
- *  - Colores en hexadecimal 0xRRGGBB.
- *  - Intensidades entre 0 (nada) y 1 (máximo).
- *  - Distancias en píxeles de la resolución interna (640x360).
+/*
+ * ★ Panel de control del arte ★
+ * Aquí están todos los valores de luz y profundidad de cada tema. Para cambiar el aspecto
+ * basta con tocar estos números. Colores 0xRRGGBB, intensidades de 0 a 1, distancias en px (640x360).
  */
 public final class EstiloVisual {
 
-    // ---------------- PROFUNDIDAD ----------------
+    // ---- profundidad ----
 
-    /** Color de la "neblina" que aclara lo que está lejos (perspectiva atmosférica). */
+    // neblina que aclara lo lejano (perspectiva atmosférica)
     public int colorNiebla;
-    /** Cuánta neblina lleva cada capa del fondo (0 = cielo, 1 = lejos, 2 = medio, 3 = cerca). */
+    // neblina de cada capa del fondo (0 = cielo, 1 = lejos, 2 = medio, 3 = cerca)
     public float[] nieblaCapa = new float[4];
 
-    /** Sombra que proyecta el terreno sobre el fondo. */
+    // sombra que echa el terreno sobre el fondo
     public int colorSombra;
     public float alfaSombra;
-    /** Hacia dónde cae la sombra (depende de dónde está el sol). */
+    // hacia dónde cae (depende de dónde esté el sol)
     public int sombraDx, sombraDy;
 
-    /** Oscurece el interior de los bloques grandes para que parezcan macizos. */
-    public float volumenPaso;   // oscuridad que se suma por cada bloque de profundidad
-    public float volumenMax;    // oscuridad máxima
+    // oscurece el interior de los bloques grandes para que parezcan macizos
+    public float volumenPaso;   // lo que oscurece cada bloque de profundidad
+    public float volumenMax;    // como mucho
 
-    /** Sombra suave bajo macetas, farolas, carteles y Coco. */
+    // sombrita bajo macetas, farolas, carteles y Coco
     public float alfaSombraContacto;
 
-    // ---------------- ILUMINACIÓN ----------------
+    // ---- iluminación ----
 
-    /** Penumbra general de la escena al aire libre (0 = pleno día). */
+    // penumbra general al aire libre (0 = pleno día)
     public int colorAmbiente;
     public float oscuridadExterior;
 
-    /** Penumbra cuando se baja al interior de la Mezquita (sala de columnas). */
+    // penumbra dentro de la Mezquita
     public int colorInterior;
     public float oscuridadInterior;
-    /**
-     * Sala de columnas del interior (ver SalaProfunda): niebla de cada plano, del
-     * más lejano al más cercano. Más niebla = más oscuro = se ve más lejos.
-     */
+    // niebla de cada plano de la sala de columnas, de lejos a cerca (más niebla = más oscuro = más lejos)
     public float[] nieblaSala = new float[3];
     public int colorNieblaSala;
 
-    /** Sol del fondo: posición en pantalla, tamaño del resplandor y fuerza. */
+    // sol del fondo: posición, tamaño del resplandor y fuerza
     public int solX, solY, solRadio, colorSol;
     public float brilloSol;
-    /** El sol del fondo baja con la cámara como su capa (true en el río). */
+    // el sol baja con la cámara como su capa (true en el río)
     public boolean solSigueCamara;
 
-    /** Farolas encendidas (puntos de control). */
+    // farolas encendidas
     public int colorFarola, radioFarola;
     public float brilloFarola;
 
-    /** Puerta de la meta. */
+    // puerta de la meta
     public int colorMeta, radioMeta;
     public float brilloMeta;
 
-    /** Pequeña luz alrededor de Coco para que nunca se pierda en la oscuridad. */
+    // lucecita alrededor de Coco para que no se pierda en la oscuridad
     public int radioJugador;
 
-    /** Lámparas colgantes de la sala de columnas. */
+    // lámparas de la sala de columnas
     public int colorLampara, radioLampara;
     public float brilloLampara;
 
-    /** Oscurecimiento de las esquinas de la pantalla (viñeta). */
+    // esquinas de la pantalla más oscuras (viñeta)
     public float vineta;
-
-    // =====================================================================
 
     private static final EstiloVisual RIO = rio(), MEZQUITA = mezquita();
 
@@ -85,7 +74,7 @@ public final class EstiloVisual {
         return tema == Level.Tema.RIO ? RIO : MEZQUITA;
     }
 
-    /** Nivel 1: mañana soleada en la ribera del Guadalquivir. */
+    // nivel 1: mañana soleada en la ribera
     private static EstiloVisual rio() {
         EstiloVisual e = new EstiloVisual();
         e.colorNiebla = 0xD6ECF5;
@@ -120,7 +109,7 @@ public final class EstiloVisual {
         return e;
     }
 
-    /** Nivel 2: atardecer en el casco histórico y penumbra dentro de la Mezquita. */
+    // nivel 2: atardecer fuera y penumbra dentro de la Mezquita
     private static EstiloVisual mezquita() {
         EstiloVisual e = new EstiloVisual();
         e.colorNiebla = 0xF7A783;
@@ -155,10 +144,7 @@ public final class EstiloVisual {
         return e;
     }
 
-    /**
-     * 0 = fuera, 1 = dentro de la sala de columnas de la Mezquita.
-     * (Mismo criterio con el que aparece el fondo de columnas.)
-     */
+    // 0 = fuera, 1 = dentro de la sala de columnas (mismo criterio que el fondo de columnas)
     public static float factorInterior(Level.Tema tema, int camY) {
         if (tema != Level.Tema.MEZQUITA) return 0f;
         return Math.max(0f, Math.min(1f, (camY - 110) / 60f));

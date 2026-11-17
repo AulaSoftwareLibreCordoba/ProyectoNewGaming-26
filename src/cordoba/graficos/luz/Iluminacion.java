@@ -11,34 +11,30 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * ILUMINACIÓN de la escena. Funciona en tres pasos:
- *
- *  0. Fondo (detrás de los bloques): resplandor del sol y, dentro de la
- *     Mezquita, penumbra del fondo con sus lámparas colgantes.
- *  1. Penumbra: se pinta una capa oscura del color del ambiente y se le
- *     "recortan" agujeros donde hay luces (farolas, meta, Coco).
- *  2. Halos: un resplandor de color suave alrededor de cada luz.
- *  3. Viñeta: las esquinas de la pantalla se oscurecen un poco.
- *
- * Solo lee el estado del juego (no cambia nada). Los valores están en {@link EstiloVisual}.
+/*
+ * La luz de la escena, por pasos:
+ *  0. fondo: resplandor del sol y, dentro de la Mezquita, penumbra con lámparas
+ *  1. penumbra: capa oscura con "agujeros" donde hay luces (farolas, meta, Coco)
+ *  2. halos de color alrededor de cada luz
+ *  3. viñeta en las esquinas
+ * Solo lee el estado del juego. Los valores están en EstiloVisual.
  */
 public class Iluminacion {
 
     private static final int ANCHO = 640, ALTO = 360;
 
     private final BufferedImage penumbra = new BufferedImage(ANCHO, ALTO, BufferedImage.TYPE_INT_ARGB_PRE);
-    /** Penumbra + viñeta ya mezcladas (se rehace solo si cambian el color o la oscuridad). */
+    // penumbra + viñeta ya mezcladas (solo se rehace si cambian)
     private final BufferedImage base = new BufferedImage(ANCHO, ALTO, BufferedImage.TYPE_INT_ARGB_PRE);
     private long claveBase = -1;
-    /** true si en este fotograma la viñeta ya va dentro de la penumbra. */
+    // true si la viñeta ya va dentro de la penumbra este fotograma
     private boolean vinetaIncluida;
 
     private BufferedImage vinetaImagen;
     private List<Trozo> vinetaTrozos;
     private float vinetaFuerza = -1;
 
-    /** Luz del fondo. Llamar justo después de dibujar las capas del fondo. */
+    // luz del fondo; llamar justo después de pintar sus capas
     public void fondo(Graphics2D g, Level.Tema tema, int camX, int camY) {
         EstiloVisual e = EstiloVisual.de(tema);
         float interior = EstiloVisual.factorInterior(tema, camY);
@@ -50,14 +46,14 @@ public class Iluminacion {
         g.setComposite(antes);
     }
 
-    /** Capa del fondo lista para dibujar: con su neblina. Se calcula una sola vez. */
+    // capa del fondo con su neblina, calculada una vez
     public static synchronized BufferedImage prepararCapa(Level.Tema tema, int indice, BufferedImage capa) {
         BufferedImage conNiebla = Profundidad.capaConNiebla(tema, indice, capa);
         EstiloVisual e = EstiloVisual.de(tema);
         return RAPIDA.computeIfAbsent(conNiebla, Iluminacion::sinTransparenciaSiEsOpaca);
     }
 
-    /** Una capa sin ningún píxel transparente (el cielo) se copia mucho más rápido como RGB. */
+    // una capa sin transparencias (el cielo) se copia mucho más rápido como RGB
     private static BufferedImage sinTransparenciaSiEsOpaca(BufferedImage c) {
         int w = c.getWidth(), h = c.getHeight();
         int[] px = c.getRGB(0, 0, w, h, null, 0, w);
@@ -69,13 +65,13 @@ public class Iluminacion {
 
     private static final Map<BufferedImage, BufferedImage> RAPIDA = new IdentityHashMap<>();
 
-    /** Penumbra + halos. Llamar después de dibujar el escenario y antes del HUD. */
+    // penumbra + halos; después del escenario y antes del HUD
     public void aplicar(Graphics2D g, Level nivel, Player p, int camX, int camY, int frame) {
         Level.Tema tema = nivel.getTema();
         EstiloVisual e = EstiloVisual.de(tema);
         float interior = EstiloVisual.factorInterior(tema, camY);
 
-        // ---- 1. Penumbra ----
+        // 1. penumbra
         float oscuridad = e.oscuridadExterior + (e.oscuridadInterior - e.oscuridadExterior) * interior;
         vinetaIncluida = oscuridad > 0.01f;
         if (vinetaIncluida) {
@@ -95,7 +91,7 @@ public class Iluminacion {
             Graphics2D m = penumbra.createGraphics();
             m.setComposite(AlphaComposite.Src);
             m.drawImage(base, 0, 0, null);
-            // Cada luz "borra" parte de la penumbra
+            // cada luz borra un trozo de penumbra
             m.setComposite(AlphaComposite.DstOut);
             for (Farola f : nivel.getFarolas()) {
                 if (f.encendida) recortar(m, (int) f.x - camX, (int) f.ySuelo - 29 - camY, parpadeo(e.radioFarola + 14, frame, (int) f.x), 1f);
@@ -107,7 +103,7 @@ public class Iluminacion {
             g.drawImage(penumbra, 0, 0, null);
         }
 
-        // ---- 2. Halos de color ----
+        // 2. halos
         Composite antes = g.getComposite();
         for (Farola f : nivel.getFarolas()) {
             if (f.encendida) halo(g, (int) f.x - camX, (int) f.ySuelo - 29 - camY,
@@ -119,10 +115,10 @@ public class Iluminacion {
         g.setComposite(antes);
     }
 
-    /** Oscurece los bordes de la pantalla. Llamar al final del escenario. */
+    // bordes más oscuros; al final del escenario
     public void vineta(Graphics2D g, Level.Tema tema) {
         float fuerza = EstiloVisual.de(tema).vineta;
-        if (fuerza <= 0 || vinetaIncluida) return;   // si hay penumbra, ya va dentro de ella
+        if (fuerza <= 0 || vinetaIncluida) return;   // si hay penumbra, ya va dentro
         vinetaImagen(fuerza);
         for (Trozo t : vinetaTrozos) g.drawImage(t.img, t.x, t.y, null);
     }
@@ -135,8 +131,6 @@ public class Iluminacion {
         }
         return vinetaImagen;
     }
-
-    // ---------------------------------------------------------------------
 
     private static void recortar(Graphics2D m, int cx, int cy, int radio, float fuerza) {
         if (radio <= 0 || fuera(cx, cy, radio)) return;
@@ -154,7 +148,7 @@ public class Iluminacion {
         return cx + r < 0 || cx - r > ANCHO || cy + r < 0 || cy - r > ALTO;
     }
 
-    /** Las llamas tiemblan un poco: el radio cambia 2 px cada cierto tiempo. */
+    // las llamas tiemblan: el radio cambia 2 px de vez en cuando
     private static int parpadeo(int radio, int frame, int semilla) {
         int t = (frame + semilla * 7) / 9;
         return radio + (((t * 1103515245 + 12345) >>> 16) % 3 == 0 ? 2 : 0);
@@ -167,7 +161,7 @@ public class Iluminacion {
         return (r << 16) | (gg << 8) | bb;
     }
 
-    /** Un trozo de la viñeta (el centro, que es transparente, no se dibuja: ahorra tiempo). */
+    // trozo de viñeta (el centro es transparente y no se pinta: ahorra tiempo)
     private record Trozo(BufferedImage img, int x, int y) { }
 
     private static List<Trozo> trozos(BufferedImage img) {
@@ -193,7 +187,7 @@ public class Iluminacion {
                 double d = Math.sqrt(dx * dx * 0.8 + dy * dy * 0.8);
                 double a = Math.max(0, d - 0.55) / 0.6;
                 a = Math.min(1, a * a) * fuerza;
-                // escalones de 1/24 con tramado para que no se vean bandas
+                // escalones de 1/24 con tramado para que no se noten bandas
                 int paso = (int) Math.round(a * 24 + (((x ^ y) & 1) == 0 ? 0.25 : -0.25));
                 int alfa = Math.max(0, Math.min(255, paso * 255 / 24));
                 img.setRGB(x, y, alfa << 24);

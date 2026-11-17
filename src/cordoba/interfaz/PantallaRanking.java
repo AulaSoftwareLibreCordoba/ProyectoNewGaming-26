@@ -13,12 +13,7 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
-/**
- * Pantallas de la COMPETICIÓN:
- *   1. Final de la partida: estadísticas + escribir el nombre para el ranking.
- *   2. Tabla con el TOP 10 en tres pestañas: GENERAL, NIVEL 1 y NIVEL 2
- *      (también accesible desde el menú principal).
- */
+// Pantallas de la competición: el final (escribir el nombre) y el TOP 10 con pestañas GENERAL / NIVEL 1 / NIVEL 2.
 public class PantallaRanking {
 
     private static final Color ORO    = new Color(0xFFD54F);
@@ -33,9 +28,9 @@ public class PantallaRanking {
     private final Ranking ranking;
 
     private final StringBuilder nombre = new StringBuilder();
-    private Puntuacion resaltada;   // partida recién guardada (null = ninguna)
-    private int puesto;             // su puesto en el ranking general
-    private int pestana;            // clasificación activa; el foco se guarda en navegacion
+    private Puntuacion resaltada;   // la partida que se acaba de guardar (o null)
+    private int puesto;             // su puesto en el general
+    private int pestana;            // pestaña activa (el foco va en navegacion)
 
     private final Boton bGuardar = new Boton(255, 278, 130, 22, "GUARDAR", Andalusi.BOTON_VERDE).andalusi();
     private final Boton bMenu    = new Boton(255, 300, 130, 22, "MENÚ", Andalusi.BOTON_VERDE).andalusi();
@@ -55,14 +50,14 @@ public class PantallaRanking {
         navegacion = new GameMenu.NavegacionMenu(opciones);
     }
 
-    /** Prepara la pantalla final para que el siguiente jugador escriba su nombre. */
+    // deja la pantalla lista para el siguiente jugador
     public void empezarNombre() {
         nombre.setLength(0);
         resaltada = null;
         puesto = -1;
     }
 
-    /** Abre la tabla sin resaltar a nadie (desde el menú principal). */
+    // desde el menú: sin resaltar a nadie
     public void verTabla() {
         resaltada = null;
         puesto = -1;
@@ -70,14 +65,9 @@ public class PantallaRanking {
         reiniciarFoco();
     }
 
-    // =====================================================================
-    //  1. INTRODUCIR NOMBRE
-    // =====================================================================
+    // ---- 1. escribir el nombre ----
 
-    /**
-     * Gestiona la escritura del nombre.
-     * @return la partida guardada en el ranking, o null si todavía no se ha guardado
-     */
+    // devuelve la partida guardada, o null si aún no se ha guardado
     public Puntuacion actualizarNombre(Input in, int frames, int muertes, int compilaciones, int n1, int n2) {
         boolean confirmar = false;
         for (char c : in.tomarEscrito().toCharArray()) {
@@ -122,7 +112,7 @@ public class PantallaRanking {
         int bote = (frame / 12) % 2 == 0 ? 0 : -8;
         g.drawImage(coco, 294, 86 + bote, 52, 52, null);
 
-        // Estadísticas (las mismas columnas que tendrá el ranking)
+        // estadísticas (las mismas columnas que el ranking)
         Ui.datoCentrado(g, "Tiempo total: ", Puntuacion.formatearTiempo(frames), 320, 154, Ui.TEXTO);
         g.setFont(Ui.FUENTE_MONO);
         Ui.textoCentrado(g, "Nivel 1: " + (n1 > 0 ? Puntuacion.formatearTiempo(n1) : "--")
@@ -131,7 +121,7 @@ public class PantallaRanking {
         Ui.datoCentrado(g, "Caídas: ", String.valueOf(muertes), 320, 180, Ui.TEXTO);
         Ui.datoCentrado(g, "Cambios de código compilados: ", String.valueOf(compilaciones), 320, 193, AZUL);
 
-        // Puesto provisional y récords de nivel
+        // puesto provisional y récords de nivel
         int pos = ranking.posicionPara(frames, muertes, compilaciones);
         if (pos <= Ranking.TOP)
             Ui.textoCentrado(g, "¡Entras en el TOP 10 en el puesto " + pos + "º!", 320, 209, colorPuesto(pos, Ui.VERDE));
@@ -144,7 +134,7 @@ public class PantallaRanking {
         else if (ranking.esRecordNivel(1, n1))
             Ui.textoCentrado(g, "¡NUEVO RÉCORD DEL NIVEL 1!", 320, 222, ORO);
 
-        // Caja de texto
+        // caja de texto
         g.setFont(Ui.FUENTE);
         Ui.textoCentrado(g, "Escribe tu nombre para el ranking:", 320, 240, Ui.TEXTO);
         int bx = 220, by = 248, bw = 200, bh = 20;
@@ -162,7 +152,7 @@ public class PantallaRanking {
         } else {
             Ui.texto(g, nombre.toString(), tx, ty, Ui.VERDE);
         }
-        if ((frame / 30) % 2 == 0) {   // cursor parpadeante
+        if ((frame / 30) % 2 == 0) {   // cursor parpadeando
             int cx = tx + (nombre.length() == 0 ? 0 : g.getFontMetrics().stringWidth(nombre.toString()) + 1);
             g.setColor(Ui.TEXTO);
             g.fillRect(cx, by + 5, 2, 11);
@@ -176,11 +166,9 @@ public class PantallaRanking {
         Ui.textoCentrado(g, "ENTER: guardar  ·  RETROCESO: borrar", 320, 316, Ui.GRIS);
     }
 
-    // =====================================================================
-    //  2. TABLA TOP 10
-    // =====================================================================
+    // ---- 2. tabla TOP 10 ----
 
-    /** Devuelve true cuando el jugador quiere volver al menú. */
+    // true cuando quiere volver al menú
     public boolean actualizarTabla(Input in) {
         if (iniciarFoco) {
             navegacion.abrir(in);
@@ -221,7 +209,7 @@ public class PantallaRanking {
         dibujarFondo(g, frame);
         Ui.panel(g, 80, 18, 480, 324, Ui.PANEL, Ui.BORDE);
 
-        // Título con Coco a ambos lados
+        // título con un Coco a cada lado
         g.setFont(Ui.FUENTE_GRANDE);
         Ui.textoCentrado(g, "RANKING · TOP 10", 320, 46, Ui.BORDE);
         BufferedImage coco = (frame / 20) % 2 == 0 ? Sprites.COCO_VICTORIA1 : Sprites.COCO_VICTORIA2;
@@ -233,7 +221,7 @@ public class PantallaRanking {
                 : "Mejores tiempos del nivel 2 · el nº1 corre como FANTASMA";
         Ui.textoCentrado(g, sub, 320, 61, Ui.GRIS);
 
-        // Pestañas
+        // pestañas
         for (int i = 0; i < bPestanas.length; i++) {
             bPestanas[i].color = i == pestana ? Andalusi.BOTON_ALBERO : new Color(0x3A3A50);
         }
@@ -264,7 +252,7 @@ public class PantallaRanking {
         }
 
         g.setFont(Ui.FUENTE);
-        // Mensaje inferior
+        // mensaje de abajo
         int my = 290;
         if (!ranking.isGuardadoOk()) {
             Ui.textoCentrado(g, "¡Error! No se pudo guardar el fichero ranking.txt", 320, my, Ui.ROJO);
@@ -309,7 +297,7 @@ public class PantallaRanking {
         }
     }
 
-    /** Dibuja la cabecera de la tabla y devuelve su y. */
+    // cabecera de la tabla; devuelve su y
     private int cabecera(Graphics2D g, String[] titulos, int[] xs, int cPos) {
         g.setFont(Ui.FUENTE_HUD);
         int y = 100;
@@ -321,14 +309,11 @@ public class PantallaRanking {
         return y;
     }
 
-    /**
-     * Fondo, puesto, medalla y nombre de una fila.
-     * @return true si es la partida que se acaba de guardar
-     */
+    // fondo, puesto, medalla y nombre de una fila. true si es la partida recién guardada
     private boolean fila(Graphics2D g, int i, int fy, Puntuacion p, int frame, int cPos, int cNombre) {
         int puestoFila = i + 1;
         g.setFont(Ui.FUENTE);
-        if (i % 2 == 1) {   // filas alternas, como un listado de IDE
+        if (i % 2 == 1) {   // filas alternas, como en un IDE
             g.setColor(Ui.PANEL_2);
             g.fillRect(96, fy - 12, 448, 17);
         }
@@ -353,9 +338,7 @@ public class PantallaRanking {
         return esNuevo;
     }
 
-    // =====================================================================
-    //  Utilidades
-    // =====================================================================
+    // ---- utilidades ----
 
     private void dibujarFondo(Graphics2D g, int frame) {
         renderer.dibujarFondo(g, Level.Tema.MEZQUITA, frame / 3, 0, 544);
@@ -372,7 +355,7 @@ public class PantallaRanking {
         }
     }
 
-    /** Medalla de 8x8 en pixel art. */
+    // medalla de 8x8
     private static void dibujarMedalla(Graphics2D g, int x, int y, Color color) {
         g.setColor(color.darker().darker());
         g.fillRect(x + 1, y, 6, 8);

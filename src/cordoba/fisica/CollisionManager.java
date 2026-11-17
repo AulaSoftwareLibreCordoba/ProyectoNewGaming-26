@@ -5,15 +5,8 @@ import cordoba.niveles.Level;
 import cordoba.niveles.elementos.ObstaculoMovil;
 import cordoba.niveles.plataformas.PlataformaDinamica;
 
-/**
- * Detección y resolución de colisiones del jugador con el nivel.
- *
- * Técnica usada: "movimiento por ejes separados".
- *   1. Movemos en X y, si nos metemos en un bloque, retrocedemos hasta su borde.
- *   2. Movemos en Y y hacemos lo mismo (así sabemos si pisamos suelo o techo).
- * El movimiento se divide en pasos de 4 px como máximo para que el jugador
- * nunca atraviese un bloque de 16 px aunque vaya muy rápido.
- */
+// Colisiones por ejes separados: primero X, luego Y (así sabemos si pisa suelo o techo).
+// Se mueve en pasos de 4 px como mucho para no atravesar bloques aunque vaya muy rápido.
 public class CollisionManager {
 
     private static final int T = Level.TILE;
@@ -25,9 +18,8 @@ public class CollisionManager {
         this.nivel = nivel;
     }
 
-    /** Mueve al jugador según su velocidad (vx, vy) resolviendo colisiones. */
     public void moverJugador(Player p) {
-        // Si estaba sobre una plataforma móvil, la plataforma lo arrastra
+        // si está en una plataforma móvil, se lo lleva con ella
         if (p.plataformaBajo != null && p.plataformaBajo.esSolida() && p.plataformaBajo.getDx() != 0) {
             moverX(p, p.plataformaBajo.getDx(), false);
         }
@@ -44,7 +36,7 @@ public class CollisionManager {
         }
     }
 
-    /** Mueve en horizontal. Devuelve true si ha chocado con una pared. */
+    // true si choca con una pared
     private boolean moverX(Player p, float d, boolean frenar) {
         p.x += d;
         int f1 = fila(p.y);
@@ -71,14 +63,14 @@ public class CollisionManager {
         return false;
     }
 
-    /** Mueve en vertical. Devuelve true si ha tocado suelo o techo. */
+    // true si toca suelo o techo
     private boolean moverY(Player p, float d) {
         float piesAntes = p.y + Player.ALTO;
         p.y += d;
         int c1 = columna(p.x);
         int c2 = columna(p.x + Player.ANCHO - 0.01f);
         if (d > 0) {
-            // ¿Pisamos un bloque?
+            // ¿pisa un bloque?
             int f = fila(p.y + Player.ALTO - 0.01f);
             for (int c = c1; c <= c2; c++) {
                 if (nivel.esSolido(c, f)) {
@@ -88,7 +80,7 @@ public class CollisionManager {
                     return true;
                 }
             }
-            // ¿Pisamos una plataforma dinámica? (solo desde arriba)
+            // ¿pisa una plataforma? (solo desde arriba)
             for (PlataformaDinamica pl : nivel.getPlataformas()) {
                 if (!pl.esSolida()) continue;
                 boolean solapaX = p.x + Player.ANCHO > pl.getX() && p.x < pl.getX() + pl.getAncho();
@@ -104,7 +96,7 @@ public class CollisionManager {
                 }
             }
         } else if (d < 0) {
-            // ¿Nos damos con la cabeza?
+            // ¿se da con la cabeza?
             int f = fila(p.y);
             for (int c = c1; c <= c2; c++) {
                 if (nivel.esSolido(c, f)) {
@@ -117,11 +109,7 @@ public class CollisionManager {
         return false;
     }
 
-    /**
-     * ¿El jugador toca algo peligroso? (pinchos, agua, bolas de pinchos o caer
-     * fuera del mapa). Las cajas de los peligros son algo más pequeñas que el
-     * tile para que el juego sea "justo".
-     */
+    // ¿toca algo que mata? Las cajas de peligro son algo más pequeñas que el tile para que sea justo.
     public boolean tocaPeligro(Player p) {
         float x1 = p.x + 2, x2 = p.x + Player.ANCHO - 2;
         float y1 = p.y + 2, y2 = p.y + Player.ALTO - 1;

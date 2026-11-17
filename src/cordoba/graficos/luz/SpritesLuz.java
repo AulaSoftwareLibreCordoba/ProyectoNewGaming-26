@@ -4,25 +4,22 @@ import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Degradados circulares "pixelados" (por anillos, como en el pixel art clásico)
- * que se usan para las luces. Se generan una vez y se guardan en caché.
- */
+// Degradados circulares pixelados (por anillos) para las luces. Se generan una vez y se cachean.
 final class SpritesLuz {
 
-    /** Número de anillos del degradado: menos = más retro, más = más suave. */
+    // anillos del degradado: menos = más retro, más = más suave
     private static final int ANILLOS = 6;
 
     private static final Map<Long, BufferedImage> CACHE = new HashMap<>();
 
     private SpritesLuz() { }
 
-    /** Máscara blanca: alfa 255 en el centro y 0 en el borde. */
+    // máscara blanca: opaca en el centro y transparente en el borde
     static BufferedImage mascara(int radio) {
         return halo(radio, 0xFFFFFF);
     }
 
-    /** Círculo de luz del color indicado que se desvanece hacia el borde. */
+    // círculo de luz de ese color que se desvanece hacia fuera
     static synchronized BufferedImage halo(int radio, int rgb) {
         long clave = ((long) radio << 32) | (rgb & 0xFFFFFFL);
         return CACHE.computeIfAbsent(clave, k -> crear(radio, rgb));
@@ -37,7 +34,7 @@ final class SpritesLuz {
                 if (dist >= 1) continue;
                 double luz = 1 - dist;
                 luz = luz * luz * (3 - 2 * luz);              // suavizado
-                // Anillos + tramado 2x2 en la frontera entre anillos
+                // anillos + tramado 2x2 entre anillo y anillo
                 double nivel = luz * ANILLOS;
                 int anillo = (int) nivel;
                 double resto = nivel - anillo;

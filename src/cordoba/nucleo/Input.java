@@ -2,30 +2,23 @@ package cordoba.nucleo;
 
 import java.awt.event.*;
 
-/**
- * Guarda el estado del teclado y del ratón.
- *
- * - abajo(tecla):   la tecla está pulsada ahora mismo.
- * - pulsada(tecla): la tecla se ha pulsado en ESTE fotograma (un solo disparo).
- *
- * Los eventos llegan desde el hilo de Swing y el juego los lee desde su
- * propio hilo, por eso los métodos son "synchronized".
- */
+// Teclado y ratón. abajo() = la tecla está pulsada ahora · pulsada() = se pulsó en ESTE fotograma.
+// Los eventos llegan del hilo de Swing y el juego lee desde el suyo, por eso todo es synchronized.
 public class Input implements KeyListener, MouseListener, MouseMotionListener {
 
     private final boolean[] teclas = new boolean[1024];
     private final boolean[] pulsadas = new boolean[1024];
 
-    // Ratón en coordenadas de PANTALLA (luego Game las convierte a 640x360)
+    // ratón en coordenadas de pantalla (luego se pasan a 640x360)
     private int ratonX, ratonY;
     private boolean clic;            // clic en este fotograma
     private boolean botonPulsado;    // botón mantenido
 
-    // Conversión pantalla -> resolución interna (la actualiza Game)
+    // pantalla -> resolución interna (la pone Game)
     private double escala = 1;
     private int offX, offY;
 
-    // ------------------------- Teclado -------------------------
+    // ---- teclado ----
 
     @Override
     public synchronized void keyPressed(KeyEvent e) {
@@ -42,7 +35,7 @@ public class Input implements KeyListener, MouseListener, MouseMotionListener {
         if (c >= 0 && c < teclas.length) teclas[c] = false;
     }
 
-    /** Caracteres escritos en este fotograma (para introducir el nombre del ranking). */
+    // lo escrito en este fotograma (para el nombre del ranking)
     private final StringBuilder escrito = new StringBuilder();
 
     @Override
@@ -51,10 +44,7 @@ public class Input implements KeyListener, MouseListener, MouseMotionListener {
         if (c != KeyEvent.CHAR_UNDEFINED) escrito.append(c);
     }
 
-    /**
-     * Devuelve lo escrito desde el último fotograma (incluye '\b' al borrar
-     * y '\n' al pulsar ENTER) y lo vacía.
-     */
+    // lo escrito desde el último fotograma ('\b' = borrar, '\n' = ENTER) y lo vacía
     public synchronized String tomarEscrito() {
         String s = escrito.toString();
         escrito.setLength(0);
@@ -69,20 +59,20 @@ public class Input implements KeyListener, MouseListener, MouseMotionListener {
         return pulsadas[codigo];
     }
 
-    /** Se llama al final de cada actualización para "olvidar" las pulsaciones. */
+    // al final de cada fotograma se olvidan las pulsaciones
     public synchronized void finFrame() {
         java.util.Arrays.fill(pulsadas, false);
         escrito.setLength(0);
         clic = false;
     }
 
-    /** Suelta todas las teclas (útil al perder el foco de la ventana). */
+    // suelta todo (al perder el foco de la ventana)
     public synchronized void soltarTodo() {
         java.util.Arrays.fill(teclas, false);
         botonPulsado = false;
     }
 
-    // ------------------------- Ratón -------------------------
+    // ---- ratón ----
 
     @Override
     public synchronized void mousePressed(MouseEvent e) {
@@ -119,12 +109,12 @@ public class Input implements KeyListener, MouseListener, MouseMotionListener {
         this.offY = offY;
     }
 
-    /** X del ratón en la resolución interna (0..639). */
+    // x del ratón en 640x360
     public synchronized int getRatonX() {
         return (int) ((ratonX - offX) / escala);
     }
 
-    /** Y del ratón en la resolución interna (0..359). */
+    // y del ratón en 640x360
     public synchronized int getRatonY() {
         return (int) ((ratonY - offY) / escala);
     }

@@ -1,9 +1,6 @@
 package cordoba.niveles.elementos;
 
-/**
- * Cartel de tutorial. Al pasar por él se muestra su mensaje y, opcionalmente,
- * se ejecuta una acción (por ejemplo, desbloquear una variable).
- */
+// Cartel del tutorial: al pasar enseña su mensaje y, si tiene, ejecuta una acción (p. ej. desbloquear una variable).
 public class Cartel {
 
     public final float x, ySuelo;

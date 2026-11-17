@@ -10,30 +10,21 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/**
- * Efectos de sonido "chiptune" generados por código (onda cuadrada y ruido).
- * No necesita archivos de audio. Si el ordenador no tiene salida de sonido,
- * simplemente se desactiva sin provocar errores.
+/*
+ * Sonidos chiptune generados por código, sin archivos. Si no hay audio, se desactiva y ya.
  *
- * Pulsa M durante la partida para silenciar / activar el sonido.
- *
- * ESTRATEGIA DE CONCURRENCIA
- * - Productores: cualquier hilo del juego (p. ej. el hilo de Swing/juego) llama a
- *   salto(), muerte()... Solo generan un byte[] y lo meten en la cola "nuevas".
- * - Consumidor único: el hilo "HiloSonido" es el ÚNICO que toca la línea de audio
- *   y la lista de voces activas. Por eso esa lista no necesita cerrojos.
- * - Único estado compartido: la cola "nuevas" (thread-safe) y los flags volatile.
- * - Los sonidos se MEZCLAN (se suman) en bloques pequeños, así que varios sonidos
- *   pueden sonar a la vez en lugar de esperar su turno uno detrás de otro.
- * - Errores: si falla el audio, "disponible" pasa a false y el juego sigue.
+ * Cómo va lo de los hilos:
+ * - Cualquier hilo pide un sonido (salto(), muerte()...): solo genera los bytes y los mete en la cola "nuevas".
+ * - Solo el hilo "HiloSonido" toca la línea de audio y la lista de voces, así que esa lista no necesita cerrojos.
+ * - Los sonidos se suman (mezclan) por bloques, así suenan a la vez en vez de hacer cola.
  */
 public final class Sonido {
 
     private static final float FRECUENCIA_MUESTREO = 22050f;
-    private static final int TAM_BLOQUE = 512;   // ~23 ms de audio por iteración
-    private static final int MAX_VOCES = 8;      // sonidos simultáneos máximos
+    private static final int TAM_BLOQUE = 512;   // ~23 ms de audio por vuelta
+    private static final int MAX_VOCES = 8;      // sonidos a la vez como mucho
 
-    /** Un sonido ya generado y su posición de lectura actual. */
+    // un sonido ya generado y por dónde va
     private static final class Voz {
         final byte[] datos;
         int pos = 0;
@@ -43,11 +34,11 @@ public final class Sonido {
     private static final BlockingQueue<Voz> nuevas = new LinkedBlockingQueue<>();
     private static volatile boolean disponible = true;
     private static volatile boolean silenciado = false;
-    private static Thread hilo;   // protegido por el cerrojo de la clase (synchronized)
+    private static Thread hilo;   // protegido por synchronized
 
     private Sonido() { }
 
-    /** Arranca el hilo mezclador (solo la primera vez). */
+    // arranca el hilo mezclador (solo la primera vez)
     private static synchronized void iniciar() {
         if (hilo != null) return;
         hilo = new Thread(Sonido::bucleMezclador, "HiloSonido");
@@ -55,10 +46,7 @@ public final class Sonido {
         hilo.start();
     }
 
-    /**
-     * Bucle del hilo de audio: suma todas las voces activas en bloques
-     * pequeños y los escribe en la línea de audio.
-     */
+    // bucle del hilo de audio: suma las voces activas y lo manda a la tarjeta de sonido
     private static void bucleMezclador() {
         SourceDataLine linea = null;
         List<Voz> activas = new ArrayList<>();
@@ -67,15 +55,14 @@ public final class Sonido {
         try {
             AudioFormat formato = new AudioFormat(FRECUENCIA_MUESTREO, 8, 1, true, false);
             linea = AudioSystem.getSourceDataLine(formato);
-            linea.open(formato, TAM_BLOQUE * 2);   // búfer pequeño = poca latencia
+            linea.open(formato, TAM_BLOQUE * 2);   // búfer pequeño = poco retraso
             linea.start();
 
             while (!Thread.currentThread().isInterrupted()) {
-                // Sin sonidos activos NO dormimos: escribimos silencio. Así la línea
-                // nunca se queda vacía (evita los "pops"). El ritmo lo marca
-                // linea.write, que bloquea hasta que hay hueco, así que no gasta CPU.
+                // Sin sonidos escribimos silencio en vez de dormir: así no hay "pops".
+                // linea.write espera a que haya hueco, así que no se come la CPU.
                 nuevas.drainTo(activas);
-                while (activas.size() > MAX_VOCES) activas.remove(0);   // descarta los más antiguos
+                while (activas.size() > MAX_VOCES) activas.remove(0);   // si hay demasiados, fuera los más viejos
 
                 Arrays.fill(mezcla, 0);
                 for (Voz v : activas) {
@@ -88,26 +75,22 @@ public final class Sonido {
                 for (int i = 0; i < TAM_BLOQUE; i++) {
                     salida[i] = (byte) Math.max(-128, Math.min(127, mezcla[i]));
                 }
-                linea.write(salida, 0, TAM_BLOQUE);   // bloquea hasta que hay hueco: marca el ritmo
+                linea.write(salida, 0, TAM_BLOQUE);
             }
         } catch (Exception e) {
-            disponible = false;                       // sin audio: el juego sigue funcionando
+            disponible = false;                       // sin audio el juego sigue igual
         } finally {
             if (linea != null) linea.close();
         }
     }
 
-    /**
-     * Genera un tono que va de frecuencia f1 a f2 durante "ms" milisegundos.
-     * @param ruido      true = ruido blanco (explosiones, derrumbes)
-     * @param retrasoMs  espera antes de que empiece a sonar (para encadenar notas)
-     */
+    // tono que va de f1 a f2 en "ms" milisegundos (ruido = explosiones, derrumbes; retraso = para encadenar notas)
     private static void tono(float f1, float f2, int ms, float volumen, boolean ruido, int retrasoMs) {
         if (!disponible || silenciado) return;
         iniciar();
         int n = (int) (FRECUENCIA_MUESTREO * ms / 1000);
         int retraso = (int) (FRECUENCIA_MUESTREO * retrasoMs / 1000);
-        byte[] b = new byte[retraso + n];   // los primeros "retraso" bytes quedan en silencio (0)
+        byte[] b = new byte[retraso + n];   // lo del principio se queda en silencio (el retraso)
         double fase = 0;
         Random r = new Random(7);
         for (int i = 0; i < n; i++) {
@@ -115,7 +98,7 @@ public final class Sonido {
             double f = f1 + (f2 - f1) * t;
             fase += f / FRECUENCIA_MUESTREO;
             double onda = ruido ? (r.nextDouble() * 2 - 1) : ((fase % 1.0) < 0.5 ? 1 : -1);
-            double ataque = Math.min(1.0, i / 60.0);   // ~3 ms de subida: evita el clic inicial
+            double ataque = Math.min(1.0, i / 60.0);   // subida suave para que no haga clic
             double envolvente = Math.min(1.0, (1 - t) * 1.6) * ataque;
             b[retraso + i] = (byte) (onda * envolvente * volumen * 90);
         }
@@ -126,11 +109,11 @@ public final class Sonido {
         tono(f1, f2, ms, volumen, ruido, 0);
     }
 
-    // ---- Antirrebote: el mismo efecto no puede repetirse antes de un intervalo mínimo ----
+    // antirrebote: el mismo sonido no se puede repetir demasiado seguido
     private static final int SALTO = 0, ATERRIZAR = 1, APLICAR = 2, ERROR = 3, CLIC = 4,
                              MUERTE = 5, CHECKPOINT = 6, CRUJIDO = 7, DERRUMBE = 8, VICTORIA = 9;
-    private static final long[] ultimo = new long[10];          // nanoTime de la última vez
-    private static final Object cerrojoAntirrebote = new Object(); // sección crítica mínima
+    private static final long[] ultimo = new long[10];          // cuándo sonó cada uno por última vez
+    private static final Object cerrojoAntirrebote = new Object();
 
     private static boolean permitir(int id, int minMs) {
         long ahora = System.nanoTime();
@@ -163,11 +146,11 @@ public final class Sonido {
 
     public static void alternarSilencio() {
         silenciado = !silenciado;
-        if (silenciado) nuevas.clear();   // al silenciar, se descartan los sonidos pendientes
+        if (silenciado) nuevas.clear();   // al silenciar tiramos lo pendiente
     }
     public static boolean isSilenciado()  { return silenciado; }
 
-    /** Opcional: llamar al cerrar el juego para parar el hilo de audio y liberar la línea. */
+    // para el hilo de audio al cerrar el juego
     public static synchronized void cerrar() {
         if (hilo == null) return;
         hilo.interrupt();

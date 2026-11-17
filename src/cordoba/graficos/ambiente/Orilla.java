@@ -5,22 +5,17 @@ import cordoba.graficos.Fondos;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-/**
- * Orilla de arena del Guadalquivir donde se apoyan las palmeras y las cañas
- * de la capa cercana del fondo (si no, parecen flotar sobre el río).
- *
- * La arena se mueve con su capa (parallax) y el agua lame el borde.
- */
+// Arena de la orilla donde se apoyan las palmeras y cañas del fondo (si no, parecen flotar).
 public final class Orilla {
 
-    /** Altura (en coordenadas de la capa) donde empieza la arena. */
+    // dónde empieza la arena (coordenadas de la capa)
     private static final int ARRIBA = 284, ALTO = 40;
 
-    // Arena mojada → seca, guijarros y sombras
+    // arena mojada -> seca, guijarros y sombras
     private static final int MOJADA = 0xB08A58, ARENA = 0xE0C08A, ARENA_OSC = 0xC9A66B,
                              ARENA_CLARA = 0xF0D9A8, GUIJARRO = 0x9C8466;
 
-    /** Pie de cada palmera y mata de cañas de la capa cercana (x centro, ancho de la sombra). */
+    // pie de cada palmera y mata de cañas (x centro, ancho de la sombra)
     private static final int[][] PIES = {
         { 90, 18 }, { 135, 14 }, { 434, 22 },
         { 38, 12 }, { 128, 12 }, { 218, 12 }, { 308, 12 }, { 398, 12 }, { 488, 12 }, { 578, 12 },
@@ -30,16 +25,16 @@ public final class Orilla {
 
     private Orilla() { }
 
-    /** Dibuja la orilla (llamar justo antes de la capa cercana del fondo). */
+    // llamar justo antes de la capa cercana del fondo
     public static void dibujar(Graphics2D g, int desp, int dy, double segundos) {
         BufferedImage img = textura();
         g.drawImage(img, -desp, ARRIBA + dy, null);
         g.drawImage(img, -desp + Fondos.ANCHO, ARRIBA + dy, null);
 
-        // El agua lame el borde: una lengua de espuma que sube y baja
+        // el agua lame el borde: espuma que sube y baja
         Color agua = new Color(0x5FA8CC), espuma = new Color(0xE8F7FF);
         for (int x = 0; x < Fondos.ANCHO; x += 2) {
-            int lx = x + desp;   // posición en la capa: la ola viaja con la orilla
+            int lx = x + desp;   // la ola viaja con la orilla
             double ola = Math.sin(lx * 0.07 + segundos * 1.8) + 0.5 * Math.sin(lx * 0.19 - segundos * 2.6);
             int alto = (int) Math.round(1.5 + ola * 1.3);    // 0..4 px sobre la arena
             if (alto <= 0) continue;
@@ -57,10 +52,10 @@ public final class Orilla {
         for (int y = 0; y < ALTO; y++) {
             for (int x = 0; x < Fondos.ANCHO; x++) {
                 int c;
-                if (y < 4) c = MOJADA;                                  // arena mojada junto al agua
+                if (y < 4) c = MOJADA;                                  // mojada junto al agua
                 else if (y < 6) c = ((x + y) & 1) == 0 ? MOJADA : ARENA_OSC;
                 else c = ARENA;
-                // ondulaciones de la arena (dunas pequeñas)
+                // dunitas
                 if (y >= 6 && Math.sin(x * 0.11 + y * 0.9) > 0.85) c = ARENA_CLARA;
                 if (y >= 6 && Math.sin(x * 0.11 + y * 0.9 + 2.2) > 0.9) c = ARENA_OSC;
                 img.setRGB(x, y, c);
@@ -75,7 +70,7 @@ public final class Orilla {
             g.setColor(new Color(ARENA_CLARA));
             g.fillRect(x, y - 1, 1, 1);
         }
-        // sombra bajo cada palmera y mata de cañas
+        // sombra bajo cada palmera y mata
         g.setColor(new Color(0x9E7C4C));
         for (int[] p : PIES) {
             int y = 8;

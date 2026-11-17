@@ -7,10 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Sistema de partículas sencillo: polvo al aterrizar, chispas al aplicar
- * cambios, salpicaduras... Solo es decoración visual.
- */
+// Partículas sencillas: polvo, chispas, salpicaduras... Solo decoración.
 public class Particulas {
 
     private static class Particula {

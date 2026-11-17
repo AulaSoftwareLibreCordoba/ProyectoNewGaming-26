@@ -15,28 +15,20 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Clase base de los niveles.
- *
- * Un nivel tiene:
- *  - un MAPA de tiles (char[][]), donde cada carácter es un tipo de bloque:
- *        '.' vacío      '#' suelo        'S' piedra / muralla
- *        '^' pinchos    'v' pinchos de techo
- *        '~' agua       'u' corriente de aire (empuja hacia arriba)
- *  - plataformas dinámicas, obstáculos móviles, farolas (puntos de control),
- *    carteles de tutorial, decoración y una META.
- *
- * Los niveles concretos (Level1, Level2) se "dibujan" en su constructor con
- * métodos auxiliares como suelo(), agua(), pinchos(), farola()...
+/*
+ * Base de los niveles. Un nivel es un mapa de caracteres:
+ *   '.' vacío   '#' suelo   'S' piedra   '^' pinchos   'v' pinchos de techo   '~' agua   'u' corriente de aire
+ * más plataformas, obstáculos, farolas (checkpoints), carteles, decoración y la meta.
+ * Level1 y Level2 lo montan en su constructor con suelo(), agua(), farola()...
  */
 public abstract class Level {
 
     public static final int TILE = 16;
 
-    /** Empuje de la corriente de aire (px/fotograma²). Equivale a gravedad 12.5. */
+    // empuje de la corriente de aire (equivale a gravedad 12.5)
     public static final float FUERZA_CORRIENTE = 0.5f;
 
-    /** Rozamiento dentro de la corriente (multiplica la velocidad vertical cada fotograma). */
+    // rozamiento dentro de la corriente (frena la velocidad vertical)
     public static final float ROZAMIENTO_CORRIENTE = 0.92f;
 
     public enum Tema { RIO, MEZQUITA }
@@ -54,14 +46,14 @@ public abstract class Level {
     protected final List<Decoracion> decoraciones = new ArrayList<>();
     protected Rectangle meta = new Rectangle();
 
-    protected PhysicsConfig fisica;   // se asigna en configurarFisica()
+    protected PhysicsConfig fisica;   // se pone en configurarFisica()
 
     private float inicioX, inicioY;
     private float reaparecerX, reaparecerY;
     private int indiceFarola = -1;
     private int frames;
 
-    // Mensaje de tutorial que se está mostrando
+    // mensaje del tutorial que se está enseñando
     private String mensaje;
     private int mensajeTimer;
     private boolean mensajeEsEvento;
@@ -76,23 +68,21 @@ public abstract class Level {
         for (char[] fila : mapa) java.util.Arrays.fill(fila, '.');
     }
 
-    // =====================================================================
-    //  Métodos para CONSTRUIR niveles (los usan Level1 y Level2)
-    // =====================================================================
+    // ---- para montar niveles ----
 
-    /** Rellena un rectángulo de tiles (columnas c1..c2, filas f1..f2, incluidas). */
+    // rellena columnas c1..c2 y filas f1..f2 (incluidas)
     protected void rellenar(int c1, int f1, int c2, int f2, char tipo) {
         for (int f = Math.max(0, f1); f <= Math.min(filas - 1, f2); f++)
             for (int c = Math.max(0, c1); c <= Math.min(columnas - 1, c2); c++)
                 mapa[f][c] = tipo;
     }
 
-    /** Suelo desde la fila indicada hasta el fondo del mapa. */
+    // suelo desde esa fila hasta abajo del todo
     protected void suelo(int c1, int c2, int fila) {
         rellenar(c1, fila, c2, filas - 1, '#');
     }
 
-    /** Agua desde la fila indicada hasta el fondo. */
+    // agua desde esa fila hasta abajo
     protected void agua(int c1, int c2, int fila) {
         rellenar(c1, fila, c2, filas - 1, '~');
     }
@@ -109,7 +99,7 @@ public abstract class Level {
         rellenar(c1, f1, c2, f2, '.');
     }
 
-    /** Punto de inicio: columna y fila del SUELO sobre el que aparece Coco. */
+    // columna y fila del suelo donde aparece Coco
     protected void inicio(int col, int filaSuelo) {
         inicioX = col * TILE + (TILE - Player.ANCHO) / 2f;
         inicioY = filaSuelo * TILE - Player.ALTO;
@@ -133,16 +123,14 @@ public abstract class Level {
         decoraciones.add(new Decoracion(tipo, col * TILE + TILE / 2f, filaSuelo * TILE, variante));
     }
 
-    /** Meta: rectángulo de anchoTiles x altoTiles apoyado sobre filaSuelo. */
+    // rectángulo de anchoTiles x altoTiles apoyado en filaSuelo
     protected void meta(int col, int filaSuelo, int anchoTiles, int altoTiles) {
         meta = new Rectangle(col * TILE, (filaSuelo - altoTiles) * TILE, anchoTiles * TILE, altoTiles * TILE);
     }
 
-    // =====================================================================
-    //  Consultas del mapa
-    // =====================================================================
+    // ---- consultas del mapa ----
 
-    /** ¿El tile (c, f) es sólido? Fuera del mapa por los lados y por arriba hay pared. */
+    // fuera del mapa por los lados y por arriba cuenta como pared
     public boolean esSolido(int c, int f) {
         if (c < 0 || c >= columnas) return true;
         if (f < 0) return true;
@@ -160,11 +148,9 @@ public abstract class Level {
         return tile((int) Math.floor(px / TILE), (int) Math.floor(py / TILE)) == 'u';
     }
 
-    // =====================================================================
-    //  Lógica del nivel
-    // =====================================================================
+    // ---- lógica ----
 
-    /** Ajusta las variables físicas al empezar el nivel (valores y bloqueos). */
+    // valores y bloqueos de la física al empezar el nivel
     public void configurarFisica(PhysicsConfig f) {
         this.fisica = f;
         f.restaurarTodo();
@@ -178,7 +164,7 @@ public abstract class Level {
         float cx = p.centroX();
         float pies = p.y + Player.ALTO;
 
-        // Farolas = puntos de control
+        // farolas = checkpoints
         for (int i = 0; i < farolas.size(); i++) {
             Farola fa = farolas.get(i);
             if (!fa.encendida && !p.muerto && cx >= fa.x - 4 && Math.abs(pies - fa.ySuelo) < 80) {
@@ -193,7 +179,7 @@ public abstract class Level {
             }
         }
 
-        // Carteles de tutorial
+        // carteles del tutorial
         for (Cartel c : carteles) {
             if (!c.activado && cx >= c.x) {
                 c.activado = true;
@@ -207,7 +193,7 @@ public abstract class Level {
         if (mensajeTimer > 0) mensajeTimer--;
     }
 
-    /** Reinicia los elementos dinámicos cuando el jugador reaparece. */
+    // cuando Coco reaparece, las plataformas vuelven a como estaban
     public void reiniciarDinamicos() {
         frames = 0;
         for (PlataformaDinamica pl : plataformas) pl.reiniciar();
@@ -219,22 +205,16 @@ public abstract class Level {
         mensajeTimer = duracion;
     }
 
-    /** Muestra un mensaje de tutorial con prioridad (no lo tapan los carteles). */
+    // mensaje con prioridad (no lo tapan los carteles)
     protected void mostrarEvento(String texto) {
         mostrar(texto, true, 600);
     }
 
-    // ----- Eventos que los niveles pueden aprovechar para el tutorial -----
+    // ---- eventos para el tutorial ----
 
-    /** Se llama cuando el jugador abre la consola de código. */
     public void alAbrirEditor() { }
 
-    /** Se llama cuando el jugador pulsa APLICAR CAMBIOS. */
     public void alAplicarCambios() { }
-
-    // =====================================================================
-    //  Getters
-    // =====================================================================
 
     public String getMensaje()       { return mensajeTimer > 0 ? mensaje : null; }
     public int getMensajeTimer()     { return mensajeTimer; }

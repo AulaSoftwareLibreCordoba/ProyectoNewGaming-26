@@ -1,24 +1,18 @@
 package cordoba.fisica;
 
-/**
- * Representa UNA variable física que el jugador puede modificar desde la
- * consola de código (por ejemplo "gravedad").
- *
- * Truco importante: el valor se guarda en DÉCIMAS usando un int
- * (98 décimas = 9.8). Así evitamos los errores de redondeo típicos de float
- * cuando sumamos y restamos 0.5 muchas veces.
- */
+// Una variable de la consola (gravedad, velocidad...).
+// Truco: se guarda en DÉCIMAS con un int (98 = 9.8) para que sumar 0.5 muchas veces no acumule errores de float.
 public class VariableFisica {
 
-    private final String nombre;        // nombre tal y como aparece en el "código"
-    private final String descripcion;   // explicación corta para el jugador
-    private final int porDefecto;       // valor inicial (en décimas)
-    private final int minimo;           // límite inferior (en décimas)
-    private final int maximo;           // límite superior (en décimas)
-    private final int paso;             // cuánto cambia con cada clic (en décimas)
+    private final String nombre;        // tal cual sale en el "código"
+    private final String descripcion;
+    private final int porDefecto;
+    private final int minimo;
+    private final int maximo;
+    private final int paso;             // lo que cambia con cada clic
 
-    private int valor;                  // valor actual APLICADO (en décimas)
-    private boolean bloqueada;          // si está bloqueada no se puede editar
+    private int valor;                  // el valor APLICADO
+    private boolean bloqueada;
 
     public VariableFisica(String nombre, String descripcion,
                           int porDefecto, int minimo, int maximo, int paso) {
@@ -31,7 +25,6 @@ public class VariableFisica {
         this.valor = porDefecto;
     }
 
-    /** Devuelve el valor como número decimal (ej: 9.8). */
     public float getValor() {
         return valor / 10f;
     }
@@ -44,20 +37,17 @@ public class VariableFisica {
         valor = limitar(decimas);
     }
 
-    /** Recorta un valor para que nunca se salga de [minimo, maximo]. */
+    // que nunca se salga de [minimo, maximo]
     public int limitar(int decimas) {
         return Math.max(minimo, Math.min(maximo, decimas));
     }
 
-    /**
-     * Calcula el siguiente valor hacia arriba, "encajando" en múltiplos del paso.
-     * Ejemplo con paso 0.5: 9.8 -> 10.0 -> 10.5 ...
-     */
+    // siguiente valor encajando en el paso: 9.8 -> 10.0 -> 10.5 ...
     public int siguienteArriba(int decimas) {
         return limitar((decimas / paso + 1) * paso);
     }
 
-    /** Igual que siguienteArriba pero hacia abajo: 9.8 -> 9.5 -> 9.0 ... */
+    // lo mismo hacia abajo: 9.8 -> 9.5 -> 9.0 ...
     public int siguienteAbajo(int decimas) {
         return limitar(((decimas + paso - 1) / paso - 1) * paso);
     }
@@ -66,7 +56,7 @@ public class VariableFisica {
         valor = porDefecto;
     }
 
-    /** Convierte décimas a texto: 98 -> "9.8" */
+    // 98 -> "9.8"
     public static String formatear(int decimas) {
         return (decimas / 10) + "." + (decimas % 10);
     }

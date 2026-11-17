@@ -1,14 +1,7 @@
 package cordoba.ranking;
 
-/**
- * Una partida terminada que entra en el ranking.
- *
- * Los tiempos se guardan en FOTOGRAMAS (el juego va a 60 FPS fijos), así dos
- * partidas se comparan de forma exacta, sin errores de redondeo.
- *
- * framesN1 / framesN2 son los tiempos de cada nivel por separado
- * (0 = ese nivel no se jugó, por ejemplo al usar el atajo "2" del menú).
- */
+// Una partida del ranking. Los tiempos van en fotogramas (60 FPS fijos) para comparar exacto.
+// framesN1 / framesN2 = tiempo de cada nivel (0 si no se jugó, p. ej. con el atajo "2").
 public record Puntuacion(String nombre, int frames, int muertes, int compilaciones,
                          int framesN1, int framesN2) {
 
@@ -18,12 +11,11 @@ public record Puntuacion(String nombre, int frames, int muertes, int compilacion
         nombre = limpiar(nombre);
     }
 
-    /** Tiempo de un nivel concreto (1 o 2); 0 si no se jugó. */
     public int framesNivel(int nivel) {
         return nivel == 1 ? framesN1 : nivel == 2 ? framesN2 : 0;
     }
 
-    /** Quita caracteres que romperían el fichero y recorta la longitud. */
+    // quita lo que rompería el fichero y recorta el largo
     public static String limpiar(String s) {
         if (s == null) return "";
         StringBuilder sb = new StringBuilder();
@@ -34,7 +26,7 @@ public record Puntuacion(String nombre, int frames, int muertes, int compilacion
         return limpio.length() > Ranking.MAX_NOMBRE ? limpio.substring(0, Ranking.MAX_NOMBRE).strip() : limpio;
     }
 
-    /** Tiempo total con centésimas: 1:23.45 */
+    // tiempo total con centésimas: 1:23.45
     public String tiempo() {
         return formatearTiempo(frames);
     }
@@ -44,17 +36,14 @@ public record Puntuacion(String nombre, int frames, int muertes, int compilacion
         return String.format("%d:%02d.%02d", cs / 6000, (cs / 100) % 60, cs % 100);
     }
 
-    // ---- Fichero: nombre;fotogramas;caidas;compilaciones;fotogramasN1;fotogramasN2 ----
+    // ---- fichero: nombre;fotogramas;caidas;compilaciones;fotogramasN1;fotogramasN2 ----
 
     String aLinea() {
         return String.join(SEPARADOR, nombre, String.valueOf(frames), String.valueOf(muertes),
                 String.valueOf(compilaciones), String.valueOf(framesN1), String.valueOf(framesN2));
     }
 
-    /**
-     * Devuelve null si la línea está mal formada (así un fichero dañado no rompe el juego).
-     * Acepta también el formato antiguo de 4 campos (sin tiempos por nivel).
-     */
+    // null si la línea está mal (así un fichero roto no tumba el juego); acepta el formato viejo de 4 campos
     static Puntuacion desdeLinea(String linea) {
         String[] partes = linea.split(SEPARADOR, -1);
         if (partes.length != 4 && partes.length != 6) return null;

@@ -8,27 +8,20 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * Genera los fondos en pixel art inspirados en Córdoba.
- *
- * Cada fondo está formado por varias CAPAS de 640x360 que se mueven a distinta
- * velocidad (efecto "parallax"): las lejanas se mueven poco y las cercanas más.
- *
- *  Tema RIO      : cielo · ciudad y Mezquita a lo lejos · Puente Romano y Guadalquivir · palmeras
- *  Tema MEZQUITA : atardecer · Mezquita-Catedral y campanario · casas encaladas con macetas · sala de columnas
- */
+// Fondos de Córdoba en pixel art. Cada uno son varias capas de 640x360 que se mueven a distinta
+// velocidad (parallax): las de lejos poco, las de cerca más.
 public final class Fondos {
 
     public static final int ANCHO = 640, ALTO = 360;
 
-    /** Velocidad de cada capa respecto a la cámara (0 = fija, 1 = como el escenario). */
+    // cuánto se mueve cada capa con la cámara (0 = quieta, 1 = como el escenario)
     public static final float[] PARALLAX = { 0f, 0.1f, 0.3f, 0.55f };
 
     private static final Map<Level.Tema, BufferedImage[]> CACHE = new EnumMap<>(Level.Tema.class);
 
     private Fondos() { }
 
-    /** Capas del tema (las carga de assets/backgrounds si existen). */
+    // usa los PNG de assets/backgrounds si existen
     public static synchronized BufferedImage[] capas(Level.Tema tema) {
         return CACHE.computeIfAbsent(tema, t -> {
             BufferedImage[] generadas = null;
@@ -54,7 +47,7 @@ public final class Fondos {
         return new BufferedImage(ANCHO, ALTO, BufferedImage.TYPE_INT_ARGB);
     }
 
-    /** Degradado "retro" por bandas con un pequeño tramado entre bandas. */
+    // degradado retro por bandas, con un poco de tramado entre ellas
     private static void bandas(Graphics2D g, int[] colores, int altoTotal) {
         int alto = altoTotal / colores.length;
         for (int i = 0; i < colores.length; i++) {
@@ -84,15 +77,13 @@ public final class Fondos {
         g.fillRect(x + tam / 2, y + tam / 2, tam * 2, tam / 2);
     }
 
-    // =====================================================================
-    //  TEMA RÍO (Nivel 1)
-    // =====================================================================
+    // ---- río (nivel 1) ----
 
     private static BufferedImage cieloDia() {
         BufferedImage img = nueva();
         Graphics2D g = img.createGraphics();
         bandas(g, new int[] { 0x4FA8E8, 0x62B6EE, 0x78C3F2, 0x92D0F4, 0xADDDF5, 0xC8E8F3, 0xE3EFE6, 0xFBE9CF }, 320);
-        // Sol
+        // sol
         g.setColor(new Color(0xFFF6CF));
         g.fillOval(478, 46, 48, 48);
         g.setColor(new Color(0xFFE98A));
@@ -122,7 +113,7 @@ public final class Fondos {
             int y = (int) (222 + 7 * Math.sin(a * 3 + 2) + 4 * Math.sin(a * 7));
             g.fillRect(x, y, 1, ALTO - y);
         }
-        // Casitas blancas
+        // casitas blancas
         for (int x = 0; x < ANCHO; ) {
             int w = 8 + r.nextInt(10), h = 8 + r.nextInt(14);
             if (x > 160 && x < 440) { x += w; continue; }
@@ -134,7 +125,7 @@ public final class Fondos {
             g.fillRect(x + 2, 252 - h, 2, 2);
             x += w;
         }
-        // Mezquita-Catedral (silueta lejana)
+        // la Mezquita a lo lejos
         Color muro = new Color(0xD8B98A), sombra = new Color(0xB8976A);
         g.setColor(muro);
         g.fillRect(170, 226, 260, 34);
@@ -146,11 +137,11 @@ public final class Fondos {
             g.fillRect(x, 238, 5, 8);
             g.fillRect(x + 1, 237, 3, 1);
         }
-        // Nave de la catedral
+        // nave de la catedral
         g.setColor(new Color(0xCFAE7E));
         g.fillRect(272, 204, 70, 22);
         g.fillPolygon(new int[] { 268, 307, 346 }, new int[] { 205, 192, 205 }, 3);
-        // Torre campanario
+        // campanario
         g.setColor(new Color(0xE2C595));
         g.fillRect(212, 170, 16, 58);
         g.fillRect(215, 156, 10, 14);
@@ -166,14 +157,14 @@ public final class Fondos {
     private static BufferedImage puenteRomano() {
         BufferedImage img = nueva();
         Graphics2D g = img.createGraphics();
-        // Río Guadalquivir
+        // el Guadalquivir
         g.setColor(new Color(0x3E8DB5));
         g.fillRect(0, 286, ANCHO, ALTO - 286);
         g.setColor(new Color(0x5FA8CC));
         for (int y = 290; y < ALTO; y += 9) {
             for (int x = (y * 7) % 23; x < ANCHO; x += 31) g.fillRect(x, y, 10, 1);
         }
-        // Tablero del puente
+        // tablero del puente
         Color piedra = new Color(0xC9A46B), piedraOsc = new Color(0xA7834D), piedraClara = new Color(0xE2C08A);
         g.setColor(piedra);
         g.fillRect(0, 244, ANCHO, 52);
@@ -182,20 +173,20 @@ public final class Fondos {
         g.setColor(piedraOsc);
         g.fillRect(0, 250, ANCHO, 1);
         for (int x = 0; x < ANCHO; x += 8) g.fillRect(x, 246, 1, 4); // pretil
-        // Ojos (arcos) del puente: 10 cada 64 px
+        // ojos del puente: 10, uno cada 64 px
         for (int i = 0; i < 10; i++) {
             int cx = i * 64 + 32;
-            // hueco del arco: se ve el río y la orilla lejana
+            // por el hueco se ve el río y la otra orilla
             g.setColor(new Color(0x7FB3C9));
             g.fillOval(cx - 22, 262, 44, 44);
             g.fillRect(cx - 22, 284, 44, 20);
             g.setColor(new Color(0x5B95B3));
             g.fillRect(cx - 22, 292, 44, 10);
-            // dovelas del arco
+            // dovelas
             g.setColor(piedraOsc);
             g.drawArc(cx - 23, 261, 46, 46, 0, 180);
             g.drawArc(cx - 24, 260, 48, 48, 0, 180);
-            // tajamar (pila con punta)
+            // tajamar (la pila con punta)
             int px = i * 64;
             g.setColor(piedraOsc);
             g.fillPolygon(new int[] { px - 7, px, px + 7 }, new int[] { 296, 286, 296 }, 3);
@@ -221,9 +212,7 @@ public final class Fondos {
         return img;
     }
 
-    // =====================================================================
-    //  TEMA MEZQUITA (Nivel 2)
-    // =====================================================================
+    // ---- Mezquita (nivel 2) ----
 
     private static BufferedImage cieloAtardecer() {
         BufferedImage img = nueva();
@@ -244,7 +233,7 @@ public final class Fondos {
         BufferedImage img = nueva();
         Graphics2D g = img.createGraphics();
         Color muro = new Color(0x9C5F52), muroOsc = new Color(0x7E4A42), muroCla = new Color(0xB6735F);
-        // Muro exterior con contrafuertes y almenas escalonadas
+        // muro con contrafuertes y almenas
         g.setColor(muro);
         g.fillRect(0, 216, ANCHO, ALTO - 216);
         for (int x = 0; x < ANCHO; x += 8) {
@@ -256,17 +245,17 @@ public final class Fondos {
             g.setColor(muroCla);
             g.fillRect(x, 216, 6, 60);
             g.setColor(muroOsc);
-            // puertas con arco de herradura
+            // puertas de herradura
             g.fillRect(x + 14, 236, 10, 20);
             g.fillOval(x + 13, 230, 12, 12);
         }
-        // Crucero de la catedral
+        // crucero de la catedral
         g.setColor(new Color(0x8C5348));
         g.fillRect(290, 180, 110, 36);
         g.fillPolygon(new int[] { 284, 345, 406 }, new int[] { 182, 160, 182 }, 3);
         g.setColor(muroOsc);
         for (int x = 300; x < 395; x += 16) g.fillRect(x, 190, 5, 12);
-        // Torre campanario
+        // campanario
         Color torre = new Color(0xB06B55);
         g.setColor(torre);
         g.fillRect(104, 118, 34, 100);
@@ -286,7 +275,7 @@ public final class Fondos {
         g.setColor(new Color(0xD08A6A));
         g.fillRect(104, 118, 34, 2);
         g.fillRect(108, 92, 26, 2);
-        // Palmeras en silueta
+        // palmeras en silueta
         g.setColor(new Color(0x5E3A3F));
         for (int px : new int[] { 220, 470, 560 }) {
             g.fillRect(px, 170, 3, 50);
@@ -327,7 +316,7 @@ public final class Fondos {
                     g.setColor(new Color(0x1E1E26));
                     for (int k = 0; k < 10; k += 3) g.fillRect(wx + k, wy, 1, 14);
                     g.fillRect(wx - 1, wy + 14, 12, 1);
-                    // maceta azul colgada debajo de la ventana
+                    // maceta azul colgando
                     g.setColor(new Color(0x1E4FA8));
                     g.fillRect(wx + 2, wy + 17, 6, 4);
                     g.setColor(new Color(0x2E7D32));
@@ -337,7 +326,7 @@ public final class Fondos {
                     g.fillRect(wx + 6, wy + 14, 2, 2);
                 }
             }
-            // puerta con arco y marco de albero
+            // puerta con arco
             if (w >= 56) {
                 int dx = x + w / 2 - 7;
                 g.setColor(new Color(0xD9A441));
@@ -355,7 +344,7 @@ public final class Fondos {
         return img;
     }
 
-    /** Dibuja un arco de herradura con dovelas rojas y blancas. */
+    // arco de herradura con dovelas rojas y blancas
     private static void arcoDovelas(Graphics2D g, int cx, int cy, int radio, int grosor) {
         int segmentos = 14;
         double ini = Math.toRadians(-200), fin = Math.toRadians(20);
@@ -378,7 +367,7 @@ public final class Fondos {
         Graphics2D g = img.createGraphics();
         g.setColor(new Color(0x2A1A14));
         g.fillRect(0, 0, ANCHO, ALTO);
-        // Bosque de columnas con doble arco superpuesto (como en la Mezquita)
+        // bosque de columnas con doble arco, como en la Mezquita
         for (int fila = 0; fila < 2; fila++) {
             int sep = fila == 0 ? 64 : 48;
             int base = fila == 0 ? 0 : 24;
@@ -398,7 +387,7 @@ public final class Fondos {
                 g2.dispose();
             }
         }
-        // lámparas colgantes
+        // lámparas
         g.setColor(new Color(0xFFCF6B));
         for (int x = 40; x < ANCHO; x += 128) {
             g.fillRect(x, 0, 1, 150);

@@ -8,15 +8,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Utilidades de dibujo de interfaz con estética pixel art:
- * fuentes, textos con sombra, paneles con borde y ajuste de líneas.
- */
+// Utilidades de dibujo: fuentes, textos con sombra, paneles y partir líneas.
 public final class Ui {
 
     private Ui() { }
 
-    // Rejilla nativa de Pixel Operator: 16 px; títulos al doble, sin tamaños intermedios.
+    // Pixel Operator va a 16 px; los títulos al doble, sin tamaños intermedios
     public static final int TAMANO_BASE = 16, TAMANO_TITULO = 32, INTERLINEADO = 15;
     private static final Font REGULAR = cargarFuente("PixelOperator.ttf");
     private static final Font NEGRITA = cargarFuente("PixelOperator-Bold.ttf");
@@ -29,7 +26,7 @@ public final class Ui {
     public static final Font FUENTE_GRANDE = NEGRITA.deriveFont((float) TAMANO_TITULO);
     public static final Font FUENTE_TITULO = FUENTE_GRANDE;
 
-    // Seis posiciones de minutos cubren todo el rango de fotogramas int del juego.
+    // con 6 posiciones de minutos cabe cualquier tiempo del juego
     public static final int CELDA_NUMERO = 8, CELDAS_MINUTOS = 6;
     public static final int CELDAS_TIEMPO = CELDAS_MINUTOS + 6;
     public static final int ANCHO_TIEMPO = CELDAS_TIEMPO * CELDA_NUMERO;
@@ -48,7 +45,7 @@ public final class Ui {
         }
     }
 
-    /** Aplicar al lienzo lógico, antes de dibujar tanto imágenes como letras. */
+    // aplicar al lienzo antes de dibujar imágenes y letras
     public static void preparar(Graphics2D g) {
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
@@ -56,12 +53,12 @@ public final class Ui {
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
     }
 
-    /** Múltiplos enteros: todos los píxeles conservan la misma anchura y altura. */
+    // escala entera para que todos los píxeles midan lo mismo
     public static int escalaVentana(int ancho, int alto) {
         return Math.max(1, Math.min(ancho / 640, alto / 360));
     }
 
-    // Paleta de la interfaz
+    // paleta
     public static final Color PANEL      = new Color(0x1E1E2E);
     public static final Color PANEL_2    = new Color(0x2A2A3D);
     public static final Color BORDE      = new Color(0xF2E38A);
@@ -72,7 +69,7 @@ public final class Ui {
     public static final Color GRIS       = new Color(0xBFC3D2);
     public static final Color SOMBRA     = new Color(0x14121C);
 
-    /** Texto con sombra de 1 píxel (se lee bien sobre cualquier fondo). */
+    // texto con sombra de 1 px (se lee sobre cualquier fondo)
     public static void texto(Graphics2D g, String s, int x, int y, Color color) {
         g.setColor(SOMBRA);
         dibujarTexto(g, s, x + 1, y + 1);
@@ -80,7 +77,7 @@ public final class Ui {
         dibujarTexto(g, s, x, y);
     }
 
-    /** Contorno de un píxel lógico: no invade los huecos de las letras. */
+    // contorno de 1 px que no se mete en los huecos de las letras
     public static void textoContorno(Graphics2D g, String s, int x, int y, Color color, Color contorno) {
         g.setColor(contorno);
         for (int dx = -1; dx <= 1; dx++)
@@ -90,7 +87,7 @@ public final class Ui {
         dibujarTexto(g, s, x, y);
     }
 
-    /** Símbolos ausentes de Pixel Operator: flechas y ordinales en píxeles enteros. */
+    // flechas y ordinales que no trae Pixel Operator, dibujados a mano
     private static void dibujarTexto(Graphics2D g, String s, int x, int y) {
         int inicio = 0;
         for (int i = 0; i < s.length(); i++) {
@@ -128,7 +125,7 @@ public final class Ui {
         g.drawString(s.substring(inicio), x, y);
     }
 
-    /** Cada carácter conserva su celda: ':' y '.' jamás dependen del ancho del texto. */
+    // cada carácter en su celda, así ':' y '.' no bailan
     public static void tiempo(Graphics2D g, String tiempo, int x, int y, Color color) {
         int separador = tiempo.indexOf(':');
         if (separador < 1 || separador > CELDAS_MINUTOS
@@ -147,7 +144,7 @@ public final class Ui {
                 + g.getFontMetrics(FUENTE_MONO).stringWidth(valor);
     }
 
-    /** Etiqueta proporcional y valor monoespaciado, sin cambiar las métricas al medir. */
+    // etiqueta normal y valor monoespaciado
     public static void dato(Graphics2D g, String etiqueta, String valor, int x, int y, Color color) {
         Font anterior = g.getFont();
         g.setFont(FUENTE);
@@ -167,7 +164,7 @@ public final class Ui {
         texto(g, s, cx - w / 2, y, color);
     }
 
-    /** Acorta por anchura medida, sin cambiar la escala de las letras. */
+    // acorta por anchura sin cambiar el tamaño de letra
     public static String recortar(Graphics2D g, String s, int ancho) {
         FontMetrics fm = g.getFontMetrics();
         if (fm.stringWidth(s) <= ancho) return s;
@@ -183,7 +180,7 @@ public final class Ui {
         return y + (alto - fm.getAscent() - fm.getDescent()) / 2 + fm.getAscent();
     }
 
-    /** Panel rectangular con doble borde "retro". */
+    // panel con doble borde retro
     public static void panel(Graphics2D g, int x, int y, int w, int h, Color fondo, Color borde) {
         g.setColor(new Color(0, 0, 0, 120));
         g.fillRect(x + 3, y + 3, w, h);
@@ -195,7 +192,7 @@ public final class Ui {
         g.drawRect(x + 2, y + 2, w - 5, h - 5);
     }
 
-    /** Parte un texto en líneas que quepan en "anchoMax" píxeles. */
+    // parte el texto en líneas que quepan en anchoMax
     public static List<String> ajustar(Graphics2D g, String texto, int anchoMax) {
         List<String> lineas = new ArrayList<>();
         FontMetrics fm = g.getFontMetrics();

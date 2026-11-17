@@ -11,36 +11,27 @@ import cordoba.niveles.plataformas.PlataformaDinamica;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 
-/**
- * COCO, el cocodrilo protagonista.
- *
- * Toda su física sale de PhysicsConfig:
- *   - gravedad    -> cuánto aumenta la velocidad de caída cada fotograma
- *   - velocidad   -> velocidad horizontal máxima al andar
- *   - fuerzaSalto -> velocidad vertical inicial del salto
- * Si cambias esos valores en la consola, Coco se comporta de otra forma al instante.
- */
+// Coco, el prota. Toda su física sale de PhysicsConfig, así que lo que cambies en la consola se nota al momento.
 public class Player {
 
-    /** Tamaño de la caja de colisión (el dibujo es algo más grande). */
+    // caja de colisión (el dibujo es un poco más grande)
     public static final int ANCHO = 12, ALTO = 16;
 
-    /** Qué tan rápido alcanza la velocidad deseada (1 = instantáneo). */
+    // lo rápido que llega a la velocidad que quieres (1 = al instante)
     private static final float CONTROL_SUELO = 0.30f;
     private static final float CONTROL_AIRE  = 0.08f;
 
-    /** Ayudas para que saltar sea cómodo (en fotogramas). */
+    // ayudas para que saltar no sea frustrante (en fotogramas)
     private static final int TIEMPO_COYOTE = 6;   // aún puedes saltar justo después de salir del borde
-    private static final int BUFFER_SALTO  = 6;   // si pulsas un poco antes de tocar el suelo, también salta
+    private static final int BUFFER_SALTO  = 6;   // si pulsas un pelín antes de tocar el suelo, salta igual
 
-    // Estado físico (píxeles y píxeles/fotograma)
+    // en píxeles y píxeles/fotograma
     public float x, y, vx, vy;
     public boolean enSuelo;
     public boolean mirandoDerecha = true;
-    public PlataformaDinamica plataformaBajo;   // plataforma sobre la que está (o null)
-    public boolean enCorriente;                 // dentro de una corriente de aire
+    public PlataformaDinamica plataformaBajo;   // plataforma que pisa (o null)
+    public boolean enCorriente;
 
-    // Estados especiales
     public boolean muerto;
     public int timerMuerte;
     public boolean celebrando;
@@ -54,7 +45,7 @@ public class Player {
         colocar(x, y);
     }
 
-    /** Coloca al jugador en una posición y resetea su estado. */
+    // lo pone en un sitio y resetea todo
     public void colocar(float x, float y) {
         this.x = x;
         this.y = y;
@@ -67,16 +58,10 @@ public class Player {
         coyote = bufferSalto = 0;
     }
 
-    /**
-     * Actualiza a Coco durante un fotograma.
-     * @param izquierda    tecla izquierda mantenida
-     * @param derecha      tecla derecha mantenida
-     * @param saltoPulsado se ha pulsado SALTAR en este fotograma
-     */
     public void actualizar(boolean izquierda, boolean derecha, boolean saltoPulsado,
                            PhysicsConfig fisica, Level nivel, CollisionManager colisiones,
                            Particulas particulas) {
-        // --- Animación de muerte: pequeño salto y caída fuera de la pantalla ---
+        // muriendo: saltito y se cae de la pantalla
         if (muerto) {
             timerMuerte++;
             if (timerMuerte > 12) {
@@ -86,7 +71,7 @@ public class Player {
             return;
         }
 
-        // --- Celebración al llegar a la meta ---
+        // celebrando en la meta
         if (celebrando) {
             timerCelebracion++;
             vx = 0;
@@ -94,7 +79,7 @@ public class Player {
             saltoPulsado = enSuelo && timerCelebracion % 40 == 0;
         }
 
-        // --- 1. Movimiento horizontal (usa la VELOCIDAD de PhysicsConfig) ---
+        // 1. moverse (velocidad)
         float objetivo = 0;
         if (izquierda) objetivo -= fisica.velocidadPx();
         if (derecha)   objetivo += fisica.velocidadPx();
@@ -104,7 +89,7 @@ public class Player {
         if (objetivo > 0) mirandoDerecha = true;
         else if (objetivo < 0) mirandoDerecha = false;
 
-        // --- 2. Salto (usa la FUERZA DE SALTO de PhysicsConfig) ---
+        // 2. saltar (fuerzaSalto)
         if (saltoPulsado) bufferSalto = BUFFER_SALTO;
         if (enSuelo) coyote = TIEMPO_COYOTE;
         else if (coyote > 0) coyote--;
@@ -121,19 +106,19 @@ public class Player {
             }
         }
 
-        // --- 3. Gravedad (usa la GRAVEDAD de PhysicsConfig) ---
+        // 3. gravedad
         vy += fisica.gravedadPx();
 
-        // Corriente de aire: empuja hacia arriba con fuerza fija
+        // la corriente de aire empuja hacia arriba siempre igual
         enCorriente = nivel.esCorriente(x + ANCHO / 2f, y + ALTO / 2f);
         if (enCorriente) {
             vy -= Level.FUERZA_CORRIENTE;
-            vy *= Level.ROZAMIENTO_CORRIENTE;   // el aire frena: no vale "colarse" cayendo desde muy alto
+            vy *= Level.ROZAMIENTO_CORRIENTE;   // el aire frena: no vale colarse cayendo desde muy alto
             if (vy < -2.5f) vy = -2.5f;
         }
         if (vy > PhysicsConfig.CAIDA_MAXIMA) vy = PhysicsConfig.CAIDA_MAXIMA;
 
-        // --- 4. Mover comprobando colisiones ---
+        // 4. moverse comprobando choques
         boolean estabaEnSuelo = enSuelo;
         float vyAntes = vy;
         colisiones.moverJugador(this);
@@ -143,7 +128,7 @@ public class Player {
             Sonido.aterrizar();
         }
 
-        // --- 5. Datos para la animación ---
+        // 5. datos para la animación
         if (enSuelo && Math.abs(vx) > 0.2f) {
             distanciaAndada += Math.abs(vx);
             tiempoQuieto = 0;
@@ -152,7 +137,6 @@ public class Player {
         }
     }
 
-    /** Empieza la animación de "perder". */
     public void morir() {
         if (muerto) return;
         muerto = true;
@@ -167,13 +151,12 @@ public class Player {
         timerCelebracion = 0;
     }
 
-    /** Devuelve el fotograma de animación adecuado al estado actual. */
     public BufferedImage fotogramaActual() {
         BufferedImage img = fotogramaBase();
         return mirandoDerecha ? img : Sprites.volteada(img);
     }
 
-    /** El dibujo actual sin voltear (mirando a la derecha). Lo usa también el fantasma. */
+    // el dibujo sin voltear; el fantasma también lo usa
     public BufferedImage fotogramaBase() {
         BufferedImage img;
         if (muerto) {
@@ -186,13 +169,13 @@ public class Player {
             int i = (int) (distanciaAndada / 6) % Sprites.COCO_ANDAR.length;
             img = Sprites.COCO_ANDAR[i];
         } else {
-            // parpadeo de vez en cuando
+            // parpadea de vez en cuando
             img = (tiempoQuieto % 180) > 170 ? Sprites.COCO_PARPADEO : Sprites.COCO_QUIETO;
         }
         return img;
     }
 
-    /** Posición X donde dibujar el sprite de 20 px para que cuadre con la caja de 12 px. */
+    // el sprite mide 20 px y la caja 12: esto los cuadra
     public int xDibujo() {
         return mirandoDerecha ? Math.round(x) - 3 : Math.round(x) - 5;
     }

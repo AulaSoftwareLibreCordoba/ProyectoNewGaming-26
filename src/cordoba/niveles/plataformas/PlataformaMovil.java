@@ -6,19 +6,13 @@ import cordoba.niveles.Level;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-/**
- * Plataforma que va y viene horizontalmente entre xMin y xMax.
- * Si el jugador está encima, la plataforma lo arrastra (ver CollisionManager).
- */
+// Plataforma que va y viene en horizontal. Si Coco está encima, se lo lleva (ver CollisionManager).
 public class PlataformaMovil extends PlataformaDinamica {
 
     private final float xMin, xMax, velocidad;
     private final int desfase;
 
-    /**
-     * @param velocidad píxeles por fotograma
-     * @param desfase   fotogramas de adelanto (para sincronizarla con otras plataformas)
-     */
+    // velocidad en px/fotograma · desfase en fotogramas (para cuadrarla con otras)
     public PlataformaMovil(float xMin, float xMax, float y, int anchoTiles, float velocidad, int desfase) {
         super(xMin, y, anchoTiles * Level.TILE, 8);
         this.xMin = xMin;
@@ -30,7 +24,7 @@ public class PlataformaMovil extends PlataformaDinamica {
     @Override
     public void actualizar(int frame, Player jugador) {
         float recorrido = xMax - xMin;
-        float t = ((frame + desfase) * velocidad) % (2 * recorrido);   // movimiento de ida y vuelta
+        float t = ((frame + desfase) * velocidad) % (2 * recorrido);   // ida y vuelta
         float nuevaX = t < recorrido ? xMin + t : xMin + 2 * recorrido - t;
         dx = nuevaX - x;
         x = nuevaX;

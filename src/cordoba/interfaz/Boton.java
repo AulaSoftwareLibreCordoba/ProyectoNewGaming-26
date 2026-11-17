@@ -5,17 +5,14 @@ import cordoba.nucleo.Input;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-/**
- * Botón de interfaz en pixel art. Se dibuja más claro cuando el ratón
- * está encima y puede desactivarse.
- */
+// Botón en pixel art: se aclara con el ratón encima y se puede desactivar.
 public class Boton {
 
     public final int x, y, w, h;
     public String texto;
     public Color color;
     public boolean activo = true;
-    /** Estética andalusí (menús). Si es false, botón sencillo (consola de código). */
+    // estilo andalusí (menús); si es false, botón sencillo (consola)
     public boolean andalusi;
 
     public Boton(int x, int y, int w, int h, String texto, Color color) {
@@ -27,7 +24,7 @@ public class Boton {
         this.color = color;
     }
 
-    /** Activa la estética andalusí (ver {@link Andalusi#boton}). */
+    // activa el estilo andalusí
     public Boton andalusi() {
         andalusi = true;
         return this;
@@ -37,7 +34,7 @@ public class Boton {
         return activo && mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
-    /** ¿Se ha hecho clic sobre el botón en este fotograma? */
+    // ¿clic encima en este fotograma?
     public boolean clicado(Input in) {
         return in.clic() && contiene(in.getRatonX(), in.getRatonY());
     }

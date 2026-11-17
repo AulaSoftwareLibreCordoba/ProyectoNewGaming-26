@@ -2,21 +2,12 @@ package cordoba.interfaz;
 
 import java.awt.*;
 
-/**
- * Motivos decorativos de inspiración andalusí en pixel art, para la interfaz:
- *
- *  - Estrella de ocho puntas (dos cuadrados superpuestos).
- *  - Dovelas rojas y blancas, como los arcos de la Mezquita.
- *  - Friso de arcos de herradura.
- *  - Cenefa de alicatado (azulejos geométricos).
- *  - Esquinas escalonadas, como las almenas de la Mezquita.
- *  - Botones con todo lo anterior.
- */
+// Adornos andalusíes en pixel art para la interfaz: estrella de ocho puntas, dovelas, arcos, alicatado y botones.
 public final class Andalusi {
 
     private Andalusi() { }
 
-    // Paleta
+    // paleta
     public static final Color ORO        = new Color(0xD9A441);
     public static final Color ORO_CLARO  = new Color(0xF6D77E);
     public static final Color ORO_OSCURO = new Color(0x8C5A1C);
@@ -28,15 +19,13 @@ public final class Andalusi {
     public static final Color TURQUESA   = new Color(0x2A9D8F);
     public static final Color VERDE      = new Color(0x1E6B47);
 
-    // Colores de los botones (cuerpo)
+    // colores de los botones
     public static final Color BOTON_VERDE   = new Color(0x1F7A55);
     public static final Color BOTON_ALBERO  = new Color(0xB9832A);
     public static final Color BOTON_GRANATE = new Color(0x9A2E2A);
     public static final Color BOTON_AZUL    = new Color(0x2C5E86);
 
-    // =====================================================================
-
-    /** Estrella de ocho puntas centrada en (cx, cy). giro = 0..1 la hace rotar. */
+    // estrella de ocho puntas en (cx, cy); giro de 0 a 1 la hace rotar
     public static void estrella(Graphics2D g, int cx, int cy, int r, Color relleno, Color borde, double giro) {
         double a0 = giro * Math.PI / 2;
         for (int capa = 0; capa < 2; capa++) {
@@ -57,7 +46,7 @@ public final class Andalusi {
         g.fillRect(cx, cy, 1, 1);   // punto central
     }
 
-    /** Estrella de ocho puntas pequeña dibujada píxel a píxel (para botones). */
+    // estrellita para los botones, píxel a píxel
     private static final String[] ESTRELLA_PEQ = {
         "...#...",
         ".#####.",
@@ -87,7 +76,7 @@ public final class Andalusi {
             }
     }
 
-    /** Arco de herradura de dovelas alternas (rojo / crema). */
+    // arco de herradura con dovelas alternas
     public static void dovelas(Graphics2D g, int cx, int cy, int radio, int grosor, int segmentos, Color a, Color b) {
         double ini = Math.toRadians(-200), fin = Math.toRadians(20);
         for (int i = 0; i < segmentos; i++) {
@@ -101,7 +90,7 @@ public final class Andalusi {
         }
     }
 
-    /** Fila de arcos de herradura pequeños (arquería ciega) entre x y x+w. */
+    // fila de arquitos de herradura entre x y x+w
     public static void frisoArcos(Graphics2D g, int x, int y, int w, int separacion, Color hueco) {
         int n = Math.max(1, w / separacion);
         int sobra = (w - n * separacion) / 2;
@@ -118,13 +107,13 @@ public final class Andalusi {
         }
     }
 
-    /** Cenefa de alicatado de alto 6: rombos y estrellitas en azul, turquesa y crema. */
+    // cenefa de alicatado de 6 px: rombos y estrellitas
     public static void cenefa(Graphics2D g, int x, int y, int w) {
         g.setColor(AZUL);
         g.fillRect(x, y, w, 6);
         for (int i = 0; i < w; i += 8) {
             g.setColor(CREMA);
-            g.fillRect(x + i + 3, y + 1, 2, 4);     // rombo (cruz)
+            g.fillRect(x + i + 3, y + 1, 2, 4);     // rombo
             g.fillRect(x + i + 2, y + 2, 4, 2);
             g.setColor(TURQUESA);
             g.fillRect(x + i + 3, y + 2, 2, 2);
@@ -136,7 +125,7 @@ public final class Andalusi {
         g.fillRect(x, y + 5, w, 1);
     }
 
-    /** Rectángulo con las esquinas escalonadas (como una almena). */
+    // rectángulo con las esquinas escalonadas, como una almena
     public static void escalonado(Graphics2D g, int x, int y, int w, int h, int paso, Color c) {
         g.setColor(c);
         g.fillRect(x + paso * 2, y, w - paso * 4, h);
@@ -144,7 +133,7 @@ public final class Andalusi {
         g.fillRect(x, y + paso * 2, w, h - paso * 4);
     }
 
-    /** Marco: borde oscuro, filete de oro y esquinas escalonadas, con estrellas en las esquinas. */
+    // marco: borde oscuro, filete de oro, esquinas escalonadas y estrellas
     public static void marco(Graphics2D g, int x, int y, int w, int h, Color fondo, boolean estrellas) {
         g.setColor(new Color(0, 0, 0, 110));
         g.fillRect(x + 4, y + 4, w, h);
@@ -160,14 +149,9 @@ public final class Andalusi {
         }
     }
 
-    // =====================================================================
-    //  BOTÓN
-    // =====================================================================
+    // ---- botón ----
 
-    /**
-     * Botón andalusí: esquinas escalonadas, filete de oro, banda de dovelas
-     * arriba, cenefa abajo y estrellas a los lados del texto.
-     */
+    // botón andalusí: esquinas escalonadas, filete de oro, dovelas arriba, cenefa abajo y estrellas
     public static void boton(Graphics2D g, int x, int y, int w, int h, String texto,
                              Color base, boolean encima, boolean activo) {
         if (!activo) base = new Color(0x55556A);
@@ -185,7 +169,7 @@ public final class Andalusi {
         escalonado(g, x + 2, y + 2, w - 4, h - 4, 1, MARRON);
         g.setColor(cuerpo);
         g.fillRect(x + 3, y + 3, w - 6, h - 6);
-        // luz arriba y sombra abajo (volumen)
+        // luz arriba y sombra abajo
         g.setColor(mezclar(cuerpo, Color.WHITE, 0.22f));
         g.fillRect(x + 3, y + 3, w - 6, 1);
         g.setColor(mezclar(cuerpo, Color.BLACK, 0.30f));
@@ -193,7 +177,7 @@ public final class Andalusi {
 
         boolean grande = h >= 20;
         if (grande) {
-            // banda de dovelas (rojo y crema) bajo el borde superior
+            // banda de dovelas bajo el borde
             for (int i = x + 4, k = 0; i < x + w - 4; i += 5, k++) {
                 g.setColor(k % 2 == 0 ? ROJO : CREMA);
                 g.fillRect(i, y + 4, Math.min(4, x + w - 4 - i), 2);
@@ -215,7 +199,7 @@ public final class Andalusi {
         int ty = Ui.baseCentrada(g, y, h);
         Ui.texto(g, texto, x + (w - tw) / 2, ty, activo ? (encima ? ORO_CLARO : CREMA) : new Color(0xA0A0B0));
 
-        // estrellas a los lados (laten cuando el ratón está encima)
+        // estrellas a los lados (laten con el ratón encima)
         if (grande && w >= 80) {
             int sx = Math.max(x + 10, x + (w - tw) / 2 - 14);
             boolean destello = encima && ((int) (t * 4)) % 2 == 0;
@@ -224,7 +208,7 @@ public final class Andalusi {
             estrellaPequena(g, sx, cy - 1, relleno, MARRON, centro);
             estrellaPequena(g, x + w - (sx - x) - 1, cy - 1, relleno, MARRON, centro);
         }
-        // brillo que recorre el botón al pasar el ratón
+        // brillo que recorre el botón con el ratón encima
         if (encima && activo) {
             int bx = x + 3 + (int) ((t * 90) % (w + 20)) - 10;
             g.setColor(new Color(255, 255, 255, 60));

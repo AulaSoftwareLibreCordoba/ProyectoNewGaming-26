@@ -4,21 +4,14 @@ import cordoba.fisica.PhysicsConfig;
 import cordoba.niveles.elementos.Decoracion;
 import cordoba.niveles.plataformas.PuenteDerrumbe;
 
-/**
- * NIVEL 1 — Los primeros pasos por Córdoba (TUTORIAL)
+/*
+ * Nivel 1, el tutorial: moverse, abrir la consola y bajar la gravedad para cruzar el río, saltar la
+ * muralla, subir la velocidad para la pasarela que se hunde y llegar a la Calahorra.
  *
- * Ribera del Guadalquivir, junto al Puente Romano. Enseña a:
- *   1. Moverse y saltar.
- *   2. Abrir la consola (E), bajar la GRAVEDAD y aplicar cambios para cruzar el río.
- *   3. Comprobar que con poca gravedad también se salta más alto (muralla).
- *   4. Desbloquear y subir la VELOCIDAD para cruzar una pasarela que se derrumba.
- *   5. Llegar a la Torre de la Calahorra.
- *
- * Plano del nivel (fila 18 = superficie del suelo):
- *   col 0-14 suelo | 15-16 agua | 17-24 suelo (escalón) | 25-27 agua | 28-35 suelo
- *   36-43 RÍO ANCHO (8 bloques) | 44-65 suelo con MURALLA (53-60, 6 bloques de alto)
- *   64-79 Puente Romano (techo) con PASARELA que se derrumba (66-77)
- *   78-92 suelo con pinchos | 93-95 agua | 96-103 Torre de la Calahorra (meta)
+ * Plano (fila 18 = suelo):
+ *   0-14 suelo | 15-16 agua | 17-24 suelo con escalón | 25-27 agua | 28-35 suelo
+ *   36-43 RÍO ANCHO | 44-65 suelo con MURALLA (53-60, 6 de alto)
+ *   64-79 Puente Romano con PASARELA que se hunde (66-77) | 78-92 suelo con pinchos | 93-95 agua | 96-103 meta
  */
 public class Level1 extends Level {
 
@@ -31,41 +24,41 @@ public class Level1 extends Level {
 
         inicio(3, S);
 
-        // --- Primer tramo: aprender a moverse y saltar ---
+        // primer tramo: moverse y saltar
         suelo(0, 14, S);
         agua(15, 16, S + 1);
         suelo(17, 24, S);
-        rellenar(21, S - 2, 24, S - 1, 'S');     // escalón de piedra
+        rellenar(21, S - 2, 24, S - 1, 'S');     // escalón
         agua(25, 27, S + 1);
         suelo(28, 35, S);
 
-        // --- El Guadalquivir: demasiado ancho para la gravedad normal ---
+        // el Guadalquivir: demasiado ancho con la gravedad normal
         agua(36, 43, S + 1);
 
-        // --- Orilla con la muralla alta ---
+        // orilla con la muralla
         suelo(44, 65, S);
-        rellenar(53, S - 6, 60, S - 1, 'S');     // muralla de 6 bloques
+        rellenar(53, S - 6, 60, S - 1, 'S');     // 6 bloques de alto
 
-        // --- Bajo los ojos del Puente Romano: pasarela que se derrumba ---
-        rellenar(64, 0, 79, S - 4, 'S');         // masa del puente (techo bajo)
+        // bajo el Puente Romano: pasarela que se hunde
+        rellenar(64, 0, 79, S - 4, 'S');         // el puente (techo bajo)
         agua(66, 77, S + 1);
         plataformas.add(new PuenteDerrumbe(66 * TILE, S * TILE, 12, 75));
 
-        // --- Tramo final hasta la Calahorra ---
+        // hasta la Calahorra
         suelo(78, 92, S);
         pinchos(87, 89, S - 1);
         agua(93, 95, S + 1);
         suelo(96, 103, S);
         meta(99, S, 2, 3);
 
-        // --- Puntos de control ---
+        // checkpoints
         farola(19, S);
         farola(30, S);
         farola(48, S);
         farola(63, S);
         farola(82, S);
 
-        // --- Carteles del tutorial ---
+        // carteles
         cartel(5, S, "¡Hola! Soy Coco, un cocodrilo cordobés. Muévete con A/D o las flechas y salta con ESPACIO.");
         cartel(18, S, "Las farolas son puntos de control: si caes al agua volverás a la última farola encendida.");
         cartel(33, S, "Uf... el Guadalquivir es demasiado ancho para mi salto. Pulsa [E] para abrir la consola de código.");
@@ -74,7 +67,7 @@ public class Level1 extends Level {
                 () -> fisica.getVariable(PhysicsConfig.VELOCIDAD).setBloqueada(false));
         cartel(80, S, "¡Genial! Ya sabes cambiar el código del juego. Llega a la Torre de la Calahorra.");
 
-        // --- Decoración ---
+        // decoración
         decoracion(Decoracion.Tipo.PALMERA, 1, S, 0);
         decoracion(Decoracion.Tipo.MACETA, 8, S, 0);
         decoracion(Decoracion.Tipo.MACETA, 10, S, 1);
@@ -90,7 +83,7 @@ public class Level1 extends Level {
         decoracion(Decoracion.Tipo.PALMERA, 97, S, 0);
     }
 
-    /** En el tutorial solo empieza desbloqueada la gravedad. */
+    // en el tutorial solo empieza libre la gravedad
     @Override
     public void configurarFisica(PhysicsConfig f) {
         super.configurarFisica(f);

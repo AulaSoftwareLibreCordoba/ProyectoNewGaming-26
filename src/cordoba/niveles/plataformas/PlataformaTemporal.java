@@ -7,15 +7,12 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-/**
- * Plataforma de azulejos que aparece y desaparece en un ciclo fijo.
- * Parpadea poco antes de desaparecer para avisar al jugador.
- */
+// Azulejos que aparecen y desaparecen en ciclo. Parpadean justo antes de irse para avisar.
 public class PlataformaTemporal extends PlataformaDinamica {
 
-    private final int ciclo;      // duración total del ciclo (fotogramas)
-    private final int visible;    // cuántos fotogramas del ciclo es sólida
-    private final int desfase;    // para que no todas desaparezcan a la vez
+    private final int ciclo;      // ciclo entero (fotogramas)
+    private final int visible;    // fotogramas del ciclo en los que se puede pisar
+    private final int desfase;    // para que no desaparezcan todas a la vez
     private int fase;
 
     public PlataformaTemporal(float x, float y, int anchoTiles, int ciclo, int visible, int desfase) {
@@ -39,7 +36,7 @@ public class PlataformaTemporal extends PlataformaDinamica {
     public void dibujar(Graphics2D g, int camX, int camY, int frame) {
         int px = (int) x - camX, py = (int) y - camY;
         if (!esSolida()) {
-            // contorno fantasma: indica dónde volverá a aparecer
+            // contorno de dónde va a volver a salir
             g.setColor(new Color(255, 255, 255, 70));
             g.setStroke(new BasicStroke(1));
             for (int i = 0; i < ancho; i += 4) {
