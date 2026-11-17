@@ -34,7 +34,8 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 
 | Tecla | Acción |
 |---|---|
-| **ENTER** o **ESPACIO** | Jugar (empieza en el nivel 1) |
+| **ENTER** o **ESPACIO** | Jugar (primero sale la cinemática de la alcantarilla y luego el nivel 1) |
+| **ENTER**, **ESPACIO** o **ESC** | Durante la cinemática: saltarla e ir directo al nivel 1 |
 | **2** | Empezar directamente en el nivel 2 *(atajo para profesores)* |
 | Botón **RANKING** | Ver el TOP 10 (general, nivel 1 y nivel 2) |
 | Botón **SALIR** | Cerrar el juego |
