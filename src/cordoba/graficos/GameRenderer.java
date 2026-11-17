@@ -5,6 +5,11 @@ import cordoba.entidades.Fantasma;
 import cordoba.entidades.Player;
 import cordoba.fisica.PhysicsConfig;
 import cordoba.fisica.VariableFisica;
+import cordoba.graficos.ambiente.Agua;
+import cordoba.graficos.ambiente.Ambiente;
+import cordoba.graficos.luz.Iluminacion;
+import cordoba.graficos.luz.Profundidad;
+import cordoba.graficos.luz.SalaProfunda;
 import cordoba.interfaz.Ui;
 import cordoba.ranking.Puntuacion;
 import cordoba.niveles.Level;
@@ -27,6 +32,10 @@ public class GameRenderer {
 
     private static final int T = Level.TILE;
 
+    /** Efectos visuales (carpeta graficos/luz): no cambian nada del juego. */
+    private final Profundidad profundidad = new Profundidad();
+    private final Iluminacion iluminacion = new Iluminacion();
+
     // =====================================================================
     //  ESCENARIO
     // =====================================================================
@@ -43,23 +52,37 @@ public class GameRenderer {
     public void dibujarEscenario(Graphics2D g, Level nivel, Player p, Particulas part,
                                  Fantasma fantasma, int frameNivel, int camX, int camY, int frame) {
         dibujarFondo(g, nivel.getTema(), camX, camY, nivel.getAltoPx());
+        iluminacion.fondo(g, nivel.getTema(), camX, camY);
         dibujarCorrientes(g, nivel, camX, camY, frame);
-        dibujarDecoracion(g, nivel.getDecoraciones(), camX, camY);
+        dibujarDecoracion(g, nivel.getDecoraciones(), nivel.getTema(), camX, camY);
+        profundidad.sombraTerreno(g, nivel, camX, camY);
         dibujarMeta(g, nivel, camX, camY, frame);
         dibujarTiles(g, nivel, camX, camY, frame);
+        profundidad.volumen(g, nivel, camX, camY);
         for (Cartel c : nivel.getCarteles()) {
+            Profundidad.sombraContacto(g, nivel.getTema(), (int) c.x - camX, (int) c.ySuelo - camY, 14);
             g.drawImage(Sprites.cartel(), (int) c.x - 7 - camX, (int) c.ySuelo - 20 - camY, null);
         }
-        for (Farola f : nivel.getFarolas()) dibujarFarola(g, f, camX, camY, frame);
+        for (Farola f : nivel.getFarolas()) dibujarFarola(g, f, nivel.getTema(), camX, camY, frame);
         for (PlataformaDinamica pl : nivel.getPlataformas()) pl.dibujar(g, camX, camY, frame);
         for (ObstaculoMovil o : nivel.getObstaculos()) o.dibujar(g, camX, camY, frame);
         if (fantasma != null) dibujarFantasma(g, fantasma, frameNivel, camX, camY);
         dibujarJugador(g, p, camX, camY, frame);
+        iluminacion.aplicar(g, nivel, p, camX, camY, frame);
         part.dibujar(g, camX, camY);
+        iluminacion.vineta(g, nivel.getTema());
     }
 
     /** Fondo por capas. Las más lejanas se desplazan menos (parallax). */
     public void dibujarFondo(Graphics2D g, Level.Tema tema, int camX, int camY, int altoNivel) {
+        dibujarFondo(g, tema, camX, camY, altoNivel, false);
+    }
+
+    /**
+     * Igual, pero con orilla = true se pinta una orilla de arena bajo las palmeras
+     * del río (en el menú, donde no hay suelo del nivel que las sostenga).
+     */
+    public void dibujarFondo(Graphics2D g, Level.Tema tema, int camX, int camY, int altoNivel, boolean orilla) {
         BufferedImage[] capas = Fondos.capas(tema);
         for (int i = 0; i < capas.length; i++) {
             float alfa = 1f;
@@ -78,9 +101,18 @@ public class GameRenderer {
                 g.setColor(new Color(0x2A1A14));
                 g.fillRect(0, 0, Fondos.ANCHO, dy);
             }
-            g.drawImage(capas[i], -desp, dy, null);
-            g.drawImage(capas[i], -desp + Fondos.ANCHO, dy, null);
+            if (orilla && tema == Level.Tema.RIO && i == 3) Ambiente.orilla(g, desp, dy);
+            if (tema == Level.Tema.MEZQUITA && i == 3) {
+                // Interior de la Mezquita: sala de columnas por planos de profundidad
+                SalaProfunda.dibujar(g, camX, dy, alfa);
+                g.setComposite(antes);
+                continue;
+            }
+            BufferedImage capa = Iluminacion.prepararCapa(tema, i, Ambiente.prepararCapa(tema, i, capas[i]));
+            g.drawImage(capa, -desp, dy, null);
+            g.drawImage(capa, -desp + Fondos.ANCHO, dy, null);
             g.setComposite(antes);
+            Ambiente.trasCapa(g, tema, i, camX, dy);   // nubes y destellos del río
         }
     }
 
@@ -106,9 +138,12 @@ public class GameRenderer {
                     case 'v':
                         g.drawImage(Sprites.tile(tema, t, 0, false, false), x, y, null);
                         break;
-                    case '~':
-                        dibujarAgua(g, nivel.tile(c, f - 1) != '~', x, y, c, frame);
+                    case '~': {
+                        int prof = 0;   // bloques de agua que hay encima
+                        while (prof < 3 && nivel.tile(c, f - 1 - prof) == '~') prof++;
+                        Agua.dibujarBloque(g, x, y, c, prof, frame);
                         break;
+                    }
                     default:
                         break;
                 }
@@ -167,25 +202,6 @@ public class GameRenderer {
         }
     }
 
-    /** Agua animada del Guadalquivir. */
-    private void dibujarAgua(Graphics2D g, boolean superficie, int x, int y, int c, int frame) {
-        g.setColor(new Color(0x2F78A8));
-        g.fillRect(x, y, T, T);
-        g.setColor(new Color(0x3D8DC0));
-        int ola = (frame / 8 + c * 3) % 16;
-        g.fillRect(x + ola, y + 9, 5, 1);
-        g.fillRect(x + (ola + 8) % 16, y + 13, 4, 1);
-        if (superficie) {
-            g.setColor(new Color(0x56A8D8));
-            g.fillRect(x, y + 3, T, 3);
-            g.setColor(new Color(0xBDE8FF));
-            for (int i = 0; i < T; i++) {
-                int fase = (i + c * T + frame / 6) % 8;
-                if (fase < 3) g.fillRect(x + i, y + 3, 1, 1);
-            }
-        }
-    }
-
     /** Corriente de aire: líneas blancas que suben. */
     private void dibujarCorrientes(Graphics2D g, Level nivel, int camX, int camY, int frame) {
         int c1 = Math.max(0, camX / T), c2 = Math.min(nivel.getColumnas() - 1, (camX + 640) / T);
@@ -206,18 +222,20 @@ public class GameRenderer {
         }
     }
 
-    private void dibujarDecoracion(Graphics2D g, List<Decoracion> lista, int camX, int camY) {
+    private void dibujarDecoracion(Graphics2D g, List<Decoracion> lista, Level.Tema tema, int camX, int camY) {
         for (Decoracion d : lista) {
             BufferedImage img = d.imagen();
             int x = (int) d.x - img.getWidth() / 2 - camX;
             int y = (int) d.ySuelo - img.getHeight() - camY;
             if (x > 640 || x + img.getWidth() < 0) continue;
+            Profundidad.sombraContacto(g, tema, (int) d.x - camX, (int) d.ySuelo - camY, Math.min(img.getWidth(), 24));
             g.drawImage(img, x, y, null);
         }
     }
 
-    private void dibujarFarola(Graphics2D g, Farola f, int camX, int camY, int frame) {
+    private void dibujarFarola(Graphics2D g, Farola f, Level.Tema tema, int camX, int camY, int frame) {
         int x = (int) f.x - 6 - camX, y = (int) f.ySuelo - 36 - camY;
+        Profundidad.sombraContacto(g, tema, (int) f.x - camX, (int) f.ySuelo - camY, 10);
         if (f.encendida) {
             // halo de luz
             int r = 16 + (frame / 10) % 2;

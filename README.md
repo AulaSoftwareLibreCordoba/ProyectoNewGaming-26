@@ -217,11 +217,22 @@ CordobaCodigoSalvaje/
 │   │   ├── GameRenderer.java       Dibuja escenario, objetos, jugador y HUD
 │   │   ├── Sprites.java            Pixel art del cocodrilo (en texto), tiles y objetos
 │   │   ├── Fondos.java             Fondos con parallax: Puente Romano, Mezquita, casas encaladas…
-│   │   └── Particulas.java         Efectos visuales
+│   │   ├── Particulas.java         Efectos visuales
+│   │   ├── ambiente/               Animaciones del escenario (solo visual)
+│   │   │   ├── Ambiente.java       Punto de entrada: qué se dibuja tras cada capa del fondo
+│   │   │   ├── Nubes.java          Nubes en 3 capas que avanzan con el viento y el parallax
+│   │   │   └── Agua.java           Olas, espuma, cáusticas y destellos del río del fondo
+│   │   └── luz/                    Iluminación y profundidad (solo visual)
+│   │       ├── EstiloVisual.java   ★ Panel de control del arte: colores e intensidades por tema
+│   │       ├── Iluminacion.java    Penumbra, luces de farolas/meta/Coco, sol, lámparas y viñeta
+│   │       ├── Profundidad.java    Neblina del fondo, sombra del terreno, volumen y sombras de contacto
+│   │       ├── SalaProfunda.java   Interior de la Mezquita: columnas y arcos en 3 planos de profundidad
+│   │       └── SpritesLuz.java     Degradados de luz pixelados (en caché)
 │   ├── interfaz/                   Menús y consola de código
 │   │   ├── CodeEditor.java         ★ La consola de código (IDE simulado, en vivo)
 │   │   ├── GameMenu.java           Pantallas de inicio, pausa y victoria
 │   │   ├── PantallaRanking.java    Final de partida (escribir nombre) y TOP 10 (general / nivel 1 / nivel 2)
+│   │   ├── Andalusi.java           Motivos andalusíes: estrellas, dovelas, arquería, alicatado y botones
 │   │   └── Ui.java / Boton.java    Utilidades de interfaz
 │   ├── ranking/
 │   │   ├── Ranking.java            Carga, ordena y guarda las partidas en ranking.txt
@@ -256,6 +267,35 @@ java -cp out cordoba.Main --exportar-assets
 Puedes editarlos con Aseprite, Piskel o GIMP y el juego usará tu versión.
 **Ojo:** si modificas el dibujo en texto de `Sprites.java`, borra el PNG correspondiente
 (o la carpeta `assets/`) para que se use el nuevo.
+
+### Iluminación y profundidad
+La carpeta `graficos/luz/` añade luz y sensación de profundidad **sin tocar ningún sprite ni la lógica
+del juego** (solo lee el estado y pinta encima):
+
+* **Profundidad:** neblina en las capas lejanas del fondo, sombra que proyecta el terreno, interior de
+  los bloques grandes más oscuro (volumen) y sombras de contacto bajo macetas, farolas y carteles.
+* **Iluminación:** resplandor del sol, halo de las farolas encendidas y de la meta, penumbra del
+  atardecer y del interior de la Mezquita (con luz alrededor de Coco y lámparas colgantes) y viñeta.
+
+* **Interior de la Mezquita:** la sala de columnas se dibuja en tres planos (`SalaProfunda`). Los
+  lejanos tienen arcos más pequeños que convergen hacia el horizonte, más niebla y menos parallax; al
+  fondo, una arquería en silueta contra una luz cálida. Sustituye a la capa plana `mezquita_capa3.png`.
+
+Para cambiar el aspecto basta con tocar los valores de `EstiloVisual.java` (uno por tema).
+
+### Animaciones del ambiente
+La carpeta `graficos/ambiente/` da vida al escenario:
+
+* **Nubes** en tres capas (lejos, medio y cerca) que avanzan con el viento a distinta velocidad.
+  Las nubes que venían pintadas en el cielo del río se borran al cargar para que no queden quietas.
+* **Agua**: olas que avanzan con espuma en la cresta, más oscura en lo hondo, reflejos de luz que se
+  mueven por dentro y destellos en el río del fondo.
+
+### Estética andalusí de la interfaz
+Los botones de los menús (`Boton.andalusi()`) usan esquinas escalonadas como las almenas de la Mezquita,
+filete de oro, dovelas rojas y blancas y estrellas de ocho puntas. El menú de inicio tiene el título en una
+placa con arquería, letras que ondulan, rayos de sol, pétalos de azahar, un panel de código que se edita
+solo y se maneja también con **↑/↓ + ENTER**.
 
 El cocodrilo está dibujado así en `Sprites.java` (cada letra es un color de la paleta):
 ```java
