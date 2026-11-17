@@ -67,11 +67,6 @@ public class Game extends Canvas implements Runnable {
     private int framesTotal, muertesTotal, compilacionesTotal;
     private final int[] framesPorNivel = new int[3];   // tiempo de cada nivel (se usan el 1 y el 2)
 
-    // aviso temporal de abajo
-    private String aviso;
-    private Color colorAviso = Ui.VERDE;
-    private int avisoTimer;
-
     private volatile boolean ejecutando;
     private Runnable alSalir = () -> System.exit(0);
     private Runnable alPantallaCompleta;   // F11 (lo pone Main)
@@ -202,7 +197,6 @@ public class Game extends Canvas implements Runnable {
             default:
                 break;
         }
-        if (avisoTimer > 0) avisoTimer--;
         input.finFrame();
     }
 
@@ -277,15 +271,12 @@ public class Game extends Canvas implements Runnable {
 
     private void actualizarEditor() {
         switch (editor.actualizar(input)) {
-            case APLICADO:
+            case APLICADO:   // se cierra guardando los cambios
                 compilacionesNivel++;
-                mostrarAviso("Cambios aplicados: " + editor.getUltimoResumen(), Ui.VERDE);
                 particulas.emitir(jugador.centroX(), jugador.centroY(), 24, new Color(0x82AAFF), 2f, 0f, 40);
+                estado = GameState.JUGANDO;
                 break;
-            case CERRAR:
-                if (editor.hayCambiosPendientes()) {
-                    mostrarAviso("Cerraste sin aplicar: ¡los cambios no se han compilado!", Ui.AMARILLO);
-                }
+            case CERRAR:     // se cierra sin cambios
                 estado = GameState.JUGANDO;
                 Sonido.clic();
                 break;
@@ -298,12 +289,6 @@ public class Game extends Canvas implements Runnable {
             framesNivel++;
             grabadora.grabar(jugador);
         }
-    }
-
-    private void mostrarAviso(String texto, Color color) {
-        aviso = texto;
-        colorAviso = color;
-        avisoTimer = 180;
     }
 
     // ---- niveles ----
@@ -322,7 +307,6 @@ public class Game extends Canvas implements Runnable {
         jugador = new Player(nivel.getInicioX(), nivel.getInicioY());
         particulas.limpiar();
         framesNivel = muertesNivel = compilacionesNivel = 0;
-        avisoTimer = 0;
         grabadora = new Fantasma.Grabadora();
         fantasmaNivel = numero == 2 ? fantasmaDelRecord() : null;
         estado = GameState.JUGANDO;
@@ -415,11 +399,8 @@ public class Game extends Canvas implements Runnable {
                 if (estado == GameState.EDITOR) {
                     // consola arriba, por encima de Coco
                     editor.dibujar(g, input, frame, Puntuacion.formatearTiempo(framesTotal + framesNivel));
-                    renderer.dibujarAvisosEspeciales(g, nivel, jugador, fisica, frame, editor.getAbajo() + 16);
-                    String msg = nivel.getMensaje();
-                    if (msg != null) renderer.dibujarMensaje(g, msg, nivel.getDesbloqueo(), Math.max(31, nivel.getMensajeTimer()), -1);
                 } else {
-                    renderer.dibujarHUD(g, nivel, jugador, fisica, frame, muertesNivel, aviso, colorAviso, avisoTimer,
+                    renderer.dibujarHUD(g, nivel, jugador, fisica, frame, muertesNivel,
                             framesNivel < 600 || estado == GameState.PAUSA,
                             framesTotal + framesNivel, framesNivel, fantasmaNivel, fantasmaVisible);
                 }

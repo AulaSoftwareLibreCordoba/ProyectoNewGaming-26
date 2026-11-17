@@ -54,17 +54,17 @@ java -cp out cordoba.Main
 |---|---|
 | A / D o ← / → | Mover a Coco |
 | ESPACIO (o W / ↑) | Saltar |
-| **E** | Abrir / cerrar la **consola de código** |
+| **E** | Abrir la **consola de código** (se cierra con **ENTER**) |
 | Ratón | Usar los botones de la consola y los menús |
 | R | Reintentar desde la última farola |
-| ESC | Pausa (o cerrar la consola) |
+| ESC | Pausa |
 | M | Activar / silenciar el sonido |
 | G | Mostrar / ocultar el fantasma del récord (nivel 2) |
 | F11 | Pantalla completa / volver a ventana |
 
 Con la consola abierta **Coco se queda quieto, pero el cronómetro sigue corriendo**. La consola usa
 **W/S** o **↑/↓** para elegir variable, **A/D** o **←/→** para cambiar el valor (mantén pulsado para
-repetir), los **números** para escribirlo directamente y **ENTER** para aplicar.
+repetir), los **números** para escribirlo directamente y **ENTER** para guardar y cerrar.
 
 Todos los atajos, pantalla por pantalla, están en [ATAJOS.md](ATAJOS.md).
 
@@ -134,12 +134,12 @@ public class PhysicsConfig {
 * Cada variable muestra su nombre, su valor, una explicación y su rango permitido.
 * Los botones **[-] / [+]** (o **A/D**) cambian el valor en pasos de 0.5 **solo en el editor**.
 * También se puede **escribir el valor** con los números (`4.5`, `4,5`, `13`…): sale en blanco con un
-  cursor, **ENTER** lo compila, **RETROCESO** borra y **ESC** cancela. Si se sale del rango, se ajusta al límite.
-* Los cambios pendientes salen en amarillo con `// * sin aplicar`.
-* **APLICAR CAMBIOS** "compila": copia los valores a `PhysicsConfig` y la salida muestra
-  `BUILD SUCCESSFUL` con la lista de cambios. Si cierras sin aplicar, el juego te avisa de que no se ha compilado nada.
-* **RESTAURAR** carga los valores por defecto en el editor.
-* Las variables `final` están **bloqueadas** (en el tutorial se van desbloqueando).
+  cursor, **RETROCESO** borra y **ESC** cancela. Si se sale del rango, se ajusta al límite.
+* Los cambios pendientes salen en amarillo con `// * sin guardar`.
+* **ENTER** (o el botón **CERRAR [ENTER]**) **guarda solo y cierra**: "compila" copiando los valores a
+  `PhysicsConfig`. No hay botón de aplicar aparte.
+* **RESTAURAR** carga los valores por defecto en el editor (se guardan al cerrar).
+* Todas las variables están **desbloqueadas desde el principio**.
 * **Coco se queda quieto pero el cronómetro sigue corriendo**: la consola aparece arriba y se maneja con
   W/A/S/D o con las flechas. Pensar cuesta tiempo, así que hay que decidir rápido… o abrir la pausa (ESC).
 
@@ -155,13 +155,13 @@ Los cambios afectan de verdad al cocodrilo: `Player` lee `PhysicsConfig` en **ca
 
 ## 4. Los niveles
 
-### Nivel 1 — Los primeros pasos por Córdoba (tutorial)
+### Nivel 1 — Los primeros pasos por Córdoba
 Ribera del Guadalquivir, bajo el Puente Romano, hasta la Torre de la Calahorra.
 
 1. Moverse y saltar pequeños huecos.
-2. **El río es demasiado ancho**: abrir la consola, bajar la **gravedad** a 5.0 o menos y aplicar.
+2. **El río es demasiado ancho**: abrir la consola, bajar la **gravedad** a 5.0 o menos y cerrar con ENTER.
 3. **Muralla de 6 bloques**: con poca gravedad también se salta más alto.
-4. Se desbloquea **velocidad**: una pasarela bajo el puente se derrumba 1,25 s después de entrar → subirla a 6.5 o más.
+4. Una pasarela bajo el puente se derrumba 1,25 s después de entrar → subir la **velocidad** a 6.5 o más.
 5. Pinchos y un último salto hasta la Calahorra.
 
 ### Nivel 2 — El desafío de la Mezquita
@@ -200,8 +200,8 @@ CordobaCodigoSalvaje/
 │   │   ├── Player.java             Coco: movimiento, salto, gravedad, animaciones
 │   │   └── Fantasma.java           Graba, guarda y reproduce el fantasma del récord del nivel 2
 │   ├── niveles/                    Definición de niveles
-│   │   ├── Level.java              Clase base: mapa de tiles, objetos, farolas, carteles, eventos
-│   │   ├── Level1.java             Nivel 1 (tutorial)
+│   │   ├── Level.java              Clase base: mapa de tiles, objetos, farolas, decoración
+│   │   ├── Level1.java             Nivel 1
 │   │   ├── Level2.java             Nivel 2 (Mezquita)
 │   │   ├── plataformas/
 │   │   │   ├── PlataformaDinamica.java Base de plataformas no fijas
@@ -211,7 +211,6 @@ CordobaCodigoSalvaje/
 │   │   └── elementos/
 │   │       ├── ObstaculoMovil.java Bola de pinchos con movimiento suave
 │   │       ├── Farola.java         Punto de control
-│   │       ├── Cartel.java         Mensaje de tutorial (+ acción opcional)
 │   │       └── Decoracion.java     Macetas, palmeras, naranjos, cañas
 │   ├── graficos/                   Todo lo que se dibuja
 │   │   ├── GameRenderer.java       Dibuja escenario, objetos, jugador y HUD
@@ -248,12 +247,12 @@ CordobaCodigoSalvaje/
 ```
 Game.actualizar()
  └─ JUGANDO → Game.paso()
-      ├─ Level.actualizar()         plataformas, obstáculos, farolas, carteles
+      ├─ Level.actualizar()         plataformas, obstáculos, farolas
       ├─ Player.actualizar()        lee PhysicsConfig → vx, vy
       │    └─ CollisionManager.moverJugador()
       ├─ CollisionManager.tocaPeligro() → morir / reaparecer en la farola
       └─ ¿meta? → celebración → pantalla de victoria
- └─ EDITOR → CodeEditor.actualizar() → APLICAR copia los valores a PhysicsConfig
+ └─ EDITOR → CodeEditor.actualizar() → ENTER guarda los valores en PhysicsConfig y cierra
             └─ Coco y el nivel quietos, el cronómetro sigue
 Game.renderizar() → imagen 640x360 → escalado sin suavizado a la ventana
 ```
@@ -273,7 +272,7 @@ La carpeta `graficos/luz/` añade luz y sensación de profundidad **sin tocar ni
 del juego** (solo lee el estado y pinta encima):
 
 * **Profundidad:** neblina en las capas lejanas del fondo, sombra que proyecta el terreno, interior de
-  los bloques grandes más oscuro (volumen) y sombras de contacto bajo macetas, farolas y carteles.
+  los bloques grandes más oscuro (volumen) y sombras de contacto bajo macetas, farolas y Coco.
 * **Iluminación:** resplandor del sol, halo de las farolas encendidas y de la meta, penumbra del
   atardecer y del interior de la Mezquita (con luz alrededor de Coco y lámparas colgantes) y viñeta.
 
@@ -313,7 +312,7 @@ El cocodrilo está dibujado así en `Sprites.java` (cada letra es un color de la
 1. **Nueva variable** `friccion`: añádela al array de `PhysicsConfig` (la consola la mostrará sola) y
    úsala en `Player` en lugar de `CONTROL_SUELO`.
 2. **Nuevo nivel** `Level3` (p. ej. el Patio de los Naranjos o la Calleja de las Flores) heredando de
-   `Level` y usando `suelo()`, `agua()`, `pinchos()`, `farola()`, `cartel()`…
+   `Level` y usando `suelo()`, `agua()`, `pinchos()`, `farola()`, `decoracion()`…
 3. ~~**Escribir el valor** con el teclado en la consola en lugar de usar [+]/[-].~~ ✅ Hecho.
 4. ~~Guardar récords (tiempo y caídas) en un fichero.~~ ✅ Hecho: ver *Modo competición*.
 5. Un enemigo que patrulle usando su propia `PhysicsConfig`.

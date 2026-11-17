@@ -1,6 +1,5 @@
 package cordoba.niveles;
 
-import cordoba.fisica.PhysicsConfig;
 import cordoba.niveles.elementos.Decoracion;
 import cordoba.niveles.elementos.ObstaculoMovil;
 import cordoba.niveles.plataformas.PlataformaMovil;
@@ -95,15 +94,6 @@ public class Level2 extends Level {
         farola(115, BAJO);
         farola(151, COL);
 
-        // carteles
-        cartelDesbloqueo(4, CALLE, "fuerzaSalto", "Nivel 2: aquí nadie te dice qué valores usar.", null);
-        cartel(18, CALLE, "Muro de 8 bloques: combina gravedad y salto.");
-        cartel(31, ALTO, "¡Pinchos en el techo! No saltes demasiado alto.");
-        cartel(54, ALTO, "El pozo sopla hacia arriba (empuje 12.5). Si pesas poco, no bajarás.");
-        cartel(67, BAJO, "Este suelo se hunde enseguida: necesitas MUCHA velocidad.");
-        cartel(89, BAJO, "Columnas estrechas: si vas muy rápido, te pasas.");
-        cartel(116, BAJO, "Azulejos que desaparecen y bolas de pinchos: mira el ritmo.");
-        cartel(152, COL, "¡La Mezquita-Catedral! Entra por la puerta.");
 
         // decoración
         decoracion(Decoracion.Tipo.NARANJO, 1, CALLE, 0);
@@ -124,11 +114,5 @@ public class Level2 extends Level {
     private void foso(int c1, int c2) {
         vaciar(c1, CALLE, c2, CALLE + 1);
         pinchos(c1, c2, CALLE + 2);
-    }
-
-    // aquí todo está desbloqueado y vuelve a su valor normal
-    @Override
-    public void configurarFisica(PhysicsConfig f) {
-        super.configurarFisica(f);
     }
 }

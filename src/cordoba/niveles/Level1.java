@@ -1,12 +1,11 @@
 package cordoba.niveles;
 
-import cordoba.fisica.PhysicsConfig;
 import cordoba.niveles.elementos.Decoracion;
 import cordoba.niveles.plataformas.PuenteDerrumbe;
 
 /*
- * Nivel 1, el tutorial: moverse, abrir la consola y bajar la gravedad para cruzar el río, saltar la
- * muralla, subir la velocidad para la pasarela que se hunde y llegar a la Calahorra.
+ * Nivel 1: bajar la gravedad para cruzar el río, saltar la muralla, subir la velocidad para la
+ * pasarela que se hunde y llegar a la Calahorra.
  *
  * Plano (fila 18 = suelo):
  *   0-14 suelo | 15-16 agua | 17-24 suelo con escalón | 25-27 agua | 28-35 suelo
@@ -16,8 +15,6 @@ import cordoba.niveles.plataformas.PuenteDerrumbe;
 public class Level1 extends Level {
 
     private static final int S = 18;  // fila del suelo
-
-    private boolean ayudaGravedadMostrada, ayudaVelocidadMostrada;
 
     public Level1() {
         super(1, "Los primeros pasos por Córdoba", Tema.RIO, 104, 23);
@@ -58,14 +55,6 @@ public class Level1 extends Level {
         farola(63, S);
         farola(82, S);
 
-        // carteles
-        cartel(5, S, "¡Hola, soy Coco! Muévete con A/D o las flechas y salta con ESPACIO.");
-        cartel(18, S, "Las farolas son checkpoints: si caes, vuelves a la última encendida.");
-        cartel(33, S, "El río es muy ancho para mi salto. Pulsa [E] para abrir el código.");
-        cartel(47, S, "¡Bien! Con menos gravedad saltas más alto. Sube a la muralla.");
-        cartelDesbloqueo(62, S, "velocidad", "La pasarela se hunde al pisarla: sube la velocidad a 6.5 o más.",
-                () -> fisica.getVariable(PhysicsConfig.VELOCIDAD).setBloqueada(false));
-        cartel(80, S, "¡Genial! Ahora llega a la Torre de la Calahorra.");
 
         // decoración
         decoracion(Decoracion.Tipo.PALMERA, 1, S, 0);
@@ -81,41 +70,5 @@ public class Level1 extends Level {
         decoracion(Decoracion.Tipo.NARANJO, 85, S, 0);
         decoracion(Decoracion.Tipo.MACETA, 91, S, 1);
         decoracion(Decoracion.Tipo.PALMERA, 97, S, 0);
-    }
-
-    // en el tutorial solo empieza libre la gravedad
-    @Override
-    public void configurarFisica(PhysicsConfig f) {
-        super.configurarFisica(f);
-        f.getVariable(PhysicsConfig.VELOCIDAD).setBloqueada(true);
-        f.getVariable(PhysicsConfig.FUERZA_SALTO).setBloqueada(true);
-    }
-
-    @Override
-    public void alAbrirEditor() {
-        boolean velocidadLibre = !fisica.getVariable(PhysicsConfig.VELOCIDAD).isBloqueada();
-        if (!velocidadLibre && !ayudaGravedadMostrada) {
-            ayudaGravedadMostrada = true;
-            mostrarEvento("Baja 'gravedad' a 5.0 o menos y pulsa ENTER. ¡El tiempo corre!");
-        } else if (velocidadLibre && !ayudaVelocidadMostrada) {
-            ayudaVelocidadMostrada = true;
-            mostrarEvento("Elige 'velocidad', súbela a 6.5 o más y pulsa ENTER.");
-        }
-    }
-
-    @Override
-    public void alAplicarCambios() {
-        boolean velocidadLibre = !fisica.getVariable(PhysicsConfig.VELOCIDAD).isBloqueada();
-        if (!velocidadLibre) {
-            if (fisica.getValor(PhysicsConfig.GRAVEDAD) <= 5.0f)
-                mostrarEvento("¡Compilado! Ahora pesas menos. Cierra con [E] y salta el río.");
-            else
-                mostrarEvento("Aún pesas mucho: baja la gravedad a 5.0 o menos.");
-        } else {
-            if (fisica.getValor(PhysicsConfig.VELOCIDAD) >= 6.5f)
-                mostrarEvento("¡Compilado! Cierra con [E] y cruza la pasarela sin parar.");
-            else
-                mostrarEvento("Aún vas lento: sube la velocidad a 6.5 o más.");
-        }
     }
 }

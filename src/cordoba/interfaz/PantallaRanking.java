@@ -217,7 +217,7 @@ public class PantallaRanking {
         g.drawImage(Sprites.volteada(coco), 460, 22, 30, 30, null);
         g.setFont(Ui.FUENTE_PEQ);
         String sub = pestana == 0 ? "Menos tiempo gana · empate: menos caídas y compilaciones"
-                : pestana == 1 ? "Mejores tiempos del nivel 1 (tutorial)"
+                : pestana == 1 ? "Mejores tiempos del nivel 1"
                 : "Mejores tiempos del nivel 2 · el nº1 corre como FANTASMA";
         Ui.textoCentrado(g, sub, 320, 61, Ui.GRIS);
 

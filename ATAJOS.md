@@ -11,7 +11,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 |---|---|---|---|
 | **2** | Menú principal | Empieza directamente en el **nivel 2** | Te saltas el nivel 1 entero: el tiempo total sale mucho más bajo y la partida **también entra en el ranking** |
 | **ESC** → **REINICIAR NIVEL** | Pausa | Vuelve al principio del nivel actual | **Borra el tiempo, las caídas y las compilaciones de ese nivel** (lo de niveles anteriores se mantiene) |
-| **E** | Jugando | Abre la consola de código | Coco se queda quieto, pero **el tiempo sigue corriendo**. Hay que programar rápido |
+| **E** | Jugando | Abre la consola de código (se cierra con **ENTER**, que guarda solo) | Coco se queda quieto, pero **el tiempo sigue corriendo**. Hay que programar rápido |
 | **ESC** | Jugando | Pausa | Mientras estás en pausa **el tiempo no corre**: es el único sitio para pensar con calma |
 | **Números** + **ENTER** | Consola de código | Escribe el valor y lo compila de golpe | Mucho más rápido que pulsar [+]/[-] varias veces (`4,5` ENTER) |
 | **G** | Nivel 2 | Muestra / oculta el fantasma del récord | El fantasma enseña por dónde va el más rápido… o te distrae |
@@ -76,21 +76,19 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | *Mantener* **A/D** o **←/→** | Repetir el cambio rápidamente |
 | **0-9**, **.** o **,** | Escribir el valor de la variable seleccionada (ej.: `4,5`) |
 | **RETROCESO** | Borrar mientras escribes |
-| **ENTER** | **APLICAR CAMBIOS** (compilar), incluido lo que estés escribiendo |
-| **ESC** | Cancelar lo que estás escribiendo (o cerrar la consola si no escribes nada) |
-| **E** | Cerrar la consola |
+| **ENTER** | **Guardar y cerrar** la consola (incluido lo que estés escribiendo) |
+| **ESC** | Cancelar lo que estás escribiendo |
 
 | Ratón | Acción |
 |---|---|
 | Clic en **[-]** / **[+]** | Bajar / subir el valor de esa variable |
 | *Mantener pulsado* **[-]** / **[+]** | Repetir el cambio rápidamente |
 | Clic en una línea de código | Seleccionar esa variable |
-| Botón **APLICAR [ENTER]** | Compilar los valores |
-| Botón **RESTAURAR** | Cargar los valores por defecto en el editor (hay que aplicarlos después) |
-| Botón **CERRAR [E]** | Cerrar la consola |
+| Botón **RESTAURAR** | Cargar los valores por defecto en el editor (se guardan al cerrar) |
+| Botón **CERRAR [ENTER]** | Guardar y cerrar la consola |
 
-> ⚠️ Los cambios no tienen efecto hasta que pulsas **APLICAR CAMBIOS** (o **ENTER**).
-> Si cierras sin aplicar, el juego te avisa. Si escribes un número fuera de rango, se ajusta al límite.
+> ⚠️ Los cambios se guardan solos al cerrar con **ENTER** (no hay botón de aplicar).
+> Si escribes un número fuera de rango, se ajusta al límite. Todas las variables están desbloqueadas desde el principio.
 
 ---
 

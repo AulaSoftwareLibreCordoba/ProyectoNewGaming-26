@@ -14,12 +14,10 @@ import cordoba.graficos.luz.SalaProfunda;
 import cordoba.interfaz.Ui;
 import cordoba.ranking.Puntuacion;
 import cordoba.niveles.Level;
-import cordoba.niveles.elementos.Cartel;
 import cordoba.niveles.elementos.Decoracion;
 import cordoba.niveles.elementos.Farola;
 import cordoba.niveles.elementos.ObstaculoMovil;
 import cordoba.niveles.plataformas.PlataformaDinamica;
-import cordoba.niveles.plataformas.PuenteDerrumbe;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -52,10 +50,6 @@ public class GameRenderer {
         dibujarMeta(g, nivel, camX, camY, frame);
         dibujarTiles(g, nivel, camX, camY, frame);
         profundidad.volumen(g, nivel, camX, camY);
-        for (Cartel c : nivel.getCarteles()) {
-            Profundidad.sombraContacto(g, nivel.getTema(), (int) c.x - camX, (int) c.ySuelo - camY, 14);
-            g.drawImage(Sprites.cartel(), (int) c.x - 7 - camX, (int) c.ySuelo - 20 - camY, null);
-        }
         for (Farola f : nivel.getFarolas()) dibujarFarola(g, f, nivel.getTema(), camX, camY, frame);
         for (PlataformaDinamica pl : nivel.getPlataformas()) pl.dibujar(g, camX, camY, frame);
         for (ObstaculoMovil o : nivel.getObstaculos()) o.dibujar(g, camX, camY, frame);
@@ -355,7 +349,7 @@ public class GameRenderer {
     // ---- HUD ----
 
     public void dibujarHUD(Graphics2D g, Level nivel, Player p, PhysicsConfig fisica,
-                           int frame, int muertes, String aviso, Color colorAviso, int avisoTimer,
+                           int frame, int muertes,
                            boolean ayudaCompleta, int framesPartida, int framesNivel,
                            Fantasma fantasma, boolean fantasmaVisible) {
         dibujarCronometro(g, 4, 22, framesPartida, framesNivel, fantasma, fantasmaVisible);
@@ -399,20 +393,6 @@ public class GameRenderer {
         g.setColor(Ui.PANEL);
         g.fillRect(630 - cw, 340, cw + 10, 18);
         Ui.dato(g, "Caídas: ", cont, 635 - cw, 353, Ui.TEXTO);
-
-        String msg = nivel.getMensaje();
-        if (msg != null) dibujarMensaje(g, msg, nivel.getDesbloqueo(), nivel.getMensajeTimer(), fantasma != null ? 62 : 42);
-
-        dibujarAvisosEspeciales(g, nivel, p, fisica, frame, fantasma != null ? 126 : 106);
-
-        // aviso temporal (cambios aplicados, etc.)
-        if (aviso != null && avisoTimer > 0) {
-            g.setFont(Ui.FUENTE);
-            int w = g.getFontMetrics().stringWidth(aviso) + 20;
-            int ay = 320;
-            Ui.panel(g, 320 - w / 2, ay - 13, w, 20, new Color(0x1E1E2E), colorAviso);
-            Ui.textoCentrado(g, aviso, 320, ay + 1, colorAviso);
-        }
     }
 
     // cronómetro; en el nivel 2 con fantasma, también tu tiempo del nivel contra el récord
@@ -440,74 +420,5 @@ public class GameRenderer {
             Ui.tiempo(g, Puntuacion.formatearTiempo(fantasma.getFramesNivel()), x + 200, y + 33, Ui.TEXTO);
             Ui.texto(g, fantasma.getNombre() + (fantasmaVisible ? "" : " (oculto)"), x + 312, y + 33, Ui.GRIS);
         }
-    }
-
-    // cuenta atrás del suelo que se hunde y estado de la corriente de aire
-    public void dibujarAvisosEspeciales(Graphics2D g, Level nivel, Player p, PhysicsConfig fisica,
-                                        int frame, int y0) {
-        for (PlataformaDinamica pl : nivel.getPlataformas()) {
-            if (pl instanceof PuenteDerrumbe && ((PuenteDerrumbe) pl).estaCrujiendo()) {
-                PuenteDerrumbe pd = (PuenteDerrumbe) pl;
-                g.setFont(Ui.FUENTE);
-                String s = String.format("¡EL SUELO SE DERRUMBA!  %.1f s", pd.segundosRestantes());
-                Ui.textoCentrado(g, s, 320, y0, (frame / 6) % 2 == 0 ? Ui.ROJO : Ui.AMARILLO);
-                int bw = 160;
-                g.setColor(new Color(0, 0, 0, 160));
-                g.fillRect(320 - bw / 2, y0 + 5, bw, 5);
-                g.setColor(Ui.ROJO);
-                g.fillRect(320 - bw / 2, y0 + 5, (int) (bw * (1 - pd.getProgreso())), 5);
-            }
-        }
-        if (p.enCorriente && !p.muerto) {
-            float g1 = fisica.getValor(PhysicsConfig.GRAVEDAD);
-            float empuje = Level.FUERZA_CORRIENTE / PhysicsConfig.FACTOR_GRAVEDAD;
-            g.setFont(Ui.FUENTE);
-            String s = String.format("CORRIENTE DE AIRE: empuje %.1f  vs  gravedad %.1f", empuje, g1);
-            Ui.textoCentrado(g, s, 320, y0, g1 > empuje ? Ui.VERDE : Ui.AMARILLO);
-            String s2 = g1 > empuje ? "Pesas lo suficiente: ¡bajas!" : "La corriente te empuja hacia arriba...";
-            g.setFont(Ui.FUENTE_PEQ);
-            Ui.textoCentrado(g, s2, 320, y0 + 12, Ui.TEXTO);
-        }
-    }
-
-    // caja del tutorial a la altura y (si y < 0, pegada abajo). Si desbloqueo no es null, sale la caja de variable nueva
-    public void dibujarMensaje(Graphics2D g, String msg, String desbloqueo, int timer, int y) {
-        g.setFont(Ui.FUENTE);
-        List<String> lineas = Ui.ajustar(g, msg, 520);
-        int cabecera = desbloqueo != null ? 20 : 0;
-        int h = lineas.size() * Ui.INTERLINEADO + 12 + cabecera;
-        int w = 560, x = 40;
-        if (y < 0) y = 360 - h - 4;
-        Composite antes = g.getComposite();
-        if (timer < 30) g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, Math.max(0, timer / 30f)));
-        if (desbloqueo == null) {
-            Ui.panel(g, x, y, w, h, new Color(0x2B1D12), new Color(0xE0B040));
-            g.drawImage(Sprites.COCO_QUIETO, x + 6, y + (h - 20) / 2, null);
-        } else {
-            // verde con borde que parpadea y una franja dorada arriba
-            boolean brillo = (timer / 8) % 2 == 0;
-            Ui.panel(g, x, y, w, h, new Color(0x0F3324), brillo ? Color.WHITE : new Color(0xFFD84A));
-            g.setColor(brillo ? new Color(0xFFE27A) : new Color(0xE0B040));
-            g.fillRect(x + 3, y + 3, w - 6, cabecera - 2);
-            g.setFont(Ui.FUENTE_HUD);
-            Ui.textoCentrado(g, "¡NUEVA VARIABLE DESBLOQUEADA: " + desbloqueo + "!", x + w / 2, y + 16, new Color(0x2B1D12));
-            g.setFont(Ui.FUENTE);
-            dibujarCandadoAbierto(g, x + 10, y + cabecera + (h - cabecera - 16) / 2);
-        }
-        for (int i = 0; i < lineas.size(); i++) {
-            Ui.texto(g, lineas.get(i), x + 32, y + cabecera + 16 + i * Ui.INTERLINEADO, Ui.TEXTO);
-        }
-        g.setComposite(antes);
-    }
-
-    // candado abierto de 12x16 en pixel art
-    private void dibujarCandadoAbierto(Graphics2D g, int x, int y) {
-        g.setColor(new Color(0xFFD84A));
-        g.fillRect(x + 6, y, 6, 2);       // arco levantado
-        g.fillRect(x + 10, y + 2, 2, 5);
-        g.fillRect(x + 6, y + 2, 2, 2);
-        g.fillRect(x, y + 7, 12, 9);      // cuerpo
-        g.setColor(new Color(0x2B1D12));
-        g.fillRect(x + 5, y + 10, 2, 3);  // cerradura
     }
 }

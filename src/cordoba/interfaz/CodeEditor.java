@@ -11,12 +11,12 @@ import java.awt.event.KeyEvent;
 
 /*
  * La consola de código: un mini IDE con PhysicsConfig.java. Cambias valores con [-]/[+], A/D, las flechas o
- * escribiendo el número, y APLICAR "compila" (solo entonces cambia la física de verdad).
+ * escribiendo el número. Al cerrar con ENTER se guardan solos ("compila" y cambia la física de verdad).
  * Coco se queda quieto mientras está abierta, pero el tiempo sigue corriendo.
  */
 public class CodeEditor {
 
-    // qué ha pasado este fotograma (Game reacciona a esto)
+    // qué ha pasado este fotograma (Game reacciona a esto). APLICADO = se cierra y había cambios
     public enum Resultado { NADA, APLICADO, CERRAR }
 
     // va arriba para que se vea a Coco
@@ -41,14 +41,12 @@ public class CodeEditor {
     private int seleccion;
     private String escritura;     // número que estás tecleando (null = no estás escribiendo)
 
-    private Boton botonAplicar, botonDefecto, botonCerrar;
+    private Boton botonDefecto, botonCerrar;
     private Boton[] botonesMenos, botonesMas;
 
     // la "salida del compilador"
     private String salida1 = "", salida2 = "";
     private Color colorSalida = Ui.GRIS;
-    private int destello;          // brillo verde al compilar
-    private String ultimoResumen = "";
 
     // repetir al mantener pulsado
     private int framesMantenido;
@@ -72,22 +70,14 @@ public class CodeEditor {
         // alto = código + salida del compilador + botones
         int finCodigo = Y_CODIGO + (totalLineas() - 1) * LINEA;
         ph = finCodigo - PY + 76;
-        botonAplicar = new Boton(PX + 14,  PY + ph - 30, 160, 22, "APLICAR [ENTER]", new Color(0x2E8B57));
-        botonDefecto = new Boton(PX + 184, PY + ph - 30, 110, 22, "RESTAURAR", new Color(0x5A6070));
-        botonCerrar  = new Boton(PX + PW - 124, PY + ph - 30, 110, 22, "CERRAR [E]", new Color(0xB0413E));
+        botonDefecto = new Boton(PX + 14, PY + ph - 30, 110, 22, "RESTAURAR", new Color(0x5A6070));
+        botonCerrar  = new Boton(PX + PW - 164, PY + ph - 30, 150, 22, "CERRAR [ENTER]", new Color(0x2E8B57));
 
         if (fisica.getVariable(seleccion).isBloqueada()) seleccion = 0;
         escritura = null;
-        salida1 = "> W/S o ↑/↓ elige · A/D o ←/→ cambia (o escribe el número) · ENTER compila";
-        salida2 = "  E cierra. ¡Ojo, el tiempo sigue corriendo!";
+        salida1 = "> W/S o ↑/↓ elige · A/D o ←/→ cambia (o escribe el número)";
+        salida2 = "  ENTER guarda y cierra. ¡Ojo, el tiempo sigue corriendo!";
         colorSalida = Ui.GRIS;
-        destello = 0;
-        nivel.alAbrirEditor();
-    }
-
-    // borde de abajo del panel (para poner cosas debajo)
-    public int getAbajo() {
-        return PY + ph;
     }
 
     private int totalLineas() {
@@ -101,7 +91,6 @@ public class CodeEditor {
     }
 
     public Resultado actualizar(Input in) {
-        if (destello > 0) destello--;
         for (int i = 0; i < cambioPorFrame.length; i++) if (cambioPorFrame[i] > 0) cambioPorFrame[i]--;
 
         // escribir el valor con el teclado
@@ -113,14 +102,12 @@ public class CodeEditor {
         }
 
         // teclado: WASD o flechas
+        // ESC solo cancela lo que estés escribiendo (para cerrar, ENTER)
         if (in.pulsada(KeyEvent.VK_ESCAPE) && escritura != null) {
             escritura = null;
             salida1 = "> Escritura cancelada.";
             salida2 = "";
             colorSalida = Ui.GRIS;
-        } else if (in.pulsada(KeyEvent.VK_E) || in.pulsada(KeyEvent.VK_ESCAPE)) {
-            confirmarEscritura();
-            return Resultado.CERRAR;
         }
         if (in.pulsada(KeyEvent.VK_W) || in.pulsada(KeyEvent.VK_UP)) {
             confirmarEscritura();
@@ -174,11 +161,10 @@ public class CodeEditor {
             framesMantenido = 0;
         }
 
-        // botones de abajo
-        if (botonAplicar.clicado(in) || in.pulsada(KeyEvent.VK_ENTER)) {
-            boolean escrito = escritura != null;
-            if (!confirmarEscritura() && escrito) return Resultado.NADA;   // no era un número válido
-            return aplicar() ? Resultado.APLICADO : Resultado.NADA;
+        // ENTER o CERRAR: guarda solo y cierra
+        if (botonCerrar.clicado(in) || in.pulsada(KeyEvent.VK_ENTER)) {
+            if (!confirmarEscritura()) return Resultado.NADA;   // no era un número válido: no cierra
+            return aplicar() ? Resultado.APLICADO : Resultado.CERRAR;
         }
         if (botonDefecto.clicado(in)) {
             escritura = null;
@@ -186,13 +172,9 @@ public class CodeEditor {
                 if (!fisica.getVariable(i).isBloqueada()) borrador[i] = fisica.getVariable(i).getPorDefecto();
             }
             salida1 = "> Valores por defecto cargados en el editor.";
-            salida2 = "  (Recuerda: no tienen efecto hasta que pulses APLICAR CAMBIOS)";
+            salida2 = "  Se guardan al cerrar con ENTER.";
             colorSalida = Ui.AMARILLO;
             Sonido.clic();
-        }
-        if (botonCerrar.clicado(in)) {
-            confirmarEscritura();
-            return Resultado.CERRAR;
         }
         return Resultado.NADA;
     }
@@ -215,7 +197,7 @@ public class CodeEditor {
         Sonido.clic();
         salida1 = "> Escribiendo " + v.getNombre() + " [" + VariableFisica.formatear(v.getMinimo()) + " - "
                 + VariableFisica.formatear(v.getMaximo()) + "]...";
-        salida2 = "  ENTER = compilar · RETROCESO = borrar · ESC = cancelar";
+        salida2 = "  ENTER = guardar y cerrar · RETROCESO = borrar · ESC = cancelar";
         colorSalida = Ui.AMARILLO;
     }
 
@@ -246,7 +228,7 @@ public class CodeEditor {
             colorSalida = Ui.AMARILLO;
             Sonido.error();
         } else if (hayCambiosPendientes()) {
-            salida1 = "* Hay cambios sin aplicar. Pulsa APLICAR CAMBIOS (o ENTER) para compilar.";
+            salida1 = "* Cambios sin guardar: se guardan al cerrar con ENTER.";
             salida2 = "";
             colorSalida = Ui.AMARILLO;
         }
@@ -276,7 +258,7 @@ public class CodeEditor {
         cambioPorFrame[i] = 10;
         Sonido.clic();
         if (hayCambiosPendientes()) {
-            salida1 = "* Hay cambios sin aplicar. Pulsa APLICAR CAMBIOS (o ENTER) para compilar.";
+            salida1 = "* Cambios sin guardar: se guardan al cerrar con ENTER.";
             salida2 = "";
             colorSalida = Ui.AMARILLO;
         }
@@ -284,34 +266,16 @@ public class CodeEditor {
 
     // "compila": copia el borrador a PhysicsConfig. true si había cambios
     private boolean aplicar() {
-        StringBuilder cambios = new StringBuilder();
         int n = 0;
         for (int i = 0; i < borrador.length; i++) {
             VariableFisica v = fisica.getVariable(i);
             if (borrador[i] != v.getDecimas()) {
-                if (cambios.length() > 0) cambios.append(", ");
-                cambios.append(v.getNombre()).append(' ')
-                       .append(VariableFisica.formatear(v.getDecimas())).append(" -> ")
-                       .append(VariableFisica.formatear(borrador[i]));
                 v.setDecimas(borrador[i]);
                 n++;
             }
         }
-        if (n == 0) {
-            salida1 = "> javac PhysicsConfig.java";
-            salida2 = "  Nada que compilar: no has cambiado ningún valor.";
-            colorSalida = Ui.GRIS;
-            Sonido.clic();
-            return false;
-        }
-        salida1 = "> javac PhysicsConfig.java ... BUILD SUCCESSFUL (" + n + (n == 1 ? " cambio)" : " cambios)");
-        salida2 = "  " + cambios;
-        colorSalida = Ui.VERDE;
-        destello = 45;
-        ultimoResumen = cambios.toString();
-        Sonido.aplicar();
-        nivel.alAplicarCambios();
-        return true;
+        if (n > 0) Sonido.aplicar();
+        return n > 0;
     }
 
     public boolean hayCambiosPendientes() {
@@ -320,15 +284,11 @@ public class CodeEditor {
         return false;
     }
 
-    public String getUltimoResumen() {
-        return ultimoResumen;
-    }
-
     // ---- dibujo ----
 
     // tiempo = cronómetro de la partida (sigue corriendo con la consola abierta)
     public void dibujar(Graphics2D g, Input in, int frame, String tiempo) {
-        Color borde = destello > 0 && (destello / 4) % 2 == 0 ? Ui.VERDE : new Color(0x5C5C80);
+        Color borde = new Color(0x5C5C80);
         Ui.panel(g, PX, PY, PW, ph, FONDO, borde);
 
         // barra de título estilo IDE
@@ -386,11 +346,11 @@ public class CodeEditor {
             String valor = VariableFisica.formatear(borrador[i]) + "f";
             Color colValor = pendiente ? Ui.AMARILLO : C_NUMERO;
             if (cambioPorFrame[i] > 0) colValor = Color.WHITE;
-            String nota = pendiente ? "  // * sin aplicar" : "";
+            String nota = pendiente ? "  // * sin guardar" : "";
             if (escribiendo) {
                 valor = escritura + ((frame / 15) % 2 == 0 ? "_" : " ");
                 colValor = Color.WHITE;
-                nota = "  // ENTER = compilar";
+                nota = "  // ENTER = guardar";
             }
             if (bloqueada) {
                 segmentos(g, x0, yc,
@@ -417,7 +377,6 @@ public class CodeEditor {
         Ui.texto(g, Ui.recortar(g, salida1, PW - 20), PX + 10, ys, colorSalida);
         Ui.texto(g, Ui.recortar(g, salida2, PW - 20), PX + 10, ys + 14, colorSalida);
 
-        botonAplicar.dibujar(g, in);
         botonDefecto.dibujar(g, in);
         botonCerrar.dibujar(g, in);
     }

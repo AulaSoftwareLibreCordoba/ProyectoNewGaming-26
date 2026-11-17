@@ -71,15 +71,6 @@ public class PuenteDerrumbe extends PlataformaDinamica {
         caida = 0;
     }
 
-    public boolean estaCrujiendo() {
-        return estado == Estado.CRUJIENDO;
-    }
-
-    // segundos que quedan
-    public float segundosRestantes() {
-        return Math.max(0, (framesLimite - contador) / 60f);
-    }
-
     public float getProgreso() {
         return estado == Estado.CRUJIENDO ? (float) contador / framesLimite : 0f;
     }
