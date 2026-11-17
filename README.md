@@ -54,7 +54,7 @@ java -cp out cordoba.Main
 |---|---|
 | A / D o ← / → | Mover a Coco |
 | ESPACIO (o W / ↑) | Saltar |
-| **E** | Abrir la **consola de código** (se cierra con **ENTER**) |
+| **E** o **ENTER** | Abrir la **consola de código** (se cierra con **ENTER**) |
 | Ratón | Usar los botones de la consola y los menús |
 | R | Reintentar desde la última farola |
 | ESC | Pausa |

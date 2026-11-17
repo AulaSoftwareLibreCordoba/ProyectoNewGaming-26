@@ -380,9 +380,9 @@ public class GameRenderer {
         g.setFont(Ui.FUENTE_PEQ);
 
         // ayuda de controles (completa al principio, luego solo la consola)
-        String ayuda = "[E] Código   [R] Reintentar   [ESC] Pausa   [M] Sonido" + (Sonido.isSilenciado() ? " (off)" : "")
+        String ayuda = "[E/ENTER] Código   [R] Reintentar   [ESC] Pausa   [M] Sonido" + (Sonido.isSilenciado() ? " (off)" : "")
                 + (fantasma != null ? "   [G] Fantasma" : "");
-        if (!ayudaCompleta) ayuda = "[E] Código";
+        if (!ayudaCompleta) ayuda = "[E/ENTER] Código";
         String cont = String.valueOf(muertes);
         int cw = Ui.anchoDato(g, "Caídas: ", cont);
         ayuda = Ui.recortar(g, ayuda, 610 - cw);

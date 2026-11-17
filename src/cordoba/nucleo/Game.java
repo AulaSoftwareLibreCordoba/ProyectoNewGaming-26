@@ -203,7 +203,7 @@ public class Game extends Canvas implements Runnable {
     private void actualizarPartida() {
         boolean puedeControlar = !jugador.muerto && !jugador.celebrando;
 
-        if (puedeControlar && input.pulsada(KeyEvent.VK_E)) {
+        if (puedeControlar && (input.pulsada(KeyEvent.VK_E) || input.pulsada(KeyEvent.VK_ENTER))) {   // abre la consola
             estado = GameState.EDITOR;
             editor.abrir(fisica, nivel);
             Sonido.clic();

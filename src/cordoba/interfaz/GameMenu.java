@@ -166,7 +166,7 @@ public class GameMenu {
         g.fillRect(0, 326, 640, 34);
         Andalusi.cenefa(g, 0, 322, 640);
         g.setFont(Ui.FUENTE_PEQ);
-        Ui.textoCentrado(g, "A/D o flechas: mover  ·  ESPACIO: saltar  ·  E: consola de código  ·  ESC: pausa", 320, 341, Ui.TEXTO);
+        Ui.textoCentrado(g, "A/D o flechas: mover  ·  ESPACIO: saltar  ·  E/ENTER: consola  ·  ESC: pausa", 320, 341, Ui.TEXTO);
         Ui.textoCentrado(g, "Demo para 2.º DAM · Java + Swing", 320, 355, Andalusi.ORO_CLARO);
 
         // fundido al arrancar

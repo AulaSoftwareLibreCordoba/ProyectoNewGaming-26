@@ -11,7 +11,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 |---|---|---|---|
 | **2** | Menú principal | Empieza directamente en el **nivel 2** | Te saltas el nivel 1 entero: el tiempo total sale mucho más bajo y la partida **también entra en el ranking** |
 | **ESC** → **REINICIAR NIVEL** | Pausa | Vuelve al principio del nivel actual | **Borra el tiempo, las caídas y las compilaciones de ese nivel** (lo de niveles anteriores se mantiene) |
-| **E** | Jugando | Abre la consola de código (se cierra con **ENTER**, que guarda solo) | Coco se queda quieto, pero **el tiempo sigue corriendo**. Hay que programar rápido |
+| **E** o **ENTER** | Jugando | Abre la consola de código (se cierra con **ENTER**, que guarda solo) | Coco se queda quieto, pero **el tiempo sigue corriendo**. Hay que programar rápido |
 | **ESC** | Jugando | Pausa | Mientras estás en pausa **el tiempo no corre**: es el único sitio para pensar con calma |
 | **Números** + **ENTER** | Consola de código | Escribe el valor y lo compila de golpe | Mucho más rápido que pulsar [+]/[-] varias veces (`4,5` ENTER) |
 | **G** | Nivel 2 | Muestra / oculta el fantasma del récord | El fantasma enseña por dónde va el más rápido… o te distrae |
@@ -49,7 +49,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | **A** / **←** | Moverse a la izquierda |
 | **D** / **→** | Moverse a la derecha |
 | **ESPACIO** / **W** / **↑** | Saltar |
-| **E** | Abrir la consola de código (Coco se para, **el tiempo no**) |
+| **E** o **ENTER** | Abrir la consola de código (Coco se para, **el tiempo no**) |
 | **R** | Reintentar desde la última farola *(cuenta como una caída)* |
 | **G** | Mostrar / ocultar el fantasma del récord *(solo en el nivel 2, si hay récord)* |
 | **ESC** | Pausa (el cronómetro se detiene) |
@@ -63,7 +63,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 
 ---
 
-## 💻 Consola de código (tecla E)
+## 💻 Consola de código (tecla E o ENTER)
 
 > ⚠️ **Con la consola abierta Coco se queda quieto, pero el cronómetro sigue corriendo.**
 
