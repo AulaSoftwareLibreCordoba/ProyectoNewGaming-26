@@ -9,18 +9,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * RANKING de la competición.
- *
- * Criterio: gana quien tarde MENOS. Si empatan, quien tenga menos caídas;
- * después, menos compilaciones; y si aun así empatan, quien lo logró antes.
- *
- * Se guardan TODAS las partidas en un fichero de texto (UTF-8, una por línea):
- *     nombre;fotogramas;caidas;compilaciones;fotogramasNivel1;fotogramasNivel2
- * pero en pantalla solo se muestran las {@link #TOP} mejores.
- *
- * Además del ranking general hay un ranking por nivel (solo por tiempo).
- */
+// Ranking de la competición. Gana quien tarde menos; si empatan, menos caídas, luego menos compilaciones
+// y luego quien lo hizo antes. Se guardan TODAS las partidas en ranking.txt pero solo se enseñan 10.
+// También hay ranking por nivel (solo por tiempo).
 public class Ranking {
 
     public static final int TOP = 10;
@@ -53,27 +44,26 @@ public class Ranking {
         partidas.sort(ORDEN);   // sort es estable: en empate se respeta el orden del fichero
     }
 
-    /** Las 10 mejores partidas, de mejor a peor. */
     public List<Puntuacion> mejores() {
         return List.copyOf(partidas.subList(0, Math.min(TOP, partidas.size())));
     }
 
-    /** Las 10 mejores partidas en un nivel concreto (solo las que jugaron ese nivel). */
+    // solo las partidas que jugaron ese nivel
     public List<Puntuacion> mejoresNivel(int nivel) {
         List<Puntuacion> lista = new ArrayList<>();
         for (Puntuacion p : partidas) if (p.framesNivel(nivel) > 0) lista.add(p);
-        // Orden estable: en empate queda delante quien lo consiguió antes (orden del fichero)
+        // estable: en empate va delante quien lo hizo antes
         lista.sort(Comparator.comparingInt(p -> p.framesNivel(nivel)));
         return List.copyOf(lista.subList(0, Math.min(TOP, lista.size())));
     }
 
-    /** Récord de un nivel, o null si nadie lo ha jugado todavía. */
+    // null si nadie lo ha jugado aún
     public Puntuacion mejorNivel(int nivel) {
         List<Puntuacion> lista = mejoresNivel(nivel);
         return lista.isEmpty() ? null : lista.get(0);
     }
 
-    /** Puesto (empezando en 1) que tendría una partida con estos datos. */
+    // puesto (desde 1) que tendría una partida así
     public int posicionPara(int frames, int muertes, int compilaciones) {
         Puntuacion nueva = new Puntuacion("?", frames, muertes, compilaciones, 0, 0);
         int pos = 1;
@@ -83,14 +73,14 @@ public class Ranking {
         return pos;
     }
 
-    /** ¿Ese tiempo batiría el récord del nivel? (empatar no basta) */
+    // ¿batiría el récord del nivel? (empatar no vale)
     public boolean esRecordNivel(int nivel, int framesNivel) {
         if (framesNivel <= 0) return false;
         Puntuacion mejor = mejorNivel(nivel);
         return mejor == null || framesNivel < mejor.framesNivel(nivel);
     }
 
-    /** Añade la partida, guarda el fichero y devuelve el puesto obtenido. */
+    // la añade, guarda y devuelve el puesto
     public int registrar(Puntuacion p) {
         int pos = posicionPara(p.frames(), p.muertes(), p.compilaciones());
         partidas.add(pos - 1, p);
@@ -98,7 +88,6 @@ public class Ranking {
         return pos;
     }
 
-    /** ¿Se pudo escribir el fichero la última vez? */
     public boolean isGuardadoOk() {
         return guardadoOk;
     }
@@ -107,7 +96,7 @@ public class Ranking {
         List<String> lineas = new ArrayList<>();
         for (Puntuacion p : partidas) lineas.add(p.aLinea());
         try {
-            // Se escribe primero en un temporal: si el juego se cierra a medias, no se pierde el ranking
+            // primero a un temporal: si el juego se cierra a medias, no se pierde el ranking
             Path tmp = fichero.resolveSibling(fichero.getFileName() + ".tmp");
             Files.write(tmp, lineas, StandardCharsets.UTF_8);
             Files.move(tmp, fichero, StandardCopyOption.REPLACE_EXISTING);

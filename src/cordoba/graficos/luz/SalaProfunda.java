@@ -3,27 +3,19 @@ package cordoba.graficos.luz;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-/**
- * Fondo del INTERIOR de la Mezquita con profundidad: un "bosque" de columnas
- * y arcos dobles repartido en varios PLANOS.
- *
- *  - Telón: luz cálida al fondo y una arquería lejanísima en silueta.
- *  - Planos 0..3: del más lejano al más cercano. Cuanto más lejos, más pequeños
- *    (perspectiva hacia el horizonte), más oscuros (niebla) y más despacio se
- *    mueven con la cámara (parallax).
- *  - Lámparas colgantes encendidas en los planos cercanos.
- *
- * Cada plano se prepara una sola vez: la franja de arcos es una imagen y las
- * columnas se pintan con rectángulos (así casi no cuesta tiempo).
- * La niebla de cada plano se ajusta en {@link EstiloVisual#nieblaSala}.
+/*
+ * Interior de la Mezquita con profundidad: un bosque de columnas y arcos dobles en varios planos.
+ * Cuanto más lejos, más pequeño, más oscuro (niebla) y más lento con la cámara.
+ * Cada plano se prepara una sola vez (los arcos son una imagen y las columnas, rectángulos),
+ * así que casi no gasta tiempo. La niebla se ajusta en EstiloVisual.nieblaSala.
  */
 public final class SalaProfunda {
 
     private static final int ANCHO = 640, ALTO = 360;
-    /** Altura del horizonte (coordenadas de la capa): ahí convergen todos los planos. */
+    // altura del horizonte: ahí convergen todos los planos
     private static final int HORIZONTE = 112;
 
-    /** Un plano: separación entre columnas (su tamaño), parallax y desfase de las columnas. */
+    // un plano: separación entre columnas (su tamaño), parallax y desfase
     private record Plano(int separacion, float parallax, int desfase, boolean lamparas) {
         float escala() { return separacion / 80f; }
     }
@@ -31,15 +23,15 @@ public final class SalaProfunda {
     private static final Plano[] PLANOS = {
         new Plano(32, 0.16f, 0, false),     // lejos: columnas pequeñas y muchas
         new Plano(64, 0.36f, 21, true),     // medio
-        new Plano(128, 0.66f, 90, true),    // cerca: columnas grandes y pocas
+        new Plano(128, 0.66f, 90, true),    // cerca: grandes y pocas
     };
 
-    // Colores sin niebla
+    // colores sin niebla
     private static final int ROJO = 0x9E3326, CREMA = 0xE6D3AA, PIEDRA = 0xC9B48A, PIEDRA_LUZ = 0xE8D7AE,
                              PIEDRA_SOMBRA = 0x9C8862, CAPITEL = 0x8C7A57, MADERA = 0x4A2C1A, VIGA = 0x2E1A10,
                              ORO = 0xC8963E, SUELO = 0x5A3A26, SUELO_LINEA = 0x6E4A30, LAMPARA = 0xFFCF6B;
 
-    /** Todo lo que se precalcula de cada plano. */
+    // lo que se precalcula de cada plano
     private static final class Hecho {
         BufferedImage banda;
         Color fuste, fusteLuz, fusteSombra, capitel, suelo, sueloLinea;
@@ -52,10 +44,7 @@ public final class SalaProfunda {
 
     private SalaProfunda() { }
 
-    /**
-     * Dibuja la sala completa. dy = altura de pantalla donde empieza la capa,
-     * alfa = transparencia (aparece poco a poco al bajar al interior).
-     */
+    // dy = dónde empieza la capa en pantalla · alfa = aparece poco a poco al bajar
     public static void dibujar(Graphics2D g, int camX, int dy, float alfa) {
         preparar();
         EstiloVisual e = EstiloVisual.de(cordoba.niveles.Level.Tema.MEZQUITA);
@@ -70,7 +59,7 @@ public final class SalaProfunda {
             int sep = p.separacion;
             int desp = Math.floorMod((int) (camX * p.parallax), ANCHO);
 
-            // suelo del plano (con juntas horizontales)
+            // suelo del plano con juntas
             g.setColor(h.suelo);
             g.fillRect(0, dy + h.ySuelo, ANCHO, ALTO - h.ySuelo);
             g.setColor(h.sueloLinea);
@@ -95,7 +84,7 @@ public final class SalaProfunda {
             g.drawImage(h.banda, -desp, dy, null);
             g.drawImage(h.banda, -desp + ANCHO, dy, null);
 
-            // lámparas colgantes
+            // lámparas
             if (p.lamparas && e.radioLampara > 0) {
                 float s = p.escala();
                 int yTecho = y(6, s), yLamp = y(150, s);
@@ -120,14 +109,12 @@ public final class SalaProfunda {
         g.setComposite(antes);
     }
 
-    /** Altura en pantalla de un punto a altura "yMundo" de un plano con esa escala (perspectiva). */
+    // altura en pantalla de un punto de ese plano (perspectiva)
     private static int y(int yMundo, float escala) {
         return Math.round(HORIZONTE + (yMundo - HORIZONTE) * escala);
     }
 
-    // =====================================================================
-    //  Preparación (una sola vez)
-    // =====================================================================
+    // ---- preparación (una sola vez) ----
 
     private static synchronized void preparar() {
         if (hechos != null) return;
@@ -177,14 +164,14 @@ public final class SalaProfunda {
             g.fillRect(cx - pilastra / 2, t1, pilastra, h.yFuste - t1);
             g.setColor(new Color(PIEDRA_LUZ));
             g.fillRect(cx - pilastra / 2, t1, Math.max(1, pilastra / 4), h.yFuste - t1);
-            // arco de arriba (medio punto) y de abajo (herradura), con dovelas
+            // arco de arriba (medio punto) y de abajo (herradura)
             dovelas(g, ax, ySup, sep / 2 - 1, grosor, 10, -180, 0);
             dovelas(g, ax, yInf, sep / 2 - pilastra / 2 - 1, grosor, 12, -200, 20);
             // capitel
             g.setColor(new Color(CAPITEL));
             g.fillRect(cx - pilastra / 2 - 1, h.yFuste - Math.max(2, Math.round(5 * s)), pilastra + 2, Math.max(2, Math.round(5 * s)));
         }
-        // la niebla oscurece el plano entero (solo donde hay dibujo)
+        // la niebla oscurece el plano (solo donde hay dibujo)
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, niebla));
         g.setColor(new Color(colorNiebla()));
         g.fillRect(0, 0, ANCHO, alto);
@@ -207,7 +194,7 @@ public final class SalaProfunda {
         }
     }
 
-    /** Telón del fondo: oscuridad arriba, luz cálida en el horizonte y arquería lejanísima. */
+    // telón: oscuro arriba, luz cálida en el horizonte y arquería lejísimos
     private static BufferedImage crearTelon(EstiloVisual e) {
         BufferedImage img = new BufferedImage(ANCHO, ALTO, BufferedImage.TYPE_INT_RGB);
         int arriba = 0x0C0605, luz = 0x5A3420, abajo = 0x140A07;
@@ -220,7 +207,7 @@ public final class SalaProfunda {
                 img.setRGB(x, y, c);
             }
         }
-        // arquería lejanísima en silueta (sin parallax: está "infinitamente" lejos)
+        // arquería en silueta, sin parallax (está "infinitamente" lejos)
         Graphics2D g = img.createGraphics();
         float s = 0.22f;
         int sep = 16;
@@ -237,8 +224,6 @@ public final class SalaProfunda {
         return img;
     }
 
-    // ---------------------------------------------------------------------
-
     private static int colorNiebla() {
         return EstiloVisual.de(cordoba.niveles.Level.Tema.MEZQUITA).colorNieblaSala;
     }
@@ -247,7 +232,7 @@ public final class SalaProfunda {
         return new Color(mezclar(rgb, colorNiebla(), t, 0, 0));
     }
 
-    /** Mezcla dos colores; con x,y hace un tramado 2x2 para que el degradado sea "pixel art". */
+    // mezcla dos colores; con x,y hace tramado 2x2 para que el degradado sea pixel art
     private static int mezclar(int a, int b, double t, int x, int y) {
         double umbral = (((x & 1) * 2 + (y & 1) * 3) % 4) / 4.0 - 0.375;
         t = Math.max(0, Math.min(1, Math.round((t + umbral * 0.08) * 12) / 12.0));

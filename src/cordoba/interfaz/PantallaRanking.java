@@ -13,19 +13,14 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
-/**
- * Pantallas de la COMPETICIÓN:
- *   1. Final de la partida: estadísticas + escribir el nombre para el ranking.
- *   2. Tabla con el TOP 10 en tres pestañas: GENERAL, NIVEL 1 y NIVEL 2
- *      (también accesible desde el menú principal).
- */
+// Pantallas de la competición: el final (escribir el nombre) y el TOP 10 con pestañas GENERAL / NIVEL 1 / NIVEL 2.
 public class PantallaRanking {
 
     private static final Color ORO    = new Color(0xFFD54F);
     private static final Color PLATA  = new Color(0xC8D0DC);
     private static final Color BRONCE = new Color(0xD9925B);
     private static final Color AZUL   = new Color(0x82AAFF);
-    private static final Color APAGADO = new Color(0x55556A);
+    private static final Color APAGADO = Ui.GRIS;
 
     private static final String[] PESTANAS = { "GENERAL", "NIVEL 1", "NIVEL 2" };
 
@@ -33,13 +28,15 @@ public class PantallaRanking {
     private final Ranking ranking;
 
     private final StringBuilder nombre = new StringBuilder();
-    private Puntuacion resaltada;   // partida recién guardada (null = ninguna)
-    private int puesto;             // su puesto en el ranking general
-    private int pestana;            // 0 = general, 1 = nivel 1, 2 = nivel 2
+    private Puntuacion resaltada;   // la partida que se acaba de guardar (o null)
+    private int puesto;             // su puesto en el general
+    private int pestana;            // pestaña activa (el foco va en navegacion)
 
     private final Boton bGuardar = new Boton(255, 278, 130, 22, "GUARDAR", Andalusi.BOTON_VERDE).andalusi();
     private final Boton bMenu    = new Boton(255, 300, 130, 22, "MENÚ", Andalusi.BOTON_VERDE).andalusi();
     private final Boton[] bPestanas = new Boton[PESTANAS.length];
+    private final GameMenu.NavegacionMenu navegacion;
+    private boolean iniciarFoco = true;
 
     public PantallaRanking(GameRenderer renderer, Ranking ranking) {
         this.renderer = renderer;
@@ -47,30 +44,30 @@ public class PantallaRanking {
         for (int i = 0; i < PESTANAS.length; i++) {
             bPestanas[i] = new Boton(170 + i * 102, 68, 96, 16, PESTANAS[i], new Color(0x5A6070)).andalusi();
         }
+        Boton[] opciones = new Boton[bPestanas.length + 1];
+        System.arraycopy(bPestanas, 0, opciones, 0, bPestanas.length);
+        opciones[bPestanas.length] = bMenu;
+        navegacion = new GameMenu.NavegacionMenu(opciones);
     }
 
-    /** Prepara la pantalla final para que el siguiente jugador escriba su nombre. */
+    // deja la pantalla lista para el siguiente jugador
     public void empezarNombre() {
         nombre.setLength(0);
         resaltada = null;
         puesto = -1;
     }
 
-    /** Abre la tabla sin resaltar a nadie (desde el menú principal). */
+    // desde el menú: sin resaltar a nadie
     public void verTabla() {
         resaltada = null;
         puesto = -1;
         pestana = 0;
+        reiniciarFoco();
     }
 
-    // =====================================================================
-    //  1. INTRODUCIR NOMBRE
-    // =====================================================================
+    // ---- 1. escribir el nombre ----
 
-    /**
-     * Gestiona la escritura del nombre.
-     * @return la partida guardada en el ranking, o null si todavía no se ha guardado
-     */
+    // devuelve la partida guardada, o null si aún no se ha guardado
     public Puntuacion actualizarNombre(Input in, int frames, int muertes, int compilaciones, int n1, int n2) {
         boolean confirmar = false;
         for (char c : in.tomarEscrito().toCharArray()) {
@@ -91,6 +88,7 @@ public class PantallaRanking {
             resaltada = new Puntuacion(limpio, frames, muertes, compilaciones, n1, n2);
             puesto = ranking.registrar(resaltada);
             pestana = 0;
+            reiniciarFoco();
             Sonido.checkpoint();
             return resaltada;
         }
@@ -114,16 +112,16 @@ public class PantallaRanking {
         int bote = (frame / 12) % 2 == 0 ? 0 : -8;
         g.drawImage(coco, 294, 86 + bote, 52, 52, null);
 
-        // Estadísticas (las mismas columnas que tendrá el ranking)
-        Ui.textoCentrado(g, "Tiempo total: " + Puntuacion.formatearTiempo(frames), 320, 154, Ui.TEXTO);
-        g.setFont(Ui.FUENTE_PEQ);
+        // estadísticas (las mismas columnas que el ranking)
+        Ui.datoCentrado(g, "Tiempo total: ", Puntuacion.formatearTiempo(frames), 320, 154, Ui.TEXTO);
+        g.setFont(Ui.FUENTE_MONO);
         Ui.textoCentrado(g, "Nivel 1: " + (n1 > 0 ? Puntuacion.formatearTiempo(n1) : "--")
                 + "   ·   Nivel 2: " + Puntuacion.formatearTiempo(n2), 320, 166, Ui.GRIS);
         g.setFont(Ui.FUENTE);
-        Ui.textoCentrado(g, "Caídas: " + muertes, 320, 180, Ui.TEXTO);
-        Ui.textoCentrado(g, "Cambios de código compilados: " + compilaciones, 320, 193, AZUL);
+        Ui.datoCentrado(g, "Caídas: ", String.valueOf(muertes), 320, 180, Ui.TEXTO);
+        Ui.datoCentrado(g, "Cambios de código compilados: ", String.valueOf(compilaciones), 320, 193, AZUL);
 
-        // Puesto provisional y récords de nivel
+        // puesto provisional y récords de nivel
         int pos = ranking.posicionPara(frames, muertes, compilaciones);
         if (pos <= Ranking.TOP)
             Ui.textoCentrado(g, "¡Entras en el TOP 10 en el puesto " + pos + "º!", 320, 209, colorPuesto(pos, Ui.VERDE));
@@ -136,7 +134,7 @@ public class PantallaRanking {
         else if (ranking.esRecordNivel(1, n1))
             Ui.textoCentrado(g, "¡NUEVO RÉCORD DEL NIVEL 1!", 320, 222, ORO);
 
-        // Caja de texto
+        // caja de texto
         g.setFont(Ui.FUENTE);
         Ui.textoCentrado(g, "Escribe tu nombre para el ranking:", 320, 240, Ui.TEXTO);
         int bx = 220, by = 248, bw = 200, bh = 20;
@@ -154,7 +152,7 @@ public class PantallaRanking {
         } else {
             Ui.texto(g, nombre.toString(), tx, ty, Ui.VERDE);
         }
-        if ((frame / 30) % 2 == 0) {   // cursor parpadeante
+        if ((frame / 30) % 2 == 0) {   // cursor parpadeando
             int cx = tx + (nombre.length() == 0 ? 0 : g.getFontMetrics().stringWidth(nombre.toString()) + 1);
             g.setColor(Ui.TEXTO);
             g.fillRect(cx, by + 5, 2, 11);
@@ -168,20 +166,38 @@ public class PantallaRanking {
         Ui.textoCentrado(g, "ENTER: guardar  ·  RETROCESO: borrar", 320, 316, Ui.GRIS);
     }
 
-    // =====================================================================
-    //  2. TABLA TOP 10
-    // =====================================================================
+    // ---- 2. tabla TOP 10 ----
 
-    /** Devuelve true cuando el jugador quiere volver al menú. */
+    // true cuando quiere volver al menú
     public boolean actualizarTabla(Input in) {
-        for (int i = 0; i < bPestanas.length; i++) {
-            if (bPestanas[i].clicado(in)) cambiarPestana(i);
+        if (iniciarFoco) {
+            navegacion.abrir(in);
+            iniciarFoco = false;
         }
-        if (in.pulsada(KeyEvent.VK_LEFT) || in.pulsada(KeyEvent.VK_A))
-            cambiarPestana((pestana + PESTANAS.length - 1) % PESTANAS.length);
-        if (in.pulsada(KeyEvent.VK_RIGHT) || in.pulsada(KeyEvent.VK_D) || in.pulsada(KeyEvent.VK_TAB))
-            cambiarPestana((pestana + 1) % PESTANAS.length);
-        return bMenu.clicado(in) || in.pulsada(KeyEvent.VK_ENTER) || in.pulsada(KeyEvent.VK_ESCAPE);
+        if (in.pulsada(KeyEvent.VK_ESCAPE)) return true;
+
+        boolean izquierda = in.pulsada(KeyEvent.VK_LEFT) || in.pulsada(KeyEvent.VK_A);
+        boolean derecha = in.pulsada(KeyEvent.VK_RIGHT) || in.pulsada(KeyEvent.VK_D);
+        boolean arriba = in.pulsada(KeyEvent.VK_UP), abajo = in.pulsada(KeyEvent.VK_DOWN);
+        boolean tab = in.pulsada(KeyEvent.VK_TAB);
+        if (arriba != abajo) {
+            navegacion.seleccionar(abajo ? bPestanas.length : pestana);
+        } else if (tab || (navegacion.getSeleccion() < bPestanas.length && izquierda != derecha)) {
+            int origen = navegacion.getSeleccion() < bPestanas.length ? navegacion.getSeleccion() : pestana;
+            int siguiente = Math.floorMod(origen + (tab || derecha ? 1 : -1), bPestanas.length);
+            navegacion.seleccionar(siguiente);
+            cambiarPestana(siguiente);
+        }
+        navegacion.actualizarRaton(in, izquierda || derecha || arriba || abajo || tab);
+        int activado = navegacion.activado(in, false);
+        if (activado == bPestanas.length) return true;
+        if (activado >= 0) cambiarPestana(activado);
+        return false;
+    }
+
+    private void reiniciarFoco() {
+        navegacion.seleccionar(pestana);
+        iniciarFoco = true;
     }
 
     private void cambiarPestana(int p) {
@@ -193,7 +209,7 @@ public class PantallaRanking {
         dibujarFondo(g, frame);
         Ui.panel(g, 80, 18, 480, 324, Ui.PANEL, Ui.BORDE);
 
-        // Título con Coco a ambos lados
+        // título con un Coco a cada lado
         g.setFont(Ui.FUENTE_GRANDE);
         Ui.textoCentrado(g, "RANKING · TOP 10", 320, 46, Ui.BORDE);
         BufferedImage coco = (frame / 20) % 2 == 0 ? Sprites.COCO_VICTORIA1 : Sprites.COCO_VICTORIA2;
@@ -205,15 +221,14 @@ public class PantallaRanking {
                 : "Mejores tiempos del nivel 2 · el nº1 corre como FANTASMA";
         Ui.textoCentrado(g, sub, 320, 61, Ui.GRIS);
 
-        // Pestañas
+        // pestañas
         for (int i = 0; i < bPestanas.length; i++) {
             bPestanas[i].color = i == pestana ? Andalusi.BOTON_ALBERO : new Color(0x3A3A50);
-            bPestanas[i].dibujar(g, in);
         }
+        navegacion.dibujar(g);
 
         if (pestana == 0) dibujarGeneral(g, frame);
         else dibujarNivel(g, frame, pestana);
-        bMenu.dibujar(g, in);
         g.setFont(Ui.FUENTE_PEQ);
         Ui.texto(g, "←/→ pestaña", 476, 336, APAGADO);
     }
@@ -230,12 +245,14 @@ public class PantallaRanking {
             boolean esNuevo = fila(g, i, fy, p, frame, cPos, cNombre);
             if (p == null) continue;
             Color color = esNuevo ? Ui.VERDE : colorPuesto(i + 1, Ui.TEXTO);
+            g.setFont(Ui.FUENTE_MONO);
             Ui.textoCentrado(g, p.tiempo(), cTiempo, fy, color);
             Ui.textoCentrado(g, String.valueOf(p.muertes()), cCaidas, fy, esNuevo ? Ui.VERDE : Ui.TEXTO);
             Ui.textoCentrado(g, String.valueOf(p.compilaciones()), cComp, fy, esNuevo ? Ui.VERDE : AZUL);
         }
 
-        // Mensaje inferior
+        g.setFont(Ui.FUENTE);
+        // mensaje de abajo
         int my = 290;
         if (!ranking.isGuardadoOk()) {
             Ui.textoCentrado(g, "¡Error! No se pudo guardar el fichero ranking.txt", 320, my, Ui.ROJO);
@@ -249,8 +266,8 @@ public class PantallaRanking {
     }
 
     private void dibujarNivel(Graphics2D g, int frame, int nivel) {
-        final int cPos = 100, cNombre = 136, cTiempo = 330, cTotal = 460;
-        int y = cabecera(g, new String[] { "NOMBRE", "TIEMPO NIVEL " + nivel, "PARTIDA COMPLETA" },
+        final int cPos = 100, cNombre = 136, cTiempo = 350, cTotal = 460;
+        int y = cabecera(g, new String[] { "NOMBRE", "TIEMPO NIVEL", "TIEMPO TOTAL" },
                 new int[] { cNombre, cTiempo, cTotal }, cPos);
 
         List<Puntuacion> mejores = ranking.mejoresNivel(nivel);
@@ -260,15 +277,17 @@ public class PantallaRanking {
             boolean esNuevo = fila(g, i, fy, p, frame, cPos, cNombre);
             if (p == null) continue;
             Color color = esNuevo ? Ui.VERDE : colorPuesto(i + 1, Ui.TEXTO);
+            g.setFont(Ui.FUENTE_MONO);
             Ui.textoCentrado(g, Puntuacion.formatearTiempo(p.framesNivel(nivel)), cTiempo, fy, color);
             Ui.textoCentrado(g, p.tiempo(), cTotal, fy, esNuevo ? Ui.VERDE : Ui.GRIS);
             if (nivel == 2 && i == 0) {
                 g.setFont(Ui.FUENTE_PEQ);
-                Ui.texto(g, "FANTASMA", cNombre + 92, fy, AZUL);
+                Ui.texto(g, "FANTASMA", cNombre + 112, fy, AZUL);
                 g.setFont(Ui.FUENTE);
             }
         }
 
+        g.setFont(Ui.FUENTE);
         int my = 290;
         int idx = resaltada == null ? -1 : mejores.indexOf(resaltada);
         if (idx >= 0) {
@@ -278,9 +297,9 @@ public class PantallaRanking {
         }
     }
 
-    /** Dibuja la cabecera de la tabla y devuelve su y. */
+    // cabecera de la tabla; devuelve su y
     private int cabecera(Graphics2D g, String[] titulos, int[] xs, int cPos) {
-        g.setFont(Ui.FUENTE);
+        g.setFont(Ui.FUENTE_HUD);
         int y = 100;
         Ui.texto(g, "#", cPos, y, Ui.AMARILLO);
         Ui.texto(g, titulos[0], xs[0], y, Ui.AMARILLO);
@@ -290,14 +309,11 @@ public class PantallaRanking {
         return y;
     }
 
-    /**
-     * Fondo, puesto, medalla y nombre de una fila.
-     * @return true si es la partida que se acaba de guardar
-     */
+    // fondo, puesto, medalla y nombre de una fila. true si es la partida recién guardada
     private boolean fila(Graphics2D g, int i, int fy, Puntuacion p, int frame, int cPos, int cNombre) {
         int puestoFila = i + 1;
         g.setFont(Ui.FUENTE);
-        if (i % 2 == 1) {   // filas alternas, como un listado de IDE
+        if (i % 2 == 1) {   // filas alternas, como en un IDE
             g.setColor(Ui.PANEL_2);
             g.fillRect(96, fy - 12, 448, 17);
         }
@@ -315,14 +331,14 @@ public class PantallaRanking {
             g.drawRect(96, fy - 12, 447, 16);
         }
         if (puestoFila <= 3) dibujarMedalla(g, cPos + 14, fy - 9, colorPuesto(puestoFila, Ui.TEXTO));
+        g.setFont(Ui.FUENTE_MONO);
         Ui.texto(g, puestoFila + ".", cPos, fy, esNuevo ? Ui.VERDE : colorPuesto(puestoFila, Ui.TEXTO));
+        g.setFont(Ui.FUENTE);
         Ui.texto(g, p.nombre(), cNombre, fy, esNuevo ? Ui.VERDE : Ui.TEXTO);
         return esNuevo;
     }
 
-    // =====================================================================
-    //  Utilidades
-    // =====================================================================
+    // ---- utilidades ----
 
     private void dibujarFondo(Graphics2D g, int frame) {
         renderer.dibujarFondo(g, Level.Tema.MEZQUITA, frame / 3, 0, 544);
@@ -339,7 +355,7 @@ public class PantallaRanking {
         }
     }
 
-    /** Medalla de 8x8 en pixel art. */
+    // medalla de 8x8
     private static void dibujarMedalla(Graphics2D g, int x, int y, Color color) {
         g.setColor(color.darker().darker());
         g.fillRect(x + 1, y, 6, 8);

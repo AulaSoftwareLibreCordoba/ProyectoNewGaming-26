@@ -8,26 +8,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
-/**
- * FANTASMA DEL RÉCORD: un Coco semitransparente que repite la partida más
- * rápida del nivel 2.
- *
- * No se graban las teclas, sino la POSICIÓN y el dibujo de Coco en cada
- * fotograma del nivel. Así el fantasma siempre hace exactamente lo mismo,
- * aunque el jugador del récord cambiara la física en mitad de la partida.
- *
- * El fotograma i del fantasma corresponde al fotograma i del nivel: si la
- * consola o la pausa detienen el tiempo, el fantasma también se detiene.
- *
- * Fichero binario: "COCO", versión, nombre, fotogramas del nivel y después
- * una muestra por fotograma (x, y como short + 1 byte con dibujo y dirección).
+/*
+ * Fantasma del récord del nivel 2: un Coco transparente que repite la partida más rápida.
+ * Grabamos la posición de cada fotograma (no las teclas), así sale exacto aunque el récord
+ * cambiara la física a mitad. El fotograma i del fantasma va con el fotograma i del nivel.
  */
 public class Fantasma {
 
     private static final int MAGICO = 0x434F434F;   // "COCO"
     private static final int VERSION = 1;
 
-    /** Dibujos posibles de Coco (el índice es lo que se guarda en el fichero). */
+    // los dibujos de Coco; en el fichero se guarda el índice
     private static final BufferedImage[] DIBUJOS = {
         Sprites.COCO_QUIETO, Sprites.COCO_PARPADEO, Sprites.COCO_PASO1, Sprites.COCO_PASO2,
         Sprites.COCO_SALTO, Sprites.COCO_CAIDA, Sprites.COCO_VICTORIA1, Sprites.COCO_VICTORIA2,
@@ -37,7 +28,7 @@ public class Fantasma {
     private final String nombre;
     private final int framesNivel;
     private final short[] xs, ys;
-    private final byte[] info;   // bits 0-6: índice del dibujo · bit 7: mira a la derecha
+    private final byte[] info;   // bits 0-6: dibujo · bit 7: mira a la derecha
 
     private Fantasma(String nombre, int framesNivel, short[] xs, short[] ys, byte[] info) {
         this.nombre = nombre;
@@ -50,15 +41,13 @@ public class Fantasma {
     public String getNombre()   { return nombre; }
     public int getFramesNivel() { return framesNivel; }
 
-    // =====================================================================
-    //  Reproducción
-    // =====================================================================
+    // ---- reproducción ----
 
     private int indice(int frameNivel) {
         return Math.max(0, Math.min(xs.length - 1, frameNivel - 1));
     }
 
-    /** Caja de colisión (x, y) en el fotograma indicado del nivel. */
+    // posición en ese fotograma del nivel
     public int x(int frameNivel) { return xs[indice(frameNivel)]; }
     public int y(int frameNivel) { return ys[indice(frameNivel)]; }
 
@@ -72,16 +61,14 @@ public class Fantasma {
         return (info[indice(frameNivel)] & 0x80) != 0;
     }
 
-    /** ¿Ya ha llegado a la meta? (entonces se queda celebrando) */
+    // ya ha llegado a la meta (se queda celebrando)
     public boolean terminado(int frameNivel) {
         return frameNivel > xs.length;
     }
 
-    // =====================================================================
-    //  Grabación
-    // =====================================================================
+    // ---- grabación ----
 
-    /** Va guardando la posición de Coco en cada fotograma del nivel. */
+    // va apuntando dónde está Coco en cada fotograma
     public static class Grabadora {
         private short[] xs = new short[4096], ys = new short[4096];
         private byte[] info = new byte[4096];
@@ -102,7 +89,6 @@ public class Fantasma {
             n++;
         }
 
-        /** Crea el fantasma con lo grabado hasta ahora. */
         public Fantasma crear(String nombre, int framesNivel) {
             return new Fantasma(nombre, framesNivel,
                     Arrays.copyOf(xs, n), Arrays.copyOf(ys, n), Arrays.copyOf(info, n));
@@ -115,14 +101,12 @@ public class Fantasma {
         }
     }
 
-    /** Copia con otro nombre (el nombre se conoce al final de la partida). */
+    // el nombre se sabe al final de la partida, por eso va aparte
     public Fantasma conNombre(String nuevo) {
         return new Fantasma(nuevo, framesNivel, xs, ys, info);
     }
 
-    // =====================================================================
-    //  Fichero
-    // =====================================================================
+    // ---- fichero ("COCO", versión, nombre, fotogramas y una muestra por fotograma) ----
 
     public void guardar(Path fichero) throws IOException {
         Path tmp = fichero.resolveSibling(fichero.getFileName() + ".tmp");
@@ -141,7 +125,7 @@ public class Fantasma {
         Files.move(tmp, fichero, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
     }
 
-    /** Carga el fantasma; devuelve null si no existe o está dañado. */
+    // null si no existe o está roto
     public static Fantasma cargar(Path fichero) {
         if (!Files.exists(fichero)) return null;
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(fichero)))) {
@@ -149,7 +133,7 @@ public class Fantasma {
             String nombre = in.readUTF();
             int frames = in.readInt();
             int n = in.readInt();
-            if (n <= 0 || n > 60 * 60 * 60) return null;   // máximo 1 hora de grabación
+            if (n <= 0 || n > 60 * 60 * 60) return null;   // como mucho 1 hora
             short[] xs = new short[n], ys = new short[n];
             byte[] info = new byte[n];
             for (int i = 0; i < n; i++) {

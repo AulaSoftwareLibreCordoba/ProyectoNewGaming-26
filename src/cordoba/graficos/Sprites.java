@@ -10,28 +10,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * Todo el PIXEL ART del juego.
+/*
+ * Todo el pixel art del juego. Coco está "dibujado" con texto: cada letra es un píxel de la PALETA,
+ * así que se puede retocar desde el código.
  *
- * El cocodrilo está "dibujado" con texto: cada carácter es un píxel de un color
- * de la PALETA. Así podéis editar el personaje directamente desde el código.
- *
- * Además, cada imagen se busca primero en la carpeta assets/. Si existe un PNG
- * con ese nombre, se usa el PNG (podéis retocarlo con Aseprite, Piskel, GIMP...).
- * Si no existe, se genera desde el código. Para crear los PNG ejecutad:
- *     java -cp out Main --exportar-assets
+ * Cada imagen se busca antes en assets/ (PNG que podéis editar con Aseprite, Piskel, GIMP...).
+ * Si no está, se genera aquí. Para crear los PNG: java -cp out cordoba.Main --exportar-assets
  */
 public final class Sprites {
 
     private Sprites() { }
 
-    // =====================================================================
-    //  PALETA DEL COCODRILO (carácter -> color ARGB)
-    // =====================================================================
+    // ---- paleta de Coco (letra -> color ARGB) ----
     private static final Map<Character, Integer> PALETA = new HashMap<>();
     static {
-        PALETA.put('o', 0xFF14301C); // contorno verde muy oscuro
-        PALETA.put('G', 0xFF4FB848); // verde principal
+        PALETA.put('o', 0xFF14301C); // contorno
+        PALETA.put('G', 0xFF4FB848); // verde
         PALETA.put('D', 0xFF2F8A3A); // verde sombra / escamas
         PALETA.put('H', 0xFF9BE070); // brillo
         PALETA.put('Y', 0xFFF2E38A); // barriga
@@ -41,7 +35,7 @@ public final class Sprites {
         PALETA.put('P', 0xFFFF9AA8); // mejillas
     }
 
-    // ---------------- Partes del cocodrilo (20 columnas cada fila) ----------------
+    // ---- partes de Coco (20 columnas por fila) ----
     private static final String[] CABEZA_NORMAL = {
         "......ooooo.........",
         ".....oWWWWWo........",
@@ -134,7 +128,7 @@ public final class Sprites {
         "...oo.......oo......",
     };
 
-    /** Une cabeza + cuerpo + piernas en un único fotograma de 20x20. */
+    // cabeza + cuerpo + piernas = un fotograma de 20x20
     private static String[] unir(String[] cabeza, String[] cuerpo, String[] piernas) {
         String[] r = new String[cabeza.length + cuerpo.length + piernas.length];
         System.arraycopy(cabeza, 0, r, 0, cabeza.length);
@@ -143,7 +137,7 @@ public final class Sprites {
         return r;
     }
 
-    // ---------------- Fotogramas del cocodrilo (mirando a la derecha) ----------------
+    // ---- fotogramas de Coco (mirando a la derecha) ----
     public static final BufferedImage COCO_QUIETO    = cargar("player/coco_quieto",    unir(CABEZA_NORMAL, CUERPO_BRAZO_ABAJO, PIERNAS_QUIETO));
     public static final BufferedImage COCO_PARPADEO  = cargar("player/coco_parpadeo",  unir(CABEZA_PARPADEO, CUERPO_BRAZO_ABAJO, PIERNAS_QUIETO));
     public static final BufferedImage COCO_PASO1     = cargar("player/coco_paso1",     unir(CABEZA_NORMAL, CUERPO_BRAZO_ABAJO, PIERNAS_PASO1));
@@ -154,14 +148,12 @@ public final class Sprites {
     public static final BufferedImage COCO_VICTORIA2 = cargar("player/coco_victoria2", unir(CABEZA_FELIZ, CUERPO_BRAZOS_ARRIBA, PIERNAS_SALTO));
     public static final BufferedImage COCO_HERIDO    = cargar("player/coco_herido",    unir(CABEZA_PARPADEO, CUERPO_BRAZOS_ARRIBA, PIERNAS_CAIDA));
 
-    /** Animación de caminar: se recorre en bucle. */
+    // andar, en bucle
     public static final BufferedImage[] COCO_ANDAR = { COCO_PASO1, COCO_PASO2, COCO_QUIETO, COCO_PASO2 };
 
-    // =====================================================================
-    //  Carga / generación de imágenes
-    // =====================================================================
+    // ---- cargar / generar imágenes ----
 
-    /** Convierte un dibujo en texto a imagen usando la paleta del cocodrilo. */
+    // texto -> imagen con la paleta de Coco
     public static BufferedImage desdeTexto(String[] filas) {
         int alto = filas.length, ancho = filas[0].length();
         BufferedImage img = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_ARGB);
@@ -174,24 +166,24 @@ public final class Sprites {
         return img;
     }
 
-    /** Busca assets/<ruta>.png; si no existe genera la imagen desde el texto. */
+    // assets/<ruta>.png si existe; si no, desde el texto
     private static BufferedImage cargar(String ruta, String[] datos) {
         BufferedImage desdeArchivo = leerPng(ruta);
         return desdeArchivo != null ? desdeArchivo : desdeTexto(datos);
     }
 
-    /** Intenta leer un PNG de la carpeta assets (devuelve null si no está). */
+    // null si no está
     public static BufferedImage leerPng(String ruta) {
         try {
             File f = new File("assets/" + ruta + ".png");
             if (f.exists()) return ImageIO.read(f);
         } catch (Exception ignorada) {
-            // si el PNG está corrupto usamos la versión generada
+            // si el PNG está roto, tiramos de la versión generada
         }
         return null;
     }
 
-    /** Devuelve una copia volteada horizontalmente (para mirar a la izquierda). */
+    // copia en espejo (para mirar a la izquierda)
     public static BufferedImage voltear(BufferedImage img) {
         BufferedImage r = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
         for (int y = 0; y < img.getHeight(); y++)
@@ -202,24 +194,15 @@ public final class Sprites {
 
     private static final Map<BufferedImage, BufferedImage> VOLTEADAS = new HashMap<>();
 
-    /** Versión volteada guardada en caché para no recalcularla cada fotograma. */
+    // la versión en espejo, cacheada para no calcularla cada fotograma
     public static synchronized BufferedImage volteada(BufferedImage img) {
         return VOLTEADAS.computeIfAbsent(img, Sprites::voltear);
     }
 
-    // =====================================================================
-    //  TILES (bloques de 16x16) generados por código
-    // =====================================================================
+    // ---- tiles de 16x16 ----
     private static final Map<String, BufferedImage> CACHE_TILES = new HashMap<>();
 
-    /**
-     * Devuelve la textura de un tile.
-     * @param tema         ambientación del nivel
-     * @param tipo         carácter del mapa ('#', 'S', '^', 'v', '~')
-     * @param variante     0..3, para que no todos los bloques sean iguales
-     * @param arribaLibre  true si encima no hay bloque (borde superior)
-     * @param abajoLibre   true si debajo no hay bloque (borde inferior)
-     */
+    // tipo = carácter del mapa ('#', 'S', '^', 'v', '~') · variante 0..3 para que no sean todos iguales
     public static synchronized BufferedImage tile(Level.Tema tema, char tipo, int variante,
                                                   boolean arribaLibre, boolean abajoLibre) {
         String clave = tema + "_" + tipo + "_" + variante + "_" + arribaLibre + "_" + abajoLibre;
@@ -266,7 +249,7 @@ public final class Sprites {
         return img;
     }
 
-    /** Tierra de la ribera del Guadalquivir con césped arriba. */
+    // tierra de la ribera con césped
     private static void tileTierra(Graphics2D g, Random r, boolean arriba) {
         g.setColor(new Color(0x8A5A2E));
         g.fillRect(0, 0, 16, 16);
@@ -290,11 +273,11 @@ public final class Sprites {
         }
     }
 
-    /** Adoquines del casco histórico. */
+    // adoquines del casco histórico
     private static void tileAdoquin(Graphics2D g, Random r, boolean arriba) {
         g.setColor(new Color(0x7A6650));
         g.fillRect(0, 0, 16, 16);
-        // ladrillo antiguo interior
+        // ladrillo viejo por dentro
         for (int fila = 0; fila < 4; fila++) {
             int desplaz = (fila % 2) * 4;
             for (int x = -desplaz; x < 16; x += 8) {
@@ -316,7 +299,7 @@ public final class Sprites {
         }
     }
 
-    /** Sillares de piedra arenisca (Puente Romano, murallas). */
+    // sillares de piedra (puente, murallas)
     private static void tileSillar(Graphics2D g, Random r, int var, boolean arriba, boolean abajo) {
         g.setColor(new Color(0xA8864F)); // mortero
         g.fillRect(0, 0, 16, 16);
@@ -345,7 +328,7 @@ public final class Sprites {
         }
     }
 
-    /** Piedra dorada de la Mezquita; por debajo, las dovelas rojas y blancas. */
+    // piedra dorada de la Mezquita y, debajo, las dovelas rojas y blancas
     private static void tileMezquita(Graphics2D g, Random r, int var, boolean arriba, boolean abajo) {
         g.setColor(new Color(0xB89660));
         g.fillRect(0, 0, 16, 16);
@@ -361,7 +344,7 @@ public final class Sprites {
             }
         }
         if (abajo) {
-            // Dovelas bicolor del arco (rojo ladrillo y blanco crema)
+            // dovelas bicolor
             for (int i = 0; i < 4; i++) {
                 boolean rojo = (i + var) % 2 == 0;
                 g.setColor(rojo ? new Color(0xB33A2C) : new Color(0xF3E4C0));
@@ -381,7 +364,7 @@ public final class Sprites {
         }
     }
 
-    /** Pinchos metálicos (hacia arriba o colgando del techo). */
+    // pinchos (hacia arriba o colgando del techo)
     private static void tilePinchos(Graphics2D g, boolean techo) {
         for (int i = 0; i < 3; i++) {
             int bx = 1 + i * 5;
@@ -398,11 +381,9 @@ public final class Sprites {
         if (techo) g.fillRect(0, 0, 16, 2); else g.fillRect(0, 14, 16, 2);
     }
 
-    // =====================================================================
-    //  OBJETOS DEL ESCENARIO
-    // =====================================================================
+    // ---- objetos del escenario ----
 
-    /** Farola cordobesa de hierro (encendida o apagada). 12x36 */
+    // farola cordobesa, 12x36
     public static BufferedImage farola(boolean encendida) {
         String nombre = encendida ? "farola_on" : "farola_off";
         return CACHE_OBJETOS.computeIfAbsent(nombre, k -> {
@@ -433,7 +414,7 @@ public final class Sprites {
         });
     }
 
-    /** Cartel de madera con un signo de exclamación. 14x20 */
+    // cartel de madera con exclamación, 14x20
     public static BufferedImage cartel() {
         return CACHE_OBJETOS.computeIfAbsent("cartel", k -> {
             BufferedImage desdePng = leerPng("interface/" + k);
@@ -457,7 +438,7 @@ public final class Sprites {
 
     private static final Map<String, BufferedImage> CACHE_OBJETOS = new HashMap<>();
 
-    /** Maceta azul con geranios (típica de los patios cordobeses). 10x12 */
+    // maceta azul con geranios, 10x12
     public static BufferedImage maceta(int variante) {
         return CACHE_OBJETOS.computeIfAbsent("maceta" + variante, k -> {
             BufferedImage img = new BufferedImage(12, 13, BufferedImage.TYPE_INT_ARGB);
@@ -486,7 +467,7 @@ public final class Sprites {
         });
     }
 
-    /** Palmera. 40x70 */
+    // palmera, 40x70
     public static BufferedImage palmera() {
         return CACHE_OBJETOS.computeIfAbsent("palmera", k -> {
             BufferedImage img = new BufferedImage(40, 70, BufferedImage.TYPE_INT_ARGB);
@@ -522,7 +503,7 @@ public final class Sprites {
         });
     }
 
-    /** Naranjo (como los del Patio de los Naranjos). 28x34 */
+    // naranjo, 28x34
     public static BufferedImage naranjo() {
         return CACHE_OBJETOS.computeIfAbsent("naranjo", k -> {
             BufferedImage img = new BufferedImage(28, 34, BufferedImage.TYPE_INT_ARGB);
@@ -538,7 +519,7 @@ public final class Sprites {
             for (int i = 0; i < 9; i++) g.fillRect(4 + r.nextInt(19), 4 + r.nextInt(14), 2, 2);
             g.setColor(new Color(0x1F5C25));
             g.fillRect(4, 18, 20, 2);
-            // alcorque (círculo de tierra)
+            // alcorque
             g.setColor(new Color(0x8A5A2E));
             g.fillRect(8, 32, 12, 2);
             g.dispose();
@@ -546,7 +527,7 @@ public final class Sprites {
         });
     }
 
-    /** Cañas y juncos de la orilla del río. 16x18 */
+    // cañas de la orilla, 16x18
     public static BufferedImage canas() {
         return CACHE_OBJETOS.computeIfAbsent("canas", k -> {
             BufferedImage img = new BufferedImage(16, 18, BufferedImage.TYPE_INT_ARGB);
@@ -564,7 +545,7 @@ public final class Sprites {
         });
     }
 
-    /** Guarda todas las imágenes generadas como PNG dentro de assets/. */
+    // guarda todo como PNG en assets/
     public static void exportarAssets() throws Exception {
         String[][] jugador = {
             { "coco_quieto" }, { "coco_parpadeo" }, { "coco_paso1" }, { "coco_paso2" }, { "coco_salto" },

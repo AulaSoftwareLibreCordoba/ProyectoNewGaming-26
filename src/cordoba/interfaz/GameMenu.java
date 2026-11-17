@@ -9,34 +9,94 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 
-/**
- * Pantallas de menú: inicio, pausa y nivel completado.
- * (El final de la partida y el ranking están en PantallaRanking.)
- * Cada método actualizarX() devuelve la acción elegida por el jugador.
- */
+// Menú de inicio, pausa y nivel completado. El final y el ranking están en PantallaRanking.
 public class GameMenu {
 
     public enum Accion { NINGUNA, JUGAR, SALIR, CONTINUAR, REINICIAR, MENU, NIVEL2, RANKING }
 
     private final GameRenderer renderer;
 
-    // Pantalla de inicio
+    // inicio
     private final Boton bJugar   = new Boton(245, 176, 150, 28, "JUGAR", Andalusi.BOTON_VERDE).andalusi();
     private final Boton bRanking = new Boton(245, 212, 150, 28, "RANKING", Andalusi.BOTON_ALBERO).andalusi();
     private final Boton bSalir   = new Boton(245, 248, 150, 28, "SALIR", Andalusi.BOTON_GRANATE).andalusi();
     private final Boton[] botonesInicio = { bJugar, bRanking, bSalir };
-    private int seleccion;          // botón elegido con el teclado (↑/↓)
+    private final NavegacionMenu inicio = new NavegacionMenu(botonesInicio);
 
-    // Pausa
+    // pausa
     private final Boton bContinuar = new Boton(240, 150, 160, 22, "CONTINUAR", Andalusi.BOTON_VERDE).andalusi();
     private final Boton bReiniciar = new Boton(240, 180, 160, 22, "REINICIAR NIVEL", Andalusi.BOTON_AZUL).andalusi();
     private final Boton bMenuPausa = new Boton(240, 210, 160, 22, "MENÚ PRINCIPAL", Andalusi.BOTON_GRANATE).andalusi();
+    private final NavegacionMenu pausa = new NavegacionMenu(bContinuar, bReiniciar, bMenuPausa);
 
-    // Victoria
+    // selección en círculo; si el ratón no se mueve, no le quita el control al teclado
+    static final class NavegacionMenu {
+        private final Boton[] botones;
+        private int seleccion;
+        private int ratonX = Integer.MIN_VALUE, ratonY = Integer.MIN_VALUE;
+
+        NavegacionMenu(Boton... botones) { this.botones = botones; }
+
+        int getSeleccion() { return seleccion; }
+
+        void seleccionar(int indice) { seleccion = indice; }
+
+        void abrir(Input in) {
+            seleccion = 0;
+            ratonX = in.getRatonX();
+            ratonY = in.getRatonY();
+        }
+
+        void actualizar(Input in) {
+            actualizar(in, false);
+        }
+
+        void actualizar(Input in, boolean horizontal) {
+            boolean izquierda = horizontal && in.pulsada(KeyEvent.VK_LEFT);
+            boolean derecha = horizontal && in.pulsada(KeyEvent.VK_RIGHT);
+            boolean arriba = in.pulsada(KeyEvent.VK_UP) || in.pulsada(KeyEvent.VK_W);
+            boolean abajo = in.pulsada(KeyEvent.VK_DOWN) || in.pulsada(KeyEvent.VK_S);
+            if (izquierda != derecha) {
+                seleccion = izquierda ? 0 : botones.length - 1;
+            } else if (arriba != abajo) {
+                seleccion = Math.floorMod(seleccion + (arriba ? -1 : 1), botones.length);
+            }
+            actualizarRaton(in, arriba || abajo || izquierda || derecha);
+        }
+
+        void actualizarRaton(Input in, boolean teclado) {
+            int mx = in.getRatonX(), my = in.getRatonY();
+            if (!teclado && (mx != ratonX || my != ratonY)) {
+                for (int i = 0; i < botones.length; i++)
+                    if (botones[i].contiene(mx, my)) seleccion = i;
+            }
+            ratonX = mx;
+            ratonY = my;
+        }
+
+        int activado(Input in, boolean aceptarEspacio) {
+            for (int i = 0; i < botones.length; i++) {
+                if (botones[i].clicado(in)) {
+                    seleccion = i;
+                    return i;
+                }
+            }
+            if (in.pulsada(KeyEvent.VK_ENTER) || (aceptarEspacio && in.pulsada(KeyEvent.VK_SPACE)))
+                return seleccion;
+            return -1;
+        }
+
+        void dibujar(Graphics2D g) {
+            for (int i = 0; i < botones.length; i++) botones[i].dibujar(g, i == seleccion);
+        }
+    }
+
+    // victoria
     private final Boton bSiguiente = new Boton(180, 262, 130, 24, "CONTINUAR", Andalusi.BOTON_VERDE).andalusi();
     private final Boton bMenuVict  = new Boton(330, 262, 130, 24, "MENÚ", Andalusi.BOTON_AZUL).andalusi();
+    private final NavegacionMenu victoria = new NavegacionMenu(bSiguiente, bMenuVict);
 
-    /** Valores que va "escribiendo" el panel de código del menú (gravedad, velocidad, salto). */
+    // valores que va "escribiendo" el panel de código del menú
     private static final String[][] DEMO_CODIGO = {
         { "9.8", "5.0", "12.0" }, { "4.5", "5.0", "12.0" }, { "4.5", "7.5", "12.0" }, { "9.8", "5.0", "15.0" },
     };
@@ -45,31 +105,28 @@ public class GameMenu {
         this.renderer = renderer;
     }
 
-    // =====================================================================
-    //  PANTALLA DE INICIO
-    // =====================================================================
+    // ---- inicio ----
 
     public Accion actualizarInicio(Input in) {
-        if (in.pulsada(KeyEvent.VK_UP) || in.pulsada(KeyEvent.VK_W)) seleccion = (seleccion + 2) % 3;
-        if (in.pulsada(KeyEvent.VK_DOWN) || in.pulsada(KeyEvent.VK_S)) seleccion = (seleccion + 1) % 3;
-        for (int i = 0; i < botonesInicio.length; i++)
-            if (botonesInicio[i].contiene(in.getRatonX(), in.getRatonY())) seleccion = i;
-
-        if (bJugar.clicado(in)) return Accion.JUGAR;
-        if (bRanking.clicado(in)) return Accion.RANKING;
-        if (bSalir.clicado(in)) return Accion.SALIR;
-        if (in.pulsada(KeyEvent.VK_ENTER) || in.pulsada(KeyEvent.VK_SPACE))
-            return seleccion == 0 ? Accion.JUGAR : seleccion == 1 ? Accion.RANKING : Accion.SALIR;
-        if (in.pulsada(KeyEvent.VK_2)) return Accion.NIVEL2;   // atajo para profesores
+        inicio.actualizar(in);
+        switch (inicio.activado(in, true)) {
+            case 0: return Accion.JUGAR;
+            case 1: return Accion.RANKING;
+            case 2: return Accion.SALIR;
+            default: break;
+        }
+        if (in.pulsada(KeyEvent.VK_2)) return Accion.NIVEL2;   // atajo para profes
         return Accion.NINGUNA;
     }
 
     public void dibujarInicio(Graphics2D g, Input in, int frame) {
         double t = frame / 60.0;
 
-        // ---- Fondo: el río con nubes y agua animadas, y rayos de sol ----
+        // fondo: el río animado con rayos de sol
         renderer.dibujarFondo(g, Level.Tema.RIO, frame / 2, 0, 368, true);   // con orilla de arena
+        dibujarResplandorSol(g, 502, 70, t);
         dibujarRayosSol(g, 502, 70, t);
+        dibujarPajaros(g, t);
         for (int x = 0; x < 640; x += 16) {
             g.drawImage(Sprites.tile(Level.Tema.RIO, '#', (x / 16) % 2, true, false), x, 312, null);
             g.drawImage(Sprites.tile(Level.Tema.RIO, '#', (x / 16 + 1) % 2, false, false), x, 328, null);
@@ -79,13 +136,10 @@ public class GameMenu {
         g.setPaint(new GradientPaint(0, 0, new Color(40, 16, 8, 120), 0, 180, new Color(40, 16, 8, 0)));
         g.fillRect(0, 0, 640, 180);
 
-        // ---- Pétalos de azahar y motas de luz que flotan ----
+        // pétalos de azahar y motas de luz
         dibujarPetalos(g, t);
 
-        // ---- Título en una placa con arquería, como la Mezquita ----
-        dibujarPlacaTitulo(g, frame);
-
-        // ---- Coco caminando (escala x4) ----
+        // Coco andando (x4)
         BufferedImage coco = (frame / 40) % 4 == 3 ? Sprites.COCO_VICTORIA1
                 : Sprites.COCO_ANDAR[(frame / 8) % Sprites.COCO_ANDAR.length];
         int bote = (frame / 8) % 2 == 0 ? 0 : -2;
@@ -93,24 +147,21 @@ public class GameMenu {
         g.fillOval(116, 306, 72, 8);
         g.drawImage(coco, 110, 232 + bote, 80, 80, null);
 
-        // ---- Panel de código que se "edita" solo ----
+        // título en una placa con arquería (encima de Coco)
+        dibujarPlacaTitulo(g, frame);
+
+        // panel de código que se edita solo
         dibujarCodigo(g, frame);
 
-        // ---- Botones (ratón o ↑/↓ + ENTER) ----
-        int mx = in.getRatonX(), my = in.getRatonY();
-        boolean ratonEncima = false;
-        for (Boton b : botonesInicio) ratonEncima |= b.contiene(mx, my);
-        for (int i = 0; i < botonesInicio.length; i++) {
-            boolean elegido = botonesInicio[i].contiene(mx, my) || (!ratonEncima && i == seleccion);
-            botonesInicio[i].dibujar(g, elegido);
-        }
+        // botones (ratón o ↑/↓ + ENTER)
+        inicio.dibujar(g);
         g.setFont(Ui.FUENTE_PEQ);
         String ayuda = "↑/↓ elegir · ENTER aceptar";
         int aw = g.getFontMetrics().stringWidth(ayuda) + 14;
         Andalusi.escalonado(g, 320 - aw / 2, 284, aw, 14, 1, new Color(26, 12, 6, 170));
         Ui.textoCentrado(g, ayuda, 320, 294, Andalusi.ORO_CLARO);
 
-        // ---- Pie con cenefa de alicatado ----
+        // pie con cenefa de alicatado
         g.setColor(new Color(20, 10, 6, 190));
         g.fillRect(0, 326, 640, 34);
         Andalusi.cenefa(g, 0, 322, 640);
@@ -118,14 +169,41 @@ public class GameMenu {
         Ui.textoCentrado(g, "A/D o flechas: mover  ·  ESPACIO: saltar  ·  E: consola de código  ·  ESC: pausa", 320, 341, Ui.TEXTO);
         Ui.textoCentrado(g, "Demo para 2.º DAM · Java + Swing", 320, 355, Andalusi.ORO_CLARO);
 
-        // ---- Fundido de entrada al arrancar ----
+        // fundido al arrancar
         if (frame < 45) {
             g.setColor(new Color(0, 0, 0, Math.max(0, 255 - frame * 255 / 45)));
             g.fillRect(0, 0, 640, 360);
         }
     }
 
-    /** Haces de luz que salen del sol y giran muy despacio. */
+    // halo cálido alrededor del sol que "respira" despacio
+    private void dibujarResplandorSol(Graphics2D g, int cx, int cy, double t) {
+        int r = 150 + (int) (8 * Math.sin(t * 0.8));
+        g.setPaint(new RadialGradientPaint(cx, cy, r, new float[] { 0f, 0.25f, 1f },
+                new Color[] { new Color(255, 244, 200, 110), new Color(255, 200, 120, 45), new Color(255, 170, 90, 0) }));
+        g.fillOval(cx - r, cy - r, r * 2, r * 2);
+    }
+
+    // vencejos cruzando el cielo
+    private void dibujarPajaros(Graphics2D g, double t) {
+        g.setColor(new Color(0x3A2418));
+        for (int i = 0; i < 6; i++) {
+            double vel = 14 + (i % 3) * 5;
+            int x = (int) Math.floorMod((long) (i * 137 + t * vel), 760) - 60;
+            int y = 40 + (i * 23) % 70 + (int) (Math.sin(t * 0.9 + i) * 6);
+            boolean arriba = ((int) (t * 7 + i * 3)) % 2 == 0;
+            int ala = i % 3 == 0 ? 4 : 3;
+            if (arriba) {
+                g.drawLine(x - ala, y - 2, x, y);
+                g.drawLine(x, y, x + ala, y - 2);
+            } else {
+                g.drawLine(x - ala, y + 1, x, y);
+                g.drawLine(x, y, x + ala, y + 1);
+            }
+        }
+    }
+
+    // rayos de sol que giran muy despacio
     private void dibujarRayosSol(Graphics2D g, int cx, int cy, double t) {
         Object aa = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
         for (int i = 0; i < 9; i++) {
@@ -141,7 +219,7 @@ public class GameMenu {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, aa);
     }
 
-    /** Pétalos blancos (azahar) que caen en diagonal y motas doradas que suben. */
+    // pétalos de azahar que caen y motas doradas que suben
     private void dibujarPetalos(Graphics2D g, double t) {
         for (int i = 0; i < 28; i++) {
             boolean petalo = i % 3 != 0;
@@ -160,7 +238,7 @@ public class GameMenu {
         }
     }
 
-    /** Placa del título: marco dorado, arquería de dovelas arriba y cenefa abajo. */
+    // placa del título: marco dorado, arquería arriba y cenefa abajo
     private void dibujarPlacaTitulo(Graphics2D g, int frame) {
         int px = 120, py = 18, pw = 400, ph = 134;
         g.setColor(new Color(0, 0, 0, 90));
@@ -178,28 +256,20 @@ public class GameMenu {
         Andalusi.estrella(g, px + 3, py + ph - 4, 5, Andalusi.ORO_CLARO, Andalusi.MARRON, 0);
         Andalusi.estrella(g, px + pw - 4, py + ph - 4, 5, Andalusi.ORO_CLARO, Andalusi.MARRON, 0);
 
-        // Título: cada letra flota con su propio ritmo y un brillo la recorre
+        // misma base y espaciado que las métricas de la fuente
         g.setFont(Ui.FUENTE_TITULO);
-        letrasOndulantes(g, "CÓRDOBA:", 82, frame, new Color(0xF2D27A), new Color(0x3A1E0E), 0);
-        letrasOndulantes(g, "CÓDIGO SALVAJE", 116, frame, new Color(0x7BE07B), new Color(0x0E2A14), 9);
+        tituloCentrado(g, "CÓRDOBA:", 82, new Color(0xF2D27A), new Color(0x3A1E0E));
+        tituloCentrado(g, "CÓDIGO SALVAJE", 116, new Color(0x7BE07B), new Color(0x0E2A14));
         g.setFont(Ui.FUENTE);
         Ui.textoCentrado(g, "Un plataformas donde programas las leyes de la física", 320, 133, Andalusi.CREMA);
     }
 
-    private void letrasOndulantes(Graphics2D g, String s, int y, int frame, Color color, Color contorno, int desfase) {
-        FontMetrics fm = g.getFontMetrics();
-        int x = 320 - fm.stringWidth(s) / 2;
-        int brillo = (frame / 3) % (s.length() + 40) - 20 + desfase;   // letra iluminada
-        for (int i = 0; i < s.length(); i++) {
-            String c = String.valueOf(s.charAt(i));
-            int dy = (int) Math.round(Math.sin(frame / 18.0 + (i + desfase) * 0.55) * 2.5);
-            Color col = Math.abs(i - brillo) <= 1 ? Andalusi.mezclar(color, Color.WHITE, 0.6f) : color;
-            Ui.textoContorno(g, c, x, y + dy, col, contorno);
-            x += fm.stringWidth(c);
-        }
+    private void tituloCentrado(Graphics2D g, String s, int y, Color color, Color contorno) {
+        int x = 320 - g.getFontMetrics().stringWidth(s) / 2;
+        Ui.textoContorno(g, s, x, y, color, contorno);
     }
 
-    /** Panel de código: cada pocos segundos cambia un valor y "compila". */
+    // cada pocos segundos cambia un valor y "compila"
     private void dibujarCodigo(Graphics2D g, int frame) {
         int ciclo = 180;
         int paso = (frame / ciclo) % DEMO_CODIGO.length;
@@ -210,7 +280,7 @@ public class GameMenu {
         int x = 432, y = 170, w = 190, h = 84;
         Andalusi.marco(g, x, y, w, h, Ui.PANEL, false);
         g.setFont(Ui.FUENTE_PEQ);
-        Ui.texto(g, "// ¡Cámbiame!", x + 10, y + 17, new Color(0x6A9955));
+        Ui.texto(g, "// ¡Cámbiame!", x + 10, y + 17, new Color(0xA6C98A));
         String[] nombres = { "gravedad", "velocidad", "fuerzaSalto" };
         for (int i = 0; i < 3; i++) {
             boolean cambia = !ahora[i].equals(antes[i]);
@@ -220,27 +290,33 @@ public class GameMenu {
                 int letras = Math.min(valor.length(), Math.max(0, (enCiclo - 20) / 10));
                 valor = letras == 0 ? antes[i] : valor.substring(0, letras);
             }
-            String linea = "float " + nombres[i] + " = " + valor + "f;";
+            String prefijo = "float " + nombres[i] + " = ";
             Color col = cambia && !compilado ? Ui.AMARILLO : new Color(0x82AAFF);
-            Ui.texto(g, linea, x + 10, y + 31 + i * 13, col);
+            Ui.dato(g, prefijo, valor + "f;", x + 10, y + 31 + i * 13, col);
             if (cambia && !compilado && (frame / 15) % 2 == 0) {
                 g.setColor(Ui.TEXTO);
-                g.fillRect(x + 11 + g.getFontMetrics().stringWidth(linea), y + 23 + i * 13, 2, 9);
+                g.fillRect(x + 11 + Ui.anchoDato(g, prefijo, valor + "f;"), y + 23 + i * 13, 2, 9);
             }
         }
         if (compilado) Ui.texto(g, "BUILD SUCCESSFUL", x + 10, y + 72, Ui.VERDE);
         else Ui.texto(g, "editando...", x + 10, y + 72, Ui.GRIS);
     }
 
-    // =====================================================================
-    //  PAUSA
-    // =====================================================================
+    // ---- pausa ----
+
+    public void abrirPausa(Input in) {
+        pausa.abrir(in);
+    }
 
     public Accion actualizarPausa(Input in) {
-        if (bContinuar.clicado(in) || in.pulsada(KeyEvent.VK_ESCAPE)) return Accion.CONTINUAR;
-        if (bReiniciar.clicado(in)) return Accion.REINICIAR;
-        if (bMenuPausa.clicado(in)) return Accion.MENU;
-        return Accion.NINGUNA;
+        if (in.pulsada(KeyEvent.VK_ESCAPE)) return Accion.CONTINUAR;
+        pausa.actualizar(in);
+        switch (pausa.activado(in, false)) {
+            case 0: return Accion.CONTINUAR;
+            case 1: return Accion.REINICIAR;
+            case 2: return Accion.MENU;
+            default: return Accion.NINGUNA;
+        }
     }
 
     public void dibujarPausa(Graphics2D g, Input in) {
@@ -249,18 +325,24 @@ public class GameMenu {
         Andalusi.marco(g, 220, 100, 200, 148, Ui.PANEL, true);
         g.setFont(Ui.FUENTE_GRANDE);
         Ui.textoCentrado(g, "PAUSA", 320, 132, Andalusi.ORO_CLARO);
-        bContinuar.dibujar(g, in);
-        bReiniciar.dibujar(g, in);
-        bMenuPausa.dibujar(g, in);
+        pausa.dibujar(g);
     }
 
-    // =====================================================================
-    //  NIVEL COMPLETADO
-    // =====================================================================
+    // ---- nivel completado ----
+
+    public void abrirVictoria(Input in) {
+        victoria.abrir(in);
+    }
 
     public Accion actualizarVictoria(Input in) {
-        if (bSiguiente.clicado(in) || in.pulsada(KeyEvent.VK_ENTER)) return Accion.CONTINUAR;
-        if (bMenuVict.clicado(in) || in.pulsada(KeyEvent.VK_ESCAPE)) return Accion.MENU;
+        // izquierda/derecha eligen botón; arriba/abajo siguen el ciclo de siempre
+        victoria.actualizar(in, true);
+        switch (victoria.activado(in, false)) {
+            case 0: return Accion.CONTINUAR;
+            case 1: return Accion.MENU;
+            default: break;
+        }
+        if (in.pulsada(KeyEvent.VK_ESCAPE)) return Accion.MENU;
         return Accion.NINGUNA;
     }
 
@@ -281,15 +363,14 @@ public class GameMenu {
 
         dibujarEstadisticas(g, frames, muertes, compilaciones, 206);
         Ui.textoCentrado(g, "Siguiente: Nivel 2 — El desafío de la Mezquita", 320, 252, Ui.AMARILLO);
-        bSiguiente.dibujar(g, in);
-        bMenuVict.dibujar(g, in);
+        victoria.dibujar(g);
     }
 
     private void dibujarEstadisticas(Graphics2D g, int frames, int muertes, int compilaciones, int y) {
         int seg = frames / 60;
         g.setFont(Ui.FUENTE);
-        Ui.textoCentrado(g, String.format("Tiempo: %d:%02d", seg / 60, seg % 60), 320, y, Ui.TEXTO);
-        Ui.textoCentrado(g, "Caídas: " + muertes, 320, y + 14, Ui.TEXTO);
-        Ui.textoCentrado(g, "Cambios de código compilados: " + compilaciones, 320, y + 28, new Color(0x82AAFF));
+        Ui.datoCentrado(g, "Tiempo: ", String.format("%d:%02d", seg / 60, seg % 60), 320, y, Ui.TEXTO);
+        Ui.datoCentrado(g, "Caídas: ", String.valueOf(muertes), 320, y + 14, Ui.TEXTO);
+        Ui.datoCentrado(g, "Cambios de código compilados: ", String.valueOf(compilaciones), 320, y + 28, new Color(0x82AAFF));
     }
 }

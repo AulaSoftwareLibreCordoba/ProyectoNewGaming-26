@@ -9,6 +9,7 @@ import cordoba.graficos.GameRenderer;
 import cordoba.graficos.Particulas;
 import cordoba.interfaz.CodeEditor;
 import cordoba.interfaz.GameMenu;
+import cordoba.interfaz.Introduccion;
 import cordoba.interfaz.PantallaRanking;
 import cordoba.interfaz.Ui;
 import cordoba.niveles.Level1;
@@ -26,15 +27,8 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
 
-/**
- * Núcleo del juego: bucle principal, máquina de estados y cámara.
- *
- * El juego se dibuja en una imagen de 640x360 (resolución interna) que después
- * se escala a la ventana con "vecino más próximo" para conservar los píxeles.
- *
- * El bucle funciona a 60 actualizaciones por segundo fijas: así las físicas
- * son siempre iguales en cualquier ordenador.
- */
+// El corazón del juego: bucle, estados y cámara. Todo se pinta en una imagen de 640x360 que luego
+// se escala sin suavizar. Va a 60 actualizaciones fijas por segundo, así la física es igual en cualquier PC.
 public class Game extends Canvas implements Runnable {
 
     public static final int ANCHO = 640, ALTO = 360;
@@ -45,18 +39,19 @@ public class Game extends Canvas implements Runnable {
     private final PhysicsConfig fisica = new PhysicsConfig();
     private final GameRenderer renderer = new GameRenderer();
     private final GameMenu menu = new GameMenu(renderer);
+    private final Introduccion intro = new Introduccion(renderer);
     private final CodeEditor editor = new CodeEditor();
     private final Particulas particulas = new Particulas();
     private final Ranking ranking = new Ranking(Path.of("ranking.txt"));
     private final PantallaRanking pantallaRanking = new PantallaRanking(renderer, ranking);
 
-    // Fantasma del récord del nivel 2
+    // fantasma del récord del nivel 2
     private static final Path FICHERO_FANTASMA = Path.of("fantasma.dat");
     private Fantasma fantasma = Fantasma.cargar(FICHERO_FANTASMA);   // el guardado en disco
-    private Fantasma fantasmaNivel;                // el que corre en el nivel actual (o null)
+    private Fantasma fantasmaNivel;                // el que corre en este nivel (o null)
     private boolean fantasmaVisible = true;        // tecla G
     private Fantasma.Grabadora grabadora = new Fantasma.Grabadora();
-    private Fantasma grabacionN2;                  // la partida actual en el nivel 2
+    private Fantasma grabacionN2;                  // tu partida en el nivel 2
 
     private GameState estado = GameState.MENU;
     private Level nivel;
@@ -64,21 +59,23 @@ public class Game extends Canvas implements Runnable {
     private CollisionManager colisiones;
 
     private float camX, camY;
-    private int frame;                 // contador global (animaciones de interfaz)
+    private int frame;                 // contador global para animaciones
     private int timerVictoria;         // celebración antes de la pantalla de victoria
 
-    // Estadísticas
+    // estadísticas
     private int framesNivel, muertesNivel, compilacionesNivel;
     private int framesTotal, muertesTotal, compilacionesTotal;
-    private final int[] framesPorNivel = new int[3];   // tiempo de cada nivel (índices 1 y 2)
+    private final int[] framesPorNivel = new int[3];   // tiempo de cada nivel (se usan el 1 y el 2)
 
-    // Aviso temporal en la parte inferior
+    // aviso temporal de abajo
     private String aviso;
     private Color colorAviso = Ui.VERDE;
     private int avisoTimer;
 
     private volatile boolean ejecutando;
     private Runnable alSalir = () -> System.exit(0);
+    private Runnable alPantallaCompleta;   // F11 (lo pone Main)
+    private volatile boolean rehacerBuffer;  // la ventana se ha recreado (F11) y el búfer viejo ya no vale
 
     public Game() {
         setBackground(Color.BLACK);
@@ -89,7 +86,7 @@ public class Game extends Canvas implements Runnable {
         addFocusListener(new FocusAdapter() {
             @Override
             public void focusLost(FocusEvent e) {
-                input.soltarTodo();   // evita teclas "pegadas" al cambiar de ventana
+                input.soltarTodo();   // que no se queden teclas pegadas al cambiar de ventana
             }
         });
         setFocusTraversalKeysEnabled(false);
@@ -99,6 +96,16 @@ public class Game extends Canvas implements Runnable {
         alSalir = r;
     }
 
+    public void setAlPantallaCompleta(Runnable r) {
+        alPantallaCompleta = r;
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        rehacerBuffer = true;
+    }
+
     public void iniciar() {
         ejecutando = true;
         Thread hilo = new Thread(this, "BucleJuego");
@@ -106,7 +113,7 @@ public class Game extends Canvas implements Runnable {
         requestFocus();
     }
 
-    /** Bucle principal con paso de tiempo fijo. */
+    // bucle con paso de tiempo fijo
     @Override
     public void run() {
         final double nsPorFrame = 1_000_000_000.0 / FPS;
@@ -116,7 +123,7 @@ public class Game extends Canvas implements Runnable {
             long ahora = System.nanoTime();
             acumulado += (ahora - anterior) / nsPorFrame;
             anterior = ahora;
-            if (acumulado > 5) acumulado = 5;   // si el PC se atasca, no "corremos" para recuperar
+            if (acumulado > 5) acumulado = 5;   // si el PC se atasca, no corremos para recuperar
             boolean dibujar = false;
             while (acumulado >= 1) {
                 actualizar();
@@ -133,19 +140,21 @@ public class Game extends Canvas implements Runnable {
         }
     }
 
-    // =====================================================================
-    //  ACTUALIZACIÓN
-    // =====================================================================
+    // ---- actualizar ----
 
     public void actualizar() {
         frame++;
-        // M silencia el sonido (salvo mientras se escribe el nombre, que podría llevar una M)
+        // M silencia (menos al escribir el nombre, que puede llevar M)
         if (estado != GameState.JUEGO_COMPLETADO && input.pulsada(KeyEvent.VK_M)) Sonido.alternarSilencio();
+        if (input.pulsada(KeyEvent.VK_F11) && alPantallaCompleta != null) EventQueue.invokeLater(alPantallaCompleta);
 
         switch (estado) {
             case MENU:
                 switch (menu.actualizarInicio(input)) {
-                    case JUGAR:  empezarPartida(1); break;
+                    case JUGAR:
+                        intro.reiniciar();
+                        estado = GameState.INTRO;
+                        break;
                     case NIVEL2: empezarPartida(2); break;
                     case RANKING:
                         pantallaRanking.verTabla();
@@ -154,6 +163,9 @@ public class Game extends Canvas implements Runnable {
                     case SALIR:  salir(); break;
                     default: break;
                 }
+                break;
+            case INTRO:
+                if (intro.actualizar(input)) empezarPartida(1);
                 break;
             case JUGANDO:
                 actualizarPartida();
@@ -204,6 +216,7 @@ public class Game extends Canvas implements Runnable {
             return;
         }
         if (input.pulsada(KeyEvent.VK_ESCAPE)) {
+            menu.abrirPausa(input);
             estado = GameState.PAUSA;
             return;
         }
@@ -219,27 +232,24 @@ public class Game extends Canvas implements Runnable {
         paso(izq, der, saltar);
     }
 
-    /**
-     * Un fotograma de juego con las entradas indicadas.
-     * Es público para poder probar los niveles de forma automática.
-     */
+    // un fotograma de juego; es público para poder probar los niveles automáticamente
     public void paso(boolean izq, boolean der, boolean saltar) {
         framesNivel++;
         nivel.actualizar(jugador, particulas);
         jugador.actualizar(izq, der, saltar, fisica, nivel, colisiones, particulas);
         particulas.actualizar();
 
-        // ¿Ha tocado algo peligroso?
+        // ¿ha tocado algo que mata?
         if (!jugador.muerto && !jugador.celebrando && colisiones.tocaPeligro(jugador)) {
             jugador.morir();
             particulas.emitir(jugador.centroX(), jugador.centroY(), 20, new Color(0x4FB848), 2.2f, 0.12f, 35);
         }
-        // Reaparecer tras la animación de muerte
+        // reaparece tras la animación de muerte
         if (jugador.muerto && jugador.timerMuerte > 55) {
             muertesNivel++;
             reaparecer();
         }
-        // ¿Ha llegado a la meta?
+        // ¿ha llegado a la meta?
         if (!jugador.muerto && !jugador.celebrando && nivel.getMeta().intersects(
                 jugador.x, jugador.y, Player.ANCHO, Player.ALTO)) {
             jugador.celebrar();
@@ -257,7 +267,7 @@ public class Game extends Canvas implements Runnable {
         moverCamara(false);
     }
 
-    /** G muestra u oculta el fantasma del récord. */
+    // G enseña/oculta el fantasma
     private void alternarFantasma() {
         if (fantasmaNivel != null && input.pulsada(KeyEvent.VK_G)) {
             fantasmaVisible = !fantasmaVisible;
@@ -283,11 +293,11 @@ public class Game extends Canvas implements Runnable {
                 break;
         }
         alternarFantasma();
-        // ¡El juego NO se pausa! Coco se mueve con las flechas (W/A/S/D son de la consola)
-        boolean izq = input.abajo(KeyEvent.VK_LEFT);
-        boolean der = input.abajo(KeyEvent.VK_RIGHT);
-        boolean saltar = input.pulsada(KeyEvent.VK_SPACE) || input.pulsada(KeyEvent.VK_UP);
-        paso(izq, der, saltar);
+        // Coco y el nivel se quedan quietos, pero el cronómetro sigue (y el fantasma también)
+        if (estado == GameState.EDITOR) {
+            framesNivel++;
+            grabadora.grabar(jugador);
+        }
     }
 
     private void mostrarAviso(String texto, Color color) {
@@ -296,9 +306,7 @@ public class Game extends Canvas implements Runnable {
         avisoTimer = 180;
     }
 
-    // =====================================================================
-    //  NIVELES
-    // =====================================================================
+    // ---- niveles ----
 
     private void empezarPartida(int numero) {
         framesTotal = muertesTotal = compilacionesTotal = 0;
@@ -338,14 +346,12 @@ public class Game extends Canvas implements Runnable {
             pantallaRanking.empezarNombre();
             estado = GameState.JUEGO_COMPLETADO;
         } else {
+            menu.abrirVictoria(input);
             estado = GameState.NIVEL_COMPLETADO;
         }
     }
 
-    /**
-     * El fantasma solo vale si coincide con el récord actual del nivel 2
-     * (si se borra ranking.txt para una competición nueva, el fantasma viejo deja de salir).
-     */
+    // el fantasma solo vale si coincide con el récord actual (si borráis ranking.txt, el viejo deja de salir)
     private Fantasma fantasmaDelRecord() {
         Puntuacion record = ranking.mejorNivel(2);
         if (fantasma == null || record == null) return null;
@@ -363,7 +369,7 @@ public class Game extends Canvas implements Runnable {
         }
     }
 
-    /** La cámara sigue a Coco con suavidad y mira un poco hacia donde avanza. */
+    // la cámara sigue a Coco suave y mira un poco hacia donde va
     private void moverCamara(boolean instantaneo) {
         float objetivoX = jugador.centroX() - ANCHO / 2f + (jugador.mirandoDerecha ? 40 : -40);
         float objetivoY = jugador.centroY() - ALTO / 2f - 10;
@@ -383,18 +389,17 @@ public class Game extends Canvas implements Runnable {
         alSalir.run();
     }
 
-    // =====================================================================
-    //  DIBUJO
-    // =====================================================================
+    // ---- dibujo ----
 
-    /** Dibuja el estado actual sobre la imagen interna de 640x360. */
     public BufferedImage renderizar() {
         Graphics2D g = lienzo.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+        Ui.preparar(g);
         switch (estado) {
             case MENU:
                 menu.dibujarInicio(g, input, frame);
+                break;
+            case INTRO:
+                intro.dibujar(g);
                 break;
             case JUEGO_COMPLETADO:
                 pantallaRanking.dibujarNombre(g, input, framesTotal, muertesTotal, compilacionesTotal,
@@ -408,12 +413,12 @@ public class Game extends Canvas implements Runnable {
                 Fantasma f = fantasmaVisible ? fantasmaNivel : null;
                 renderer.dibujarEscenario(g, nivel, jugador, particulas, f, framesNivel, cx, cy, nivel.getFrames());
                 if (estado == GameState.EDITOR) {
-                    // Consola arriba; Coco se vuelve a dibujar encima para no perderlo de vista
+                    // consola arriba y Coco encima para no perderlo de vista
                     editor.dibujar(g, input, frame, Puntuacion.formatearTiempo(framesTotal + framesNivel));
                     renderer.dibujarJugadorEncima(g, jugador, cx, cy, nivel.getFrames());
                     renderer.dibujarAvisosEspeciales(g, nivel, jugador, fisica, frame, editor.getAbajo() + 16);
                     String msg = nivel.getMensaje();
-                    if (msg != null) renderer.dibujarMensaje(g, msg, Math.max(31, nivel.getMensajeTimer()), -1);
+                    if (msg != null) renderer.dibujarMensaje(g, msg, nivel.getDesbloqueo(), Math.max(31, nivel.getMensajeTimer()), -1);
                 } else {
                     renderer.dibujarHUD(g, nivel, jugador, fisica, frame, muertesNivel, aviso, colorAviso, avisoTimer,
                             framesNivel < 600 || estado == GameState.PAUSA,
@@ -429,18 +434,30 @@ public class Game extends Canvas implements Runnable {
         return lienzo;
     }
 
-    /** Escala la imagen interna a la ventana manteniendo la proporción 16:9. */
+    // escala la imagen a la ventana manteniendo 16:9
     private void presentar() {
+        if (!isDisplayable()) return;   // la ventana se está rehaciendo (F11)
         BufferStrategy bs = getBufferStrategy();
-        if (bs == null) {
-            createBufferStrategy(2);
+        if (bs == null || rehacerBuffer) {
+            rehacerBuffer = false;
+            try {
+                createBufferStrategy(2);
+            } catch (IllegalStateException e) {
+                rehacerBuffer = true;
+            }
             return;
         }
         renderizar();
+        try {
+            pintar(bs);
+        } catch (IllegalStateException e) {
+            rehacerBuffer = true;   // se ha cambiado la ventana a medio dibujar
+        }
+    }
+
+    private void pintar(BufferStrategy bs) {
         int w = getWidth(), h = getHeight();
-        double escala = Math.min(w / (double) ANCHO, h / (double) ALTO);
-        // Escala entera si queda bien (píxeles perfectos); si no, fraccionaria
-        if (escala >= 1 && Math.floor(escala) / escala >= 0.85) escala = Math.floor(escala);
+        double escala = Ui.escalaVentana(w, h);
         int dw = (int) (ANCHO * escala), dh = (int) (ALTO * escala);
         int ox = (w - dw) / 2, oy = (h - dh) / 2;
         input.setTransformacion(escala, ox, oy);
@@ -456,7 +473,7 @@ public class Game extends Canvas implements Runnable {
         Toolkit.getDefaultToolkit().sync();
     }
 
-    // ---- Accesos para pruebas automáticas ----
+    // para las pruebas automáticas
     public Player getJugador()        { return jugador; }
     public Level getNivel()           { return nivel; }
     public PhysicsConfig getFisica()  { return fisica; }

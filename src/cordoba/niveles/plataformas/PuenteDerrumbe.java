@@ -7,28 +7,18 @@ import cordoba.niveles.Level;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-/**
- * Pasarela de madera vieja: en cuanto el jugador ENTRA en ella empieza una
- * cuenta atrás y, al terminar, se derrumba entera.
- *
- * Reto de programación: aumentar la "velocidad" para cruzarla a tiempo.
- * Saltar no ayuda: el tiempo depende solo de la distancia / velocidad.
- */
+// Pasarela vieja: en cuanto Coco entra empieza una cuenta atrás y al acabar se hunde entera.
+// El reto es subir la velocidad; saltar no ayuda, solo cuenta distancia / velocidad.
 public class PuenteDerrumbe extends PlataformaDinamica {
 
     private enum Estado { INTACTO, CRUJIENDO, CAIDO }
 
-    private final int framesLimite;     // fotogramas hasta derrumbarse (60 = 1 segundo)
+    private final int framesLimite;     // fotogramas hasta hundirse (60 = 1 s)
     private Estado estado = Estado.INTACTO;
     private int contador;
-    private float caida;                // desplazamiento de las tablas al caer
+    private float caida;                // lo que han caído las tablas
 
-    /**
-     * @param x            píxel izquierdo
-     * @param y            píxel superior
-     * @param anchoTiles   longitud en bloques de 16 px
-     * @param framesLimite tiempo antes de derrumbarse (en fotogramas)
-     */
+    // x, y en píxeles · anchoTiles en bloques de 16 px · framesLimite = tiempo antes de hundirse
     public PuenteDerrumbe(float x, float y, int anchoTiles, int framesLimite) {
         super(x, y, anchoTiles * Level.TILE, 6);
         this.framesLimite = framesLimite;
@@ -61,7 +51,7 @@ public class PuenteDerrumbe extends PlataformaDinamica {
             case CAIDO:
                 contador++;
                 caida += 0.5f + contador * 0.12f;
-                // Se "reconstruye" sola para poder reintentarlo
+                // se rehace sola para poder reintentarlo
                 if (contador > 150) reiniciar();
                 break;
             default:
@@ -85,7 +75,7 @@ public class PuenteDerrumbe extends PlataformaDinamica {
         return estado == Estado.CRUJIENDO;
     }
 
-    /** Segundos que quedan antes del derrumbe. */
+    // segundos que quedan
     public float segundosRestantes() {
         return Math.max(0, (framesLimite - contador) / 60f);
     }
@@ -102,7 +92,7 @@ public class PuenteDerrumbe extends PlataformaDinamica {
             int tx = (int) x + i * 8 - camX;
             int ty = (int) y - camY;
             if (estado == Estado.CRUJIENDO) {
-                // temblor cada vez más fuerte
+                // tiembla cada vez más
                 int amp = (int) (progreso * 3);
                 if (amp > 0) ty += ((frame * 7 + i * 13) % (amp * 2 + 1)) - amp;
             } else if (estado == Estado.CAIDO) {
@@ -123,7 +113,7 @@ public class PuenteDerrumbe extends PlataformaDinamica {
             }
         }
         if (estado != Estado.CAIDO) {
-            // cuerdas de la pasarela
+            // cuerdas
             g.setColor(new Color(0x7A5A30));
             int cy = (int) y - camY - 10;
             g.fillRect((int) x - camX, cy, (int) ancho, 1);

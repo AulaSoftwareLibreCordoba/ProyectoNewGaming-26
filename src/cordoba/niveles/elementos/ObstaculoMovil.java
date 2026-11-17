@@ -5,10 +5,7 @@ import cordoba.entidades.Player;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-/**
- * Bola de pinchos que se mueve de un punto a otro (ida y vuelta suave).
- * Si toca al cocodrilo, este pierde y vuelve a la última farola.
- */
+// Bola de pinchos que va y viene. Si toca a Coco, vuelta a la última farola.
 public class ObstaculoMovil {
 
     private final float x1, y1, x2, y2;
@@ -16,10 +13,7 @@ public class ObstaculoMovil {
     private final float radio = 7;
     private float cx, cy;
 
-    /**
-     * @param periodo fotogramas que tarda en ir y volver
-     * @param desfase para desincronizar varias bolas
-     */
+    // periodo = fotogramas en ir y volver · desfase = para que no vayan todas a la vez
     public ObstaculoMovil(float x1, float y1, float x2, float y2, int periodo, int desfase) {
         this.x1 = x1;
         this.y1 = y1;
@@ -33,12 +27,12 @@ public class ObstaculoMovil {
 
     public void actualizar(int frame) {
         double t = ((frame + desfase) % periodo) / (double) periodo;
-        double s = (1 - Math.cos(t * Math.PI * 2)) / 2;   // va de 0 a 1 y vuelve a 0
+        double s = (1 - Math.cos(t * Math.PI * 2)) / 2;   // va de 0 a 1 y vuelve
         cx = (float) (x1 + (x2 - x1) * s);
         cy = (float) (y1 + (y2 - y1) * s);
     }
 
-    /** Colisión círculo-rectángulo con la caja del jugador (algo reducida). */
+    // choque círculo-rectángulo con la caja de Coco (un poco reducida)
     public boolean golpea(Player j) {
         float rx1 = j.x + 2, ry1 = j.y + 2, rx2 = j.x + Player.ANCHO - 2, ry2 = j.y + Player.ALTO - 2;
         float px = Math.max(rx1, Math.min(cx, rx2));
@@ -49,10 +43,10 @@ public class ObstaculoMovil {
 
     public void dibujar(Graphics2D g, int camX, int camY, int frame) {
         int px = (int) cx - camX, py = (int) cy - camY;
-        // cadena / guía del recorrido
+        // cadena del recorrido
         g.setColor(new Color(0, 0, 0, 60));
         g.drawLine((int) x1 - camX, (int) y1 - camY, (int) x2 - camX, (int) y2 - camY);
-        // pinchos giratorios
+        // pinchos girando
         double giro = frame * 0.12;
         g.setColor(new Color(0x9AA4AE));
         for (int i = 0; i < 8; i++) {

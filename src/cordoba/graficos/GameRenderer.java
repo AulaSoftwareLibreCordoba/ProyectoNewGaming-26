@@ -8,6 +8,7 @@ import cordoba.fisica.VariableFisica;
 import cordoba.graficos.ambiente.Agua;
 import cordoba.graficos.ambiente.Ambiente;
 import cordoba.graficos.luz.Iluminacion;
+import cordoba.graficos.luz.PrimerPlano;
 import cordoba.graficos.luz.Profundidad;
 import cordoba.graficos.luz.SalaProfunda;
 import cordoba.interfaz.Ui;
@@ -24,31 +25,23 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
-/**
- * Dibuja la partida: fondo con parallax, tiles, objetos, jugador y HUD.
- * No modifica nada del juego: solo "lee" el estado y lo pinta.
- */
+// Pinta la partida (fondo, tiles, objetos, Coco y HUD). Solo lee el estado, no cambia nada.
 public class GameRenderer {
 
     private static final int T = Level.TILE;
 
-    /** Efectos visuales (carpeta graficos/luz): no cambian nada del juego. */
+    // efectos de luz (graficos/luz): pura decoración
     private final Profundidad profundidad = new Profundidad();
     private final Iluminacion iluminacion = new Iluminacion();
 
-    // =====================================================================
-    //  ESCENARIO
-    // =====================================================================
+    // ---- escenario ----
 
     public void dibujarEscenario(Graphics2D g, Level nivel, Player p, Particulas part,
                                  int camX, int camY, int frame) {
         dibujarEscenario(g, nivel, p, part, null, 0, camX, camY, frame);
     }
 
-    /**
-     * Igual que el anterior, pero dibujando también el FANTASMA del récord
-     * (detrás de Coco). frameNivel = fotogramas jugados en el nivel.
-     */
+    // igual, pero con el fantasma del récord detrás de Coco
     public void dibujarEscenario(Graphics2D g, Level nivel, Player p, Particulas part,
                                  Fantasma fantasma, int frameNivel, int camX, int camY, int frame) {
         dibujarFondo(g, nivel.getTema(), camX, camY, nivel.getAltoPx());
@@ -70,18 +63,23 @@ public class GameRenderer {
         dibujarJugador(g, p, camX, camY, frame);
         iluminacion.aplicar(g, nivel, p, camX, camY, frame);
         part.dibujar(g, camX, camY);
+        // cosas entre Coco y la cámara (desenfocadas) para dar profundidad
+        Rectangle coco = new Rectangle(Math.round(p.x) - camX, Math.round(p.y) - camY, Player.ANCHO, Player.ALTO);
+        PrimerPlano.dibujar(g, nivel.getTema(), camX, interiorMezquita(nivel.getTema(), camY), coco, frame);
         iluminacion.vineta(g, nivel.getTema());
     }
 
-    /** Fondo por capas. Las más lejanas se desplazan menos (parallax). */
+    // cuánto se está dentro de la Mezquita (0 fuera, 1 en la sala de columnas); misma cuenta que el fondo
+    private static float interiorMezquita(Level.Tema tema, int camY) {
+        if (tema != Level.Tema.MEZQUITA) return 0f;
+        return Math.max(0f, Math.min(1f, (camY - 110) / 60f));
+    }
+
     public void dibujarFondo(Graphics2D g, Level.Tema tema, int camX, int camY, int altoNivel) {
         dibujarFondo(g, tema, camX, camY, altoNivel, false);
     }
 
-    /**
-     * Igual, pero con orilla = true se pinta una orilla de arena bajo las palmeras
-     * del río (en el menú, donde no hay suelo del nivel que las sostenga).
-     */
+    // orilla = true pinta arena bajo las palmeras (en el menú no hay suelo que las sostenga)
     public void dibujarFondo(Graphics2D g, Level.Tema tema, int camX, int camY, int altoNivel, boolean orilla) {
         BufferedImage[] capas = Fondos.capas(tema);
         for (int i = 0; i < capas.length; i++) {
@@ -89,8 +87,8 @@ public class GameRenderer {
             int dy = 0;
             if (tema == Level.Tema.RIO) dy = -camY / 4;
             if (tema == Level.Tema.MEZQUITA && i == 3) {
-                // La sala de columnas aparece al bajar al interior de la Mezquita
-                alfa = Math.max(0f, Math.min(1f, (camY - 110) / 60f));
+                // la sala de columnas aparece al bajar dentro de la Mezquita
+                alfa = interiorMezquita(tema, camY);
                 if (alfa <= 0) continue;
                 dy = 90;
             }
@@ -103,7 +101,6 @@ public class GameRenderer {
             }
             if (orilla && tema == Level.Tema.RIO && i == 3) Ambiente.orilla(g, desp, dy);
             if (tema == Level.Tema.MEZQUITA && i == 3) {
-                // Interior de la Mezquita: sala de columnas por planos de profundidad
                 SalaProfunda.dibujar(g, camX, dy, alfa);
                 g.setComposite(antes);
                 continue;
@@ -112,7 +109,7 @@ public class GameRenderer {
             g.drawImage(capa, -desp, dy, null);
             g.drawImage(capa, -desp + Fondos.ANCHO, dy, null);
             g.setComposite(antes);
-            Ambiente.trasCapa(g, tema, i, camX, dy);   // nubes y destellos del río
+            Ambiente.trasCapa(g, tema, i, camX, dy);   // nubes y brillos del río
         }
     }
 
@@ -139,7 +136,7 @@ public class GameRenderer {
                         g.drawImage(Sprites.tile(tema, t, 0, false, false), x, y, null);
                         break;
                     case '~': {
-                        int prof = 0;   // bloques de agua que hay encima
+                        int prof = 0;   // bloques de agua que tiene encima
                         while (prof < 3 && nivel.tile(c, f - 1 - prof) == '~') prof++;
                         Agua.dibujarBloque(g, x, y, c, prof, frame);
                         break;
@@ -152,10 +149,7 @@ public class GameRenderer {
         dibujarArcosCiegos(g, nivel, camX, camY, c1, c2, f1, f2);
     }
 
-    /**
-     * Decora los muros grandes con arcos ciegos (como los de las fachadas de
-     * la Mezquita o los nichos del Puente Romano). Solo es decoración.
-     */
+    // arcos ciegos de adorno en los muros grandes (como en la Mezquita o el Puente Romano)
     private void dibujarArcosCiegos(Graphics2D g, Level nivel, int camX, int camY,
                                     int c1, int c2, int f1, int f2) {
         for (int f = f1 - 3; f <= f2; f++) {
@@ -188,7 +182,7 @@ public class GameRenderer {
         }
     }
 
-    /** Arco de herradura formado por dovelas de dos colores alternos. */
+    // arco de herradura con dovelas de dos colores
     private void dovelas(Graphics2D g, int cx, int cy, int radio, int grosor, int segmentos, Color a, Color b) {
         double ini = Math.toRadians(-200), fin = Math.toRadians(20);
         for (int i = 0; i < segmentos; i++) {
@@ -202,7 +196,7 @@ public class GameRenderer {
         }
     }
 
-    /** Corriente de aire: líneas blancas que suben. */
+    // corriente de aire: rayitas blancas que suben
     private void dibujarCorrientes(Graphics2D g, Level nivel, int camX, int camY, int frame) {
         int c1 = Math.max(0, camX / T), c2 = Math.min(nivel.getColumnas() - 1, (camX + 640) / T);
         int f1 = Math.max(0, camY / T), f2 = Math.min(nivel.getFilas() - 1, (camY + 360) / T);
@@ -247,13 +241,13 @@ public class GameRenderer {
         g.drawImage(Sprites.farola(f.encendida), x, y, null);
     }
 
-    /** Meta: Torre de la Calahorra (nivel 1) o puerta de la Mezquita (nivel 2). */
+    // meta: la Calahorra (nivel 1) o la puerta de la Mezquita (nivel 2)
     private void dibujarMeta(Graphics2D g, Level nivel, int camX, int camY, int frame) {
         Rectangle m = nivel.getMeta();
         int x = m.x - camX, y = m.y - camY;
         int suelo = m.y + m.height - camY;
         if (nivel.getTema() == Level.Tema.RIO) {
-            // Torre de la Calahorra: dos torres unidas por un arco
+            // Calahorra: dos torres unidas por un arco
             Color piedra = new Color(0xD9B47C), sombra = new Color(0xB08A55), clara = new Color(0xF0D4A0);
             int bx = x - 24, w = m.width + 48;
             g.setColor(piedra);
@@ -277,7 +271,7 @@ public class GameRenderer {
             }
             g.fillRect(bx + 8, suelo - 92, 6, 10);
             g.fillRect(bx + w - 16, suelo - 92, 6, 10);
-            // bandera de Córdoba (verde y blanca)
+            // bandera verde y blanca
             int fx = bx + 10;
             g.setColor(new Color(0x3A2A1A));
             g.fillRect(fx, suelo - 128, 1, 20);
@@ -288,12 +282,12 @@ public class GameRenderer {
             g.fillRect(fx + 1, suelo - 125 + ondula, 12, 3);
             g.setColor(new Color(0x1E8E3E));
             g.fillRect(fx + 1, suelo - 122 + ondula, 12, 3);
-            // puerta (meta)
+            // puerta
             g.setColor(new Color(0x3A2416));
             g.fillRect(x, y, m.width, m.height);
             g.fillOval(x, y - m.width / 2, m.width, m.width);
         } else {
-            // Puerta de la Mezquita con arco de herradura bicolor
+            // puerta de la Mezquita con arco bicolor
             int cx = x + m.width / 2;
             g.setColor(new Color(0xE0C590));
             g.fillRect(x - 18, suelo - 76, m.width + 36, 76);
@@ -323,7 +317,7 @@ public class GameRenderer {
             for (int yy = y + 8; yy < suelo - 2; yy += 6)
                 for (int xx = x + 3; xx < x + m.width - 2; xx += 6) g.fillRect(xx, yy, 1, 1);
         }
-        // destello que indica "aquí está la salida"
+        // destello para que se vea dónde está la salida
         if ((frame / 20) % 2 == 0) {
             g.setColor(new Color(255, 240, 160, 140));
             g.fillRect(x + m.width / 2 - 1, y - 14, 2, 6);
@@ -331,7 +325,7 @@ public class GameRenderer {
         }
     }
 
-    /** Coco semitransparente con el nombre del récord encima. */
+    // Coco transparente con el nombre del récord encima
     private void dibujarFantasma(Graphics2D g, Fantasma f, int frameNivel, int camX, int camY) {
         int fx = f.x(frameNivel), fy = f.y(frameNivel);
         int x = (f.miraDerecha(frameNivel) ? fx - 3 : fx - 5) - camX;
@@ -342,12 +336,11 @@ public class GameRenderer {
         g.setFont(Ui.FUENTE_PEQ);
         String etiqueta = f.terminado(frameNivel) ? f.getNombre() + " ¡META!" : f.getNombre();
         int w = g.getFontMetrics().stringWidth(etiqueta);
-        g.setColor(new Color(0xB8D8FF));
-        g.drawString(etiqueta, fx + Player.ANCHO / 2 - w / 2 - camX, y - 3);
+        Ui.texto(g, etiqueta, fx + Player.ANCHO / 2 - w / 2 - camX, y - 3, new Color(0xB8D8FF));
         g.setComposite(antes);
     }
 
-    /** Coco por encima de todo (se usa con la consola de código abierta). */
+    // Coco por encima de todo (con la consola abierta)
     public void dibujarJugadorEncima(Graphics2D g, Player p, int camX, int camY, int frame) {
         dibujarJugador(g, p, camX, camY, frame);
     }
@@ -355,7 +348,7 @@ public class GameRenderer {
     private void dibujarJugador(Graphics2D g, Player p, int camX, int camY, int frame) {
         BufferedImage img = p.fotogramaActual();
         int x = p.xDibujo() - camX, y = p.yDibujo() - camY;
-        if (p.muerto && (frame / 3) % 2 == 0) return;   // parpadeo al morir
+        if (p.muerto && (frame / 3) % 2 == 0) return;   // parpadea al morir
         // sombra en el suelo
         if (p.enSuelo) {
             g.setColor(new Color(0, 0, 0, 60));
@@ -364,60 +357,60 @@ public class GameRenderer {
         g.drawImage(img, x, y, null);
     }
 
-    // =====================================================================
-    //  HUD (información en pantalla)
-    // =====================================================================
+    // ---- HUD ----
 
     public void dibujarHUD(Graphics2D g, Level nivel, Player p, PhysicsConfig fisica,
                            int frame, int muertes, String aviso, Color colorAviso, int avisoTimer,
                            boolean ayudaCompleta, int framesPartida, int framesNivel,
                            Fantasma fantasma, boolean fantasmaVisible) {
-        // --- Nivel actual ---
-        g.setFont(Ui.FUENTE);
-        String titulo = "NIVEL " + nivel.getNumero() + " · " + nivel.getNombre();
-        int tw = g.getFontMetrics().stringWidth(titulo);
-        g.setColor(new Color(0, 0, 0, 140));
-        g.fillRect(4, 4, tw + 12, 16);
-        Ui.texto(g, titulo, 10, 16, Ui.BORDE);
-
-        // --- Cronómetro ---
         dibujarCronometro(g, 4, 22, framesPartida, framesNivel, fantasma, fantasmaVisible);
 
-        // --- Variables actuales (mini consola) ---
+        // mini consola con las variables actuales
         g.setFont(Ui.FUENTE_PEQ);
         int x = 636;
         for (int i = fisica.getCantidad() - 1; i >= 0; i--) {
             VariableFisica v = fisica.getVariable(i);
-            String s = v.getNombre() + "=" + VariableFisica.formatear(v.getDecimas());
-            int w = g.getFontMetrics().stringWidth(s) + 8;
+            String etiqueta = v.getNombre() + "=";
+            String valor = VariableFisica.formatear(v.getDecimas());
+            int w = g.getFontMetrics().stringWidth(etiqueta) + 5 * Ui.CELDA_NUMERO + 8;
             x -= w + 2;
             g.setColor(new Color(0x1E1E2E));
-            g.fillRect(x, 4, w, 14);
-            g.setColor(v.isBloqueada() ? new Color(0x44445A) : new Color(0x82AAFF));
-            g.drawRect(x, 4, w - 1, 13);
-            Ui.texto(g, s, x + 4, 14, v.isBloqueada() ? Ui.GRIS : Ui.TEXTO);
+            g.fillRect(x, 22, w, 17);
+            g.setColor(v.isBloqueada() ? new Color(0x7D8195) : new Color(0x82AAFF));
+            g.drawRect(x, 22, w - 1, 16);
+            Ui.dato(g, etiqueta, valor, x + 4, 35, v.isBloqueada() ? Ui.GRIS : Ui.TEXTO);
         }
 
-        // --- Ayuda de controles (completa al empezar; luego solo la consola) ---
-        String ayuda = "[E] Consola de código   [R] Reintentar   [ESC] Pausa   [M] Sonido" + (Sonido.isSilenciado() ? " (off)" : "")
+        // el título va en su zona y los indicadores siempre tienen su hueco
+        g.setFont(Ui.FUENTE_HUD);
+        String titulo = Ui.recortar(g, "NIVEL " + nivel.getNumero() + " · " + nivel.getNombre(), 616);
+        int tw = g.getFontMetrics().stringWidth(titulo);
+        g.setColor(Ui.PANEL);
+        g.fillRect(4, 4, tw + 12, 16);
+        Ui.texto(g, titulo, 10, 16, Ui.AMARILLO);
+        g.setFont(Ui.FUENTE_PEQ);
+
+        // ayuda de controles (completa al principio, luego solo la consola)
+        String ayuda = "[E] Código   [R] Reintentar   [ESC] Pausa   [M] Sonido" + (Sonido.isSilenciado() ? " (off)" : "")
                 + (fantasma != null ? "   [G] Fantasma" : "");
-        if (!ayudaCompleta) ayuda = "[E] Consola de código";
-        g.setColor(new Color(0, 0, 0, 140));
-        g.fillRect(4, 342, g.getFontMetrics().stringWidth(ayuda) + 12, 14);
+        if (!ayudaCompleta) ayuda = "[E] Código";
+        String cont = String.valueOf(muertes);
+        int cw = Ui.anchoDato(g, "Caídas: ", cont);
+        ayuda = Ui.recortar(g, ayuda, 610 - cw);
+        g.setColor(Ui.PANEL);
+        g.fillRect(4, 340, g.getFontMetrics().stringWidth(ayuda) + 12, 18);
         boolean resaltar = ayudaCompleta && (frame / 25) % 2 == 0;
-        Ui.texto(g, "[E] Consola de código", 10, 352, resaltar ? Ui.AMARILLO : Ui.TEXTO);
-        int ancho = g.getFontMetrics().stringWidth("[E] Consola de código");
-        Ui.texto(g, ayuda.substring("[E] Consola de código".length()), 10 + ancho, 352, Ui.TEXTO);
-        String cont = "Caídas: " + muertes;
-        Ui.texto(g, cont, 636 - g.getFontMetrics().stringWidth(cont), 352, Ui.TEXTO);
+        Ui.texto(g, ayuda, 10, 352, resaltar ? Ui.AMARILLO : Ui.TEXTO);
+        g.setColor(Ui.PANEL);
+        g.fillRect(630 - cw, 340, cw + 10, 18);
+        Ui.dato(g, "Caídas: ", cont, 635 - cw, 353, Ui.TEXTO);
 
-        // --- Mensaje de tutorial ---
         String msg = nivel.getMensaje();
-        if (msg != null) dibujarMensaje(g, msg, nivel.getMensajeTimer(), 42);
+        if (msg != null) dibujarMensaje(g, msg, nivel.getDesbloqueo(), nivel.getMensajeTimer(), fantasma != null ? 62 : 42);
 
-        dibujarAvisosEspeciales(g, nivel, p, fisica, frame, 106);
+        dibujarAvisosEspeciales(g, nivel, p, fisica, frame, fantasma != null ? 126 : 106);
 
-        // --- Aviso temporal (cambios aplicados, etc.) ---
+        // aviso temporal (cambios aplicados, etc.)
         if (aviso != null && avisoTimer > 0) {
             g.setFont(Ui.FUENTE);
             int w = g.getFontMetrics().stringWidth(aviso) + 20;
@@ -427,43 +420,36 @@ public class GameRenderer {
         }
     }
 
-    /**
-     * Cronómetro de la partida. En el nivel 2, si hay fantasma, muestra
-     * también el tiempo del nivel frente al récord.
-     */
+    // cronómetro; en el nivel 2 con fantasma, también tu tiempo del nivel contra el récord
     public void dibujarCronometro(Graphics2D g, int x, int y, int framesPartida, int framesNivel,
                                   Fantasma fantasma, boolean fantasmaVisible) {
-        g.setFont(Ui.FUENTE);
-        String total = "TIEMPO " + Puntuacion.formatearTiempo(framesPartida);
-        String extra = "";
-        if (fantasma != null) {
-            extra = "  NIVEL " + Puntuacion.formatearTiempo(framesNivel)
-                    + "  RÉCORD " + Puntuacion.formatearTiempo(fantasma.getFramesNivel())
-                    + " " + fantasma.getNombre() + (fantasmaVisible ? "" : " (oculto)");
-        }
-        int w1 = g.getFontMetrics().stringWidth(total);
-        g.setFont(Ui.FUENTE_PEQ);
-        int w2 = g.getFontMetrics().stringWidth(extra);
-        g.setColor(new Color(0, 0, 0, 140));
-        g.fillRect(x, y, w1 + w2 + 22, 16);
-        // Reloj en pixel art
+        g.setColor(Ui.PANEL);
+        g.fillRect(x, y, Ui.ANCHO_CRONOMETRO, 17);
+        // relojito en pixel art
         g.setColor(Ui.TEXTO);
         g.drawRect(x + 4, y + 4, 7, 7);
         g.fillRect(x + 7, y + 5, 1, 3);
         g.fillRect(x + 8, y + 7, 2, 1);
-        g.setFont(Ui.FUENTE);
-        Ui.texto(g, total, x + 16, y + 12, Ui.TEXTO);
-        if (!extra.isEmpty()) {
-            g.setFont(Ui.FUENTE_PEQ);
+        g.setFont(Ui.FUENTE_HUD);
+        Ui.texto(g, "TIEMPO", x + 16, y + 13, Ui.AMARILLO);
+        Ui.tiempo(g, Puntuacion.formatearTiempo(framesPartida), x + Ui.X_TIEMPO_HUD, y + 13, Ui.TEXTO);
+        if (fantasma != null) {
+            g.setColor(Ui.PANEL);
+            g.fillRect(x, y + 20, 632, 17);
+            g.setFont(Ui.FUENTE);
             boolean ganando = framesNivel <= fantasma.getFramesNivel();
-            Ui.texto(g, extra, x + 16 + w1, y + 12, ganando ? new Color(0xB8D8FF) : Ui.ROJO);
+            Ui.texto(g, "NIVEL", x + 6, y + 33, Ui.GRIS);
+            Ui.tiempo(g, Puntuacion.formatearTiempo(framesNivel), x + 43, y + 33,
+                    ganando ? new Color(0xB8D8FF) : Ui.ROJO);
+            Ui.texto(g, "RÉCORD", x + 151, y + 33, Ui.GRIS);
+            Ui.tiempo(g, Puntuacion.formatearTiempo(fantasma.getFramesNivel()), x + 200, y + 33, Ui.TEXTO);
+            Ui.texto(g, fantasma.getNombre() + (fantasmaVisible ? "" : " (oculto)"), x + 312, y + 33, Ui.GRIS);
         }
     }
 
-    /** Cuenta atrás del suelo que se derrumba y estado de la corriente de aire (a partir de y0). */
+    // cuenta atrás del suelo que se hunde y estado de la corriente de aire
     public void dibujarAvisosEspeciales(Graphics2D g, Level nivel, Player p, PhysicsConfig fisica,
                                         int frame, int y0) {
-        // --- Avisos especiales ---
         for (PlataformaDinamica pl : nivel.getPlataformas()) {
             if (pl instanceof PuenteDerrumbe && ((PuenteDerrumbe) pl).estaCrujiendo()) {
                 PuenteDerrumbe pd = (PuenteDerrumbe) pl;
@@ -489,21 +475,44 @@ public class GameRenderer {
         }
     }
 
-    /** Caja de diálogo del tutorial en la altura y (si y es negativo, pegada abajo). */
-    public void dibujarMensaje(Graphics2D g, String msg, int timer, int y) {
+    // caja del tutorial a la altura y (si y < 0, pegada abajo). Si desbloqueo no es null, sale la caja de variable nueva
+    public void dibujarMensaje(Graphics2D g, String msg, String desbloqueo, int timer, int y) {
         g.setFont(Ui.FUENTE);
         List<String> lineas = Ui.ajustar(g, msg, 520);
-        int h = lineas.size() * 13 + 12;
+        int cabecera = desbloqueo != null ? 20 : 0;
+        int h = lineas.size() * Ui.INTERLINEADO + 12 + cabecera;
         int w = 560, x = 40;
         if (y < 0) y = 360 - h - 4;
         Composite antes = g.getComposite();
         if (timer < 30) g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, Math.max(0, timer / 30f)));
-        Ui.panel(g, x, y, w, h, new Color(0x2B1D12), new Color(0xE0B040));
-        // retrato de Coco
-        g.drawImage(Sprites.COCO_QUIETO, x + 6, y + (h - 20) / 2, null);
+        if (desbloqueo == null) {
+            Ui.panel(g, x, y, w, h, new Color(0x2B1D12), new Color(0xE0B040));
+            g.drawImage(Sprites.COCO_QUIETO, x + 6, y + (h - 20) / 2, null);
+        } else {
+            // verde con borde que parpadea y una franja dorada arriba
+            boolean brillo = (timer / 8) % 2 == 0;
+            Ui.panel(g, x, y, w, h, new Color(0x0F3324), brillo ? Color.WHITE : new Color(0xFFD84A));
+            g.setColor(brillo ? new Color(0xFFE27A) : new Color(0xE0B040));
+            g.fillRect(x + 3, y + 3, w - 6, cabecera - 2);
+            g.setFont(Ui.FUENTE_HUD);
+            Ui.textoCentrado(g, "¡NUEVA VARIABLE DESBLOQUEADA: " + desbloqueo + "!", x + w / 2, y + 16, new Color(0x2B1D12));
+            g.setFont(Ui.FUENTE);
+            dibujarCandadoAbierto(g, x + 10, y + cabecera + (h - cabecera - 16) / 2);
+        }
         for (int i = 0; i < lineas.size(); i++) {
-            Ui.texto(g, lineas.get(i), x + 32, y + 16 + i * 13, Ui.TEXTO);
+            Ui.texto(g, lineas.get(i), x + 32, y + cabecera + 16 + i * Ui.INTERLINEADO, Ui.TEXTO);
         }
         g.setComposite(antes);
+    }
+
+    // candado abierto de 12x16 en pixel art
+    private void dibujarCandadoAbierto(Graphics2D g, int x, int y) {
+        g.setColor(new Color(0xFFD84A));
+        g.fillRect(x + 6, y, 6, 2);       // arco levantado
+        g.fillRect(x + 10, y + 2, 2, 5);
+        g.fillRect(x + 6, y + 2, 2, 2);
+        g.fillRect(x, y + 7, 12, 9);      // cuerpo
+        g.setColor(new Color(0x2B1D12));
+        g.fillRect(x + 5, y + 10, 2, 3);  // cerradura
     }
 }

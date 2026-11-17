@@ -10,21 +10,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * Nubes que se mueven con el viento, en TRES capas de profundidad:
- * las lejanas son pequeñas, pálidas y lentas; las cercanas, grandes y rápidas.
- * Además se desplazan un poco con la cámara (parallax).
- *
- * Las nubes que venían pintadas en el cielo del río se borran al cargar
- * (ver {@link #sinNubesPintadas}) para que no haya nubes "congeladas".
- */
+// Nubes con viento en tres capas: las de lejos pequeñas, pálidas y lentas; las de cerca grandes y rápidas.
+// Las nubes que venían pintadas en el cielo se borran al cargar para que no haya nubes congeladas.
 public final class Nubes {
 
-    /** Una capa de nubes: cuántas, tamaño, altura, viento y parallax. */
     private record Capa(int cantidad, int anchoMin, int anchoMax, int yMin, int yMax,
                         float viento, float parallax, float alfa) { }
 
-    // Ajustes por tema --------------------------------------------------
+    // ajustes por tema
     private static final Capa[] CAPAS_RIO = {
         new Capa(6, 26, 44, 18, 120, 3.0f, 0.03f, 0.55f),   // lejos
         new Capa(4, 46, 70, 30, 130, 7.0f, 0.06f, 0.80f),   // medio
@@ -35,7 +28,7 @@ public final class Nubes {
         new Capa(4, 70, 110, 50, 140, 4.5f, 0.06f, 0.70f),
         new Capa(2, 110, 150, 90, 175, 8.0f, 0.10f, 0.85f),
     };
-    // Colores: luz, medio, sombra
+    // luz, medio, sombra
     private static final int[] TONOS_RIO      = { 0xFFFFFF, 0xEEF6FB, 0xC6DDEC };
     private static final int[] TONOS_MEZQUITA = { 0xFFE0BE, 0xF4A88E, 0xA9607E };
 
@@ -48,7 +41,7 @@ public final class Nubes {
 
     private Nubes() { }
 
-    /** Dibuja todas las nubes (llamar justo después del cielo). */
+    // llamar justo después del cielo
     static void dibujar(Graphics2D g, Level.Tema tema, int camX, int dy, double segundos) {
         Composite antes = g.getComposite();
         float alfaActual = -1;
@@ -74,10 +67,10 @@ public final class Nubes {
             int[] tonos = rio ? TONOS_RIO : TONOS_MEZQUITA;
             Random r = new Random(rio ? 7 : 19);
             List<Nube> lista = new ArrayList<>();
-            for (Capa c : capas) {               // primero las lejanas: quedan detrás
+            for (Capa c : capas) {               // primero las de lejos, para que queden detrás
                 for (int i = 0; i < c.cantidad; i++) {
                     int w = c.anchoMin + r.nextInt(c.anchoMax - c.anchoMin + 1);
-                    int h = rio ? w / 2 : w / 5 + 4;          // al atardecer, nubes alargadas
+                    int h = rio ? w / 2 : w / 5 + 4;          // al atardecer, más alargadas
                     float x0 = (ANCHO + MARGEN) * (i + r.nextFloat() * 0.6f) / c.cantidad;
                     int y = c.yMin + r.nextInt(c.yMax - c.yMin + 1);
                     lista.add(new Nube(crear(r, w, h, tonos), x0, y, c));
@@ -87,16 +80,16 @@ public final class Nubes {
         });
     }
 
-    /** Genera una nube en pixel art: varios "bultos" redondos con la base plana. */
+    // una nube: varios bultos redondos con la base plana
     private static BufferedImage crear(Random r, int w, int h, int[] tonos) {
         boolean[][] m = new boolean[h][w];
         int bultos = 4 + r.nextInt(3);
         for (int b = 0; b < bultos; b++) {
             double u = (b + 0.5) / bultos;                       // 0 = izquierda, 1 = derecha
             double cx = w * (0.12 + 0.76 * u) + r.nextInt(5) - 2;
-            // más altos en el centro (silueta de cúmulo) y algo de azar
+            // más altos en el centro, con algo de azar
             double rad = h * (0.20 + 0.30 * Math.sin(Math.PI * u) + r.nextDouble() * 0.12);
-            double cy = h - 1 - rad * 0.55;                       // la base queda plana (se corta abajo)
+            double cy = h - 1 - rad * 0.55;                       // la base queda plana
             for (int y = 0; y < h; y++)
                 for (int x = 0; x < w; x++)
                     if (Math.hypot((x + 0.5 - cx) * 0.9, y + 0.5 - cy) < rad) m[y][x] = true;
@@ -118,10 +111,7 @@ public final class Nubes {
         return img;
     }
 
-    /**
-     * El cielo del río trae nubes pintadas. Se borran copiando, de la misma fila,
-     * el color del cielo más cercano (respetando el tramado de las bandas).
-     */
+    // borra las nubes pintadas copiando el color de cielo más cercano de la misma fila
     static synchronized BufferedImage sinNubesPintadas(Level.Tema tema, int indice, BufferedImage capa) {
         if (tema != Level.Tema.RIO || indice != 0) return capa;
         return LIMPIAS.computeIfAbsent(capa, c -> {
