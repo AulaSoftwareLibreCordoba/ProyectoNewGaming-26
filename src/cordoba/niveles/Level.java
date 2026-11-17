@@ -57,6 +57,7 @@ public abstract class Level {
     private String mensaje;
     private int mensajeTimer;
     private boolean mensajeEsEvento;
+    private String mensajeDesbloqueo;   // variable desbloqueada si el mensaje es de eso
 
     protected Level(int numero, String nombre, Tema tema, int columnas, int filas) {
         this.numero = numero;
@@ -116,7 +117,12 @@ public abstract class Level {
     }
 
     protected void cartel(int col, int filaSuelo, String texto, Runnable accion) {
-        carteles.add(new Cartel(col * TILE + TILE / 2f, filaSuelo * TILE, texto, accion));
+        carteles.add(new Cartel(col * TILE + TILE / 2f, filaSuelo * TILE, texto, accion, null));
+    }
+
+    // cartel de variable nueva: sale con su caja especial
+    protected void cartelDesbloqueo(int col, int filaSuelo, String variable, String texto, Runnable accion) {
+        carteles.add(new Cartel(col * TILE + TILE / 2f, filaSuelo * TILE, texto, accion, variable));
     }
 
     protected void decoracion(Decoracion.Tipo tipo, int col, int filaSuelo, int variante) {
@@ -184,10 +190,13 @@ public abstract class Level {
             if (!c.activado && cx >= c.x) {
                 c.activado = true;
                 if (c.accion != null) c.accion.run();
+                if (c.desbloquea != null) Sonido.aplicar();
                 mostrar(c.texto, false, 480);
+                mensajeDesbloqueo = c.desbloquea;
             } else if (Math.abs(cx - c.x) < 24 && !c.texto.equals(mensaje)
                     && (!mensajeEsEvento || mensajeTimer <= 0)) {
                 mostrar(c.texto, false, 300);
+                mensajeDesbloqueo = c.desbloquea;
             }
         }
         if (mensajeTimer > 0) mensajeTimer--;
@@ -201,6 +210,7 @@ public abstract class Level {
 
     private void mostrar(String texto, boolean evento, int duracion) {
         mensaje = texto;
+        mensajeDesbloqueo = null;
         mensajeEsEvento = evento;
         mensajeTimer = duracion;
     }
@@ -218,6 +228,7 @@ public abstract class Level {
 
     public String getMensaje()       { return mensajeTimer > 0 ? mensaje : null; }
     public int getMensajeTimer()     { return mensajeTimer; }
+    public String getDesbloqueo()    { return mensajeTimer > 0 ? mensajeDesbloqueo : null; }
     public int getNumero()           { return numero; }
     public String getNombre()        { return nombre; }
     public Tema getTema()            { return tema; }

@@ -396,7 +396,7 @@ public class GameRenderer {
         Ui.dato(g, "Caídas: ", cont, 635 - cw, 353, Ui.TEXTO);
 
         String msg = nivel.getMensaje();
-        if (msg != null) dibujarMensaje(g, msg, nivel.getMensajeTimer(), fantasma != null ? 62 : 42);
+        if (msg != null) dibujarMensaje(g, msg, nivel.getDesbloqueo(), nivel.getMensajeTimer(), fantasma != null ? 62 : 42);
 
         dibujarAvisosEspeciales(g, nivel, p, fisica, frame, fantasma != null ? 126 : 106);
 
@@ -465,20 +465,44 @@ public class GameRenderer {
         }
     }
 
-    // caja del tutorial a la altura y (si y < 0, pegada abajo)
-    public void dibujarMensaje(Graphics2D g, String msg, int timer, int y) {
+    // caja del tutorial a la altura y (si y < 0, pegada abajo). Si desbloqueo no es null, sale la caja de variable nueva
+    public void dibujarMensaje(Graphics2D g, String msg, String desbloqueo, int timer, int y) {
         g.setFont(Ui.FUENTE);
         List<String> lineas = Ui.ajustar(g, msg, 520);
-        int h = lineas.size() * Ui.INTERLINEADO + 12;
+        int cabecera = desbloqueo != null ? 20 : 0;
+        int h = lineas.size() * Ui.INTERLINEADO + 12 + cabecera;
         int w = 560, x = 40;
         if (y < 0) y = 360 - h - 4;
         Composite antes = g.getComposite();
         if (timer < 30) g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, Math.max(0, timer / 30f)));
-        Ui.panel(g, x, y, w, h, new Color(0x2B1D12), new Color(0xE0B040));
-        g.drawImage(Sprites.COCO_QUIETO, x + 6, y + (h - 20) / 2, null);
+        if (desbloqueo == null) {
+            Ui.panel(g, x, y, w, h, new Color(0x2B1D12), new Color(0xE0B040));
+            g.drawImage(Sprites.COCO_QUIETO, x + 6, y + (h - 20) / 2, null);
+        } else {
+            // verde con borde que parpadea y una franja dorada arriba
+            boolean brillo = (timer / 8) % 2 == 0;
+            Ui.panel(g, x, y, w, h, new Color(0x0F3324), brillo ? Color.WHITE : new Color(0xFFD84A));
+            g.setColor(brillo ? new Color(0xFFE27A) : new Color(0xE0B040));
+            g.fillRect(x + 3, y + 3, w - 6, cabecera - 2);
+            g.setFont(Ui.FUENTE_HUD);
+            Ui.textoCentrado(g, "¡NUEVA VARIABLE DESBLOQUEADA: " + desbloqueo + "!", x + w / 2, y + 16, new Color(0x2B1D12));
+            g.setFont(Ui.FUENTE);
+            dibujarCandadoAbierto(g, x + 10, y + cabecera + (h - cabecera - 16) / 2);
+        }
         for (int i = 0; i < lineas.size(); i++) {
-            Ui.texto(g, lineas.get(i), x + 32, y + 16 + i * Ui.INTERLINEADO, Ui.TEXTO);
+            Ui.texto(g, lineas.get(i), x + 32, y + cabecera + 16 + i * Ui.INTERLINEADO, Ui.TEXTO);
         }
         g.setComposite(antes);
+    }
+
+    // candado abierto de 12x16 en pixel art
+    private void dibujarCandadoAbierto(Graphics2D g, int x, int y) {
+        g.setColor(new Color(0xFFD84A));
+        g.fillRect(x + 6, y, 6, 2);       // arco levantado
+        g.fillRect(x + 10, y + 2, 2, 5);
+        g.fillRect(x + 6, y + 2, 2, 2);
+        g.fillRect(x, y + 7, 12, 9);      // cuerpo
+        g.setColor(new Color(0x2B1D12));
+        g.fillRect(x + 5, y + 10, 2, 3);  // cerradura
     }
 }

@@ -10,9 +10,9 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 
 /*
- * La consola de código: un mini IDE con PhysicsConfig.java. Cambias valores con [-]/[+], A/D o
+ * La consola de código: un mini IDE con PhysicsConfig.java. Cambias valores con [-]/[+], A/D, las flechas o
  * escribiendo el número, y APLICAR "compila" (solo entonces cambia la física de verdad).
- * Ojo: el juego NO se pausa. Coco se sigue moviendo con las flechas y el tiempo corre.
+ * Coco se queda quieto mientras está abierta, pero el tiempo sigue corriendo.
  */
 public class CodeEditor {
 
@@ -78,8 +78,8 @@ public class CodeEditor {
 
         if (fisica.getVariable(seleccion).isBloqueada()) seleccion = 0;
         escritura = null;
-        salida1 = "> W/S elige variable · A/D o escribe un número · ENTER compila · E cierra";
-        salida2 = "  ¡El juego sigue! Mueve a Coco con las flechas y salta con ESPACIO.";
+        salida1 = "> W/S o ↑/↓ elige · A/D o ←/→ cambia (o escribe el número) · ENTER compila";
+        salida2 = "  E cierra. ¡Ojo, el tiempo sigue corriendo!";
         colorSalida = Ui.GRIS;
         destello = 0;
         nivel.alAbrirEditor();
@@ -112,7 +112,7 @@ public class CodeEditor {
             }
         }
 
-        // teclado (las flechas son para mover a Coco)
+        // teclado: WASD o flechas
         if (in.pulsada(KeyEvent.VK_ESCAPE) && escritura != null) {
             escritura = null;
             salida1 = "> Escritura cancelada.";
@@ -122,20 +122,20 @@ public class CodeEditor {
             confirmarEscritura();
             return Resultado.CERRAR;
         }
-        if (in.pulsada(KeyEvent.VK_W)) {
+        if (in.pulsada(KeyEvent.VK_W) || in.pulsada(KeyEvent.VK_UP)) {
             confirmarEscritura();
             seleccion = (seleccion + borrador.length - 1) % borrador.length;
             Sonido.clic();
         }
-        if (in.pulsada(KeyEvent.VK_S)) {
+        if (in.pulsada(KeyEvent.VK_S) || in.pulsada(KeyEvent.VK_DOWN)) {
             confirmarEscritura();
             seleccion = (seleccion + 1) % borrador.length;
             Sonido.clic();
         }
-        boolean izq = in.abajo(KeyEvent.VK_A);
-        boolean der = in.abajo(KeyEvent.VK_D);
-        boolean izqP = in.pulsada(KeyEvent.VK_A);
-        boolean derP = in.pulsada(KeyEvent.VK_D);
+        boolean izq = in.abajo(KeyEvent.VK_A) || in.abajo(KeyEvent.VK_LEFT);
+        boolean der = in.abajo(KeyEvent.VK_D) || in.abajo(KeyEvent.VK_RIGHT);
+        boolean izqP = in.pulsada(KeyEvent.VK_A) || in.pulsada(KeyEvent.VK_LEFT);
+        boolean derP = in.pulsada(KeyEvent.VK_D) || in.pulsada(KeyEvent.VK_RIGHT);
 
         // ratón
         int mx = in.getRatonX(), my = in.getRatonY();
@@ -158,7 +158,7 @@ public class CodeEditor {
             }
         }
 
-        // cambios con A/D (se repiten si mantienes)
+        // cambios con A/D o ←/→ (se repiten si mantienes)
         if (izqP || derP) confirmarEscritura();
         if (izqP) cambiar(seleccion, -1);
         if (derP) cambiar(seleccion, +1);

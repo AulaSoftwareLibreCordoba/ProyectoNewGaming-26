@@ -53,9 +53,9 @@ public final class Ui {
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
     }
 
-    // escala entera para que todos los píxeles midan lo mismo
-    public static int escalaVentana(int ancho, int alto) {
-        return Math.max(1, Math.min(ancho / 640, alto / 360));
+    // lo más grande que quepa en la ventana sin deformar (16:9)
+    public static double escalaVentana(int ancho, int alto) {
+        return Math.max(0.1, Math.min(ancho / 640.0, alto / 360.0));
     }
 
     // paleta

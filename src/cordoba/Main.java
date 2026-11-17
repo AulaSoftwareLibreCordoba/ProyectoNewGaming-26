@@ -37,6 +37,21 @@ public class Main {
             ventana.setIconImage(Sprites.COCO_QUIETO);
             ventana.setVisible(true);
 
+            // F11: pantalla completa de verdad (sin bordes ni barra de Windows)
+            juego.setAlPantallaCompleta(() -> {
+                Rectangle monitor = ventana.getGraphicsConfiguration().getBounds();
+                boolean completa = !ventana.isUndecorated();
+                ventana.dispose();   // hay que cerrarla para poder quitarle el borde
+                ventana.setUndecorated(completa);
+                if (completa) {
+                    ventana.setBounds(monitor);   // sin bordes y del tamaño del monitor
+                } else {
+                    ventana.pack();
+                    ventana.setLocationRelativeTo(null);
+                }
+                ventana.setVisible(true);
+                juego.requestFocus();
+            });
             juego.setAlSalir(() -> {
                 ventana.dispose();
                 System.exit(0);

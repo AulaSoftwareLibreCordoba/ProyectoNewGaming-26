@@ -59,13 +59,13 @@ public class Level1 extends Level {
         farola(82, S);
 
         // carteles
-        cartel(5, S, "¡Hola! Soy Coco, un cocodrilo cordobés. Muévete con A/D o las flechas y salta con ESPACIO.");
-        cartel(18, S, "Las farolas son puntos de control: si caes al agua volverás a la última farola encendida.");
-        cartel(33, S, "Uf... el Guadalquivir es demasiado ancho para mi salto. Pulsa [E] para abrir la consola de código.");
-        cartel(47, S, "¡Lo lograste! Con poca gravedad también saltas MÁS ALTO. Sube a lo alto de la muralla.");
-        cartel(62, S, "¡Nueva variable desbloqueada: velocidad! La pasarela se hunde en cuanto entras: súbela a 6.5 o más.",
+        cartel(5, S, "¡Hola, soy Coco! Muévete con A/D o las flechas y salta con ESPACIO.");
+        cartel(18, S, "Las farolas son checkpoints: si caes, vuelves a la última encendida.");
+        cartel(33, S, "El río es muy ancho para mi salto. Pulsa [E] para abrir el código.");
+        cartel(47, S, "¡Bien! Con menos gravedad saltas más alto. Sube a la muralla.");
+        cartelDesbloqueo(62, S, "velocidad", "La pasarela se hunde al pisarla: sube la velocidad a 6.5 o más.",
                 () -> fisica.getVariable(PhysicsConfig.VELOCIDAD).setBloqueada(false));
-        cartel(80, S, "¡Genial! Ya sabes cambiar el código del juego. Llega a la Torre de la Calahorra.");
+        cartel(80, S, "¡Genial! Ahora llega a la Torre de la Calahorra.");
 
         // decoración
         decoracion(Decoracion.Tipo.PALMERA, 1, S, 0);
@@ -96,10 +96,10 @@ public class Level1 extends Level {
         boolean velocidadLibre = !fisica.getVariable(PhysicsConfig.VELOCIDAD).isBloqueada();
         if (!velocidadLibre && !ayudaGravedadMostrada) {
             ayudaGravedadMostrada = true;
-            mostrarEvento("¡Ojo: el juego NO se pausa! Baja 'gravedad' a 5.0 o menos con [-] (o escribe 5) y pulsa ENTER para compilar.");
+            mostrarEvento("Baja 'gravedad' a 5.0 o menos y pulsa ENTER. ¡El tiempo corre!");
         } else if (velocidadLibre && !ayudaVelocidadMostrada) {
             ayudaVelocidadMostrada = true;
-            mostrarEvento("Elige 'velocidad' con W/S, súbela a 6.5 o más (con [+] o escribiendo el número) y pulsa ENTER.");
+            mostrarEvento("Elige 'velocidad', súbela a 6.5 o más y pulsa ENTER.");
         }
     }
 
@@ -108,14 +108,14 @@ public class Level1 extends Level {
         boolean velocidadLibre = !fisica.getVariable(PhysicsConfig.VELOCIDAD).isBloqueada();
         if (!velocidadLibre) {
             if (fisica.getValor(PhysicsConfig.GRAVEDAD) <= 5.0f)
-                mostrarEvento("¡Compilado! Ahora Coco pesa menos y pasa más tiempo en el aire. Cierra con [E] y salta el río.");
+                mostrarEvento("¡Compilado! Ahora pesas menos. Cierra con [E] y salta el río.");
             else
-                mostrarEvento("Coco aún pesa demasiado para cruzar el río. Baja más la gravedad (5.0 o menos).");
+                mostrarEvento("Aún pesas mucho: baja la gravedad a 5.0 o menos.");
         } else {
             if (fisica.getValor(PhysicsConfig.VELOCIDAD) >= 6.5f)
-                mostrarEvento("¡Más rápido que nunca! Cierra la consola y cruza la pasarela sin pararte.");
+                mostrarEvento("¡Compilado! Cierra con [E] y cruza la pasarela sin parar.");
             else
-                mostrarEvento("Todavía vas lento: la pasarela caerá antes. Sube la velocidad a 6.5 o más.");
+                mostrarEvento("Aún vas lento: sube la velocidad a 6.5 o más.");
         }
     }
 }

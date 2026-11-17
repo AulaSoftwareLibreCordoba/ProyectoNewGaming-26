@@ -11,7 +11,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 |---|---|---|---|
 | **2** | Menú principal | Empieza directamente en el **nivel 2** | Te saltas el nivel 1 entero: el tiempo total sale mucho más bajo y la partida **también entra en el ranking** |
 | **ESC** → **REINICIAR NIVEL** | Pausa | Vuelve al principio del nivel actual | **Borra el tiempo, las caídas y las compilaciones de ese nivel** (lo de niveles anteriores se mantiene) |
-| **E** | Jugando | Abre la consola de código | **El juego NO se pausa**: Coco se sigue moviendo con las flechas y **el tiempo corre**. Hay que programar rápido |
+| **E** | Jugando | Abre la consola de código | Coco se queda quieto, pero **el tiempo sigue corriendo**. Hay que programar rápido |
 | **ESC** | Jugando | Pausa | Mientras estás en pausa **el tiempo no corre**: es el único sitio para pensar con calma |
 | **Números** + **ENTER** | Consola de código | Escribe el valor y lo compila de golpe | Mucho más rápido que pulsar [+]/[-] varias veces (`4,5` ENTER) |
 | **G** | Nivel 2 | Muestra / oculta el fantasma del récord | El fantasma enseña por dónde va el más rápido… o te distrae |
@@ -25,6 +25,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | Tecla | Acción |
 |---|---|
 | **M** | Activar / silenciar el sonido *(no funciona mientras escribes tu nombre, para poder usar la letra M)* |
+| **F11** | Pantalla completa / volver a ventana |
 | **Ratón** | Pulsar cualquier botón de la pantalla |
 
 ---
@@ -47,7 +48,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | **A** / **←** | Moverse a la izquierda |
 | **D** / **→** | Moverse a la derecha |
 | **ESPACIO** / **W** / **↑** | Saltar |
-| **E** | Abrir la consola de código (**el juego sigue en marcha**) |
+| **E** | Abrir la consola de código (Coco se para, **el tiempo no**) |
 | **R** | Reintentar desde la última farola *(cuenta como una caída)* |
 | **G** | Mostrar / ocultar el fantasma del récord *(solo en el nivel 2, si hay récord)* |
 | **ESC** | Pausa (el cronómetro se detiene) |
@@ -63,24 +64,15 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 
 ## 💻 Consola de código (tecla E)
 
-> ⚠️ **El juego no se pausa con la consola abierta.** Las flechas mueven a Coco y W/A/S/D manejan la consola.
-
-**Mover a Coco con la consola abierta**
+> ⚠️ **Con la consola abierta Coco se queda quieto, pero el cronómetro sigue corriendo.**
 
 | Tecla | Acción |
 |---|---|
-| **←** / **→** | Mover a Coco |
-| **ESPACIO** / **↑** | Saltar |
-
-**Manejar la consola**
-
-| Tecla | Acción |
-|---|---|
-| **W** | Seleccionar la variable de arriba |
-| **S** | Seleccionar la variable de abajo |
-| **A** | Bajar el valor (−0.5) |
-| **D** | Subir el valor (+0.5) |
-| *Mantener* **A/D** | Repetir el cambio rápidamente |
+| **W** / **↑** | Seleccionar la variable de arriba |
+| **S** / **↓** | Seleccionar la variable de abajo |
+| **A** / **←** | Bajar el valor (−0.5) |
+| **D** / **→** | Subir el valor (+0.5) |
+| *Mantener* **A/D** o **←/→** | Repetir el cambio rápidamente |
 | **0-9**, **.** o **,** | Escribir el valor de la variable seleccionada (ej.: `4,5`) |
 | **RETROCESO** | Borrar mientras escribes |
 | **ENTER** | **APLICAR CAMBIOS** (compilar), incluido lo que estés escribiendo |

@@ -96,14 +96,14 @@ public class Level2 extends Level {
         farola(151, COL);
 
         // carteles
-        cartel(4, CALLE, "NIVEL 2. Nueva variable desbloqueada: fuerzaSalto. Aquí nadie te dirá qué valores usar...");
-        cartel(18, CALLE, "Este muro mide 8 bloques. Ni la gravedad ni el salto bastan solos: combínalos.");
-        cartel(31, ALTO, "¡Pinchos en el techo! Si saltas demasiado alto te pincharás. Ajusta tus físicas.");
-        cartel(54, ALTO, "Del pozo sube aire caliente (empuje 12.5). Si pesas poco, nunca bajarás...");
-        cartel(67, BAJO, "Este suelo es antiguo y se hunde enseguida. Vas a necesitar MUCHA velocidad.");
-        cartel(89, BAJO, "Columnas estrechas: si vas muy rápido te pasarás de largo. Precisión ante todo.");
-        cartel(116, BAJO, "Azulejos que desaparecen y bolas de pinchos. Observa el ritmo antes de saltar.");
-        cartel(152, COL, "¡La Mezquita-Catedral! Entra por la puerta para terminar la demo.");
+        cartelDesbloqueo(4, CALLE, "fuerzaSalto", "Nivel 2: aquí nadie te dice qué valores usar.", null);
+        cartel(18, CALLE, "Muro de 8 bloques: combina gravedad y salto.");
+        cartel(31, ALTO, "¡Pinchos en el techo! No saltes demasiado alto.");
+        cartel(54, ALTO, "El pozo sopla hacia arriba (empuje 12.5). Si pesas poco, no bajarás.");
+        cartel(67, BAJO, "Este suelo se hunde enseguida: necesitas MUCHA velocidad.");
+        cartel(89, BAJO, "Columnas estrechas: si vas muy rápido, te pasas.");
+        cartel(116, BAJO, "Azulejos que desaparecen y bolas de pinchos: mira el ritmo.");
+        cartel(152, COL, "¡La Mezquita-Catedral! Entra por la puerta.");
 
         // decoración
         decoracion(Decoracion.Tipo.NARANJO, 1, CALLE, 0);

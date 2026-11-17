@@ -72,6 +72,8 @@ public class Game extends Canvas implements Runnable {
 
     private volatile boolean ejecutando;
     private Runnable alSalir = () -> System.exit(0);
+    private Runnable alPantallaCompleta;   // F11 (lo pone Main)
+    private volatile boolean rehacerBuffer;  // la ventana se ha recreado (F11) y el búfer viejo ya no vale
 
     public Game() {
         setBackground(Color.BLACK);
@@ -90,6 +92,16 @@ public class Game extends Canvas implements Runnable {
 
     public void setAlSalir(Runnable r) {
         alSalir = r;
+    }
+
+    public void setAlPantallaCompleta(Runnable r) {
+        alPantallaCompleta = r;
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        rehacerBuffer = true;
     }
 
     public void iniciar() {
@@ -132,6 +144,7 @@ public class Game extends Canvas implements Runnable {
         frame++;
         // M silencia (menos al escribir el nombre, que puede llevar M)
         if (estado != GameState.JUEGO_COMPLETADO && input.pulsada(KeyEvent.VK_M)) Sonido.alternarSilencio();
+        if (input.pulsada(KeyEvent.VK_F11) && alPantallaCompleta != null) EventQueue.invokeLater(alPantallaCompleta);
 
         switch (estado) {
             case MENU:
@@ -272,11 +285,11 @@ public class Game extends Canvas implements Runnable {
                 break;
         }
         alternarFantasma();
-        // el juego NO se pausa: Coco va con las flechas (W/A/S/D son de la consola)
-        boolean izq = input.abajo(KeyEvent.VK_LEFT);
-        boolean der = input.abajo(KeyEvent.VK_RIGHT);
-        boolean saltar = input.pulsada(KeyEvent.VK_SPACE) || input.pulsada(KeyEvent.VK_UP);
-        paso(izq, der, saltar);
+        // Coco y el nivel se quedan quietos, pero el cronómetro sigue (y el fantasma también)
+        if (estado == GameState.EDITOR) {
+            framesNivel++;
+            grabadora.grabar(jugador);
+        }
     }
 
     private void mostrarAviso(String texto, Color color) {
@@ -394,7 +407,7 @@ public class Game extends Canvas implements Runnable {
                     renderer.dibujarJugadorEncima(g, jugador, cx, cy, nivel.getFrames());
                     renderer.dibujarAvisosEspeciales(g, nivel, jugador, fisica, frame, editor.getAbajo() + 16);
                     String msg = nivel.getMensaje();
-                    if (msg != null) renderer.dibujarMensaje(g, msg, Math.max(31, nivel.getMensajeTimer()), -1);
+                    if (msg != null) renderer.dibujarMensaje(g, msg, nivel.getDesbloqueo(), Math.max(31, nivel.getMensajeTimer()), -1);
                 } else {
                     renderer.dibujarHUD(g, nivel, jugador, fisica, frame, muertesNivel, aviso, colorAviso, avisoTimer,
                             framesNivel < 600 || estado == GameState.PAUSA,
@@ -412,12 +425,26 @@ public class Game extends Canvas implements Runnable {
 
     // escala la imagen a la ventana manteniendo 16:9
     private void presentar() {
+        if (!isDisplayable()) return;   // la ventana se está rehaciendo (F11)
         BufferStrategy bs = getBufferStrategy();
-        if (bs == null) {
-            createBufferStrategy(2);
+        if (bs == null || rehacerBuffer) {
+            rehacerBuffer = false;
+            try {
+                createBufferStrategy(2);
+            } catch (IllegalStateException e) {
+                rehacerBuffer = true;
+            }
             return;
         }
         renderizar();
+        try {
+            pintar(bs);
+        } catch (IllegalStateException e) {
+            rehacerBuffer = true;   // se ha cambiado la ventana a medio dibujar
+        }
+    }
+
+    private void pintar(BufferStrategy bs) {
         int w = getWidth(), h = getHeight();
         double escala = Ui.escalaVentana(w, h);
         int dw = (int) (ANCHO * escala), dh = (int) (ALTO * escala);

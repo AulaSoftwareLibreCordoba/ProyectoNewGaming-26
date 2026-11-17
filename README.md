@@ -60,9 +60,10 @@ java -cp out cordoba.Main
 | ESC | Pausa (o cerrar la consola) |
 | M | Activar / silenciar el sonido |
 | G | Mostrar / ocultar el fantasma del récord (nivel 2) |
+| F11 | Pantalla completa / volver a ventana |
 
-Con la consola abierta **el juego sigue en marcha**: Coco se mueve con **← / →** y salta con **ESPACIO** (o ↑),
-mientras que la consola usa **W/S** para elegir variable, **A/D** para cambiar el valor (mantén pulsado para
+Con la consola abierta **Coco se queda quieto, pero el cronómetro sigue corriendo**. La consola usa
+**W/S** o **↑/↓** para elegir variable, **A/D** o **←/→** para cambiar el valor (mantén pulsado para
 repetir), los **números** para escribirlo directamente y **ENTER** para aplicar.
 
 Todos los atajos, pantalla por pantalla, están en [ATAJOS.md](ATAJOS.md).
@@ -139,9 +140,8 @@ public class PhysicsConfig {
   `BUILD SUCCESSFUL` con la lista de cambios. Si cierras sin aplicar, el juego te avisa de que no se ha compilado nada.
 * **RESTAURAR** carga los valores por defecto en el editor.
 * Las variables `final` están **bloqueadas** (en el tutorial se van desbloqueando).
-* **El juego no se pausa**: la consola aparece arriba, Coco se sigue moviendo con las flechas y el
-  cronómetro sigue corriendo. Es como programar "en caliente" con el programa en marcha, así que hay que
-  decidir rápido… o abrir la pausa (ESC) para pensar.
+* **Coco se queda quieto pero el cronómetro sigue corriendo**: la consola aparece arriba y se maneja con
+  W/A/S/D o con las flechas. Pensar cuesta tiempo, así que hay que decidir rápido… o abrir la pausa (ESC).
 
 Los cambios afectan de verdad al cocodrilo: `Player` lee `PhysicsConfig` en **cada fotograma**.
 
@@ -189,7 +189,7 @@ CordobaCodigoSalvaje/
 ├── src/cordoba/
 │   ├── Main.java                   Punto de entrada; crea la ventana (y exporta assets con --exportar-assets)
 │   ├── nucleo/                     Bucle principal y entrada
-│   │   ├── Game.java               Bucle a 60 FPS fijos, máquina de estados, cámara, escalado pixel-perfect
+│   │   ├── Game.java               Bucle a 60 FPS fijos, máquina de estados, cámara, escalado a la ventana
 │   │   ├── GameState.java          MENU, JUGANDO, EDITOR, PAUSA, NIVEL_COMPLETADO, JUEGO_COMPLETADO, RANKING
 │   │   └── Input.java              Teclado y ratón (pulsada / mantenida)
 │   ├── fisica/                     Física y colisiones
@@ -254,7 +254,7 @@ Game.actualizar()
       ├─ CollisionManager.tocaPeligro() → morir / reaparecer en la farola
       └─ ¿meta? → celebración → pantalla de victoria
  └─ EDITOR → CodeEditor.actualizar() → APLICAR copia los valores a PhysicsConfig
-            └─ Game.paso() con las flechas (el juego sigue en marcha)
+            └─ Coco y el nivel quietos, el cronómetro sigue
 Game.renderizar() → imagen 640x360 → escalado sin suavizado a la ventana
 ```
 
@@ -362,8 +362,9 @@ hay fantasma, su comparación ocupa otra fila. La consola tiene mayor interlinea
 más alta. Se han ajustado las columnas del ranking para los nombres de doce caracteres.
 
 Se conserva el lienzo de 640×360, sin antialiasing ni métricas fraccionarias. La presentación
-usa nearest-neighbor y escalas enteras: 1280×720 usa escala 2; 960×540 usa escala 1 con
-márgenes. La transformación del ratón conserva esa misma escala y esos mismos márgenes.
+usa nearest-neighbor y la escala más grande que quepa manteniendo 16:9 (no tiene por qué ser
+entera), así que al maximizar o con **F11** (pantalla completa) el juego llena la pantalla.
+La transformación del ratón usa esa misma escala y esos mismos márgenes.
 
 **Comprobaciones reproducibles** (PowerShell desde la raíz, JDK 17+):
 
