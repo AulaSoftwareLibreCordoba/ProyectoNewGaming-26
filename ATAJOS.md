@@ -9,12 +9,12 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 
 | Atajo | Dónde | Qué hace | Por qué importa |
 |---|---|---|---|
-| **2** | Menú principal | Empieza directamente en el **nivel 2** | Te saltas el nivel 1 entero: el tiempo total sale mucho más bajo y la partida **también entra en el ranking** |
+| **2** / **3** | Menú principal | Empieza directamente en el **nivel 2** o **3** | Te saltas niveles: el tiempo total sale mucho más bajo y la partida **también entra en el ranking** |
 | **ESC** → **REINICIAR NIVEL** | Pausa | Vuelve al principio del nivel actual | **Borra el tiempo, las caídas y las compilaciones de ese nivel** (lo de niveles anteriores se mantiene) |
 | **E** o **ENTER** | Jugando | Abre la consola de código (se cierra con **ENTER**, que guarda solo) | Coco se queda quieto, pero **el tiempo sigue corriendo**. Hay que programar rápido |
 | **ESC** | Jugando | Pausa | Mientras estás en pausa **el tiempo no corre**: es el único sitio para pensar con calma |
 | **Números** + **ENTER** | Consola de código | Escribe el valor y lo compila de golpe | Mucho más rápido que pulsar [+]/[-] varias veces (`4,5` ENTER) |
-| **G** | Nivel 2 | Muestra / oculta el fantasma del récord | El fantasma enseña por dónde va el más rápido… o te distrae |
+| **G** | Jugando | Muestra / oculta el fantasma del récord del nivel | El fantasma enseña por dónde va el más rápido… o te distrae |
 | **R** | Jugando | Vuelve a la última farola | Útil si te quedas atascado, pero **suma una caída** |
 | **M** | Siempre | Silencia / activa el sonido y la música | Imprescindible si hay varios jugando a la vez en la misma sala |
 
@@ -24,7 +24,7 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 
 | Tecla | Acción |
 |---|---|
-| **M** | Activar / silenciar el sonido y la música *(no funciona mientras escribes tu nombre, para poder usar la letra M)* |
+| **M** | Activar / silenciar el sonido y la música *(no funciona mientras escribes tu nombre al empezar, para poder usar la letra M)* |
 | **F11** | Pantalla completa / volver a ventana |
 | **Ratón** | Pulsar cualquier botón de la pantalla |
 
@@ -36,8 +36,8 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 |---|---|
 | **ENTER** o **ESPACIO** | Jugar (primero sale la cinemática de la alcantarilla y luego el nivel 1) |
 | **ENTER**, **ESPACIO** o **ESC** | Durante la cinemática: saltarla e ir directo al nivel 1 |
-| **2** | Empezar directamente en el nivel 2 *(atajo para profesores)* |
-| Botón **RANKING** | Ver el TOP 10 (general, nivel 1 y nivel 2) |
+| **2** / **3** | Empezar directamente en el nivel 2 o 3 *(atajos para profesores)* |
+| Botón **RANKING** | Ver el TOP 10 (general y de cada nivel) |
 | Botón **SALIR** | Cerrar el juego |
 
 ---
@@ -51,11 +51,11 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | **ESPACIO** / **W** / **↑** | Saltar |
 | **E** o **ENTER** | Abrir la consola de código (Coco se para, **el tiempo no**) |
 | **R** | Reintentar desde la última farola *(cuenta como una caída)* |
-| **G** | Mostrar / ocultar el fantasma del récord *(solo en el nivel 2, si hay récord)* |
+| **G** | Mostrar / ocultar el fantasma del récord *(si ese nivel ya tiene récord)* |
 | **ESC** | Pausa (el cronómetro se detiene) |
 
-> ⏱️ El **cronómetro** de la partida está arriba a la izquierda. En el nivel 2 también muestra el
-> tiempo del nivel frente al récord: en azul si vas por delante del fantasma, en rojo si vas por detrás.
+> ⏱️ El **cronómetro** de la partida está arriba a la izquierda. Si el nivel tiene fantasma, también
+> muestra tu tiempo del nivel frente al récord, con la diferencia: `-` si vas por delante, `+` si vas por detrás.
 
 > 💡 **Ayudas al salto:** puedes saltar hasta 6 fotogramas después de salir de un borde
 > (*coyote time*) y, si pulsas saltar un poco antes de tocar el suelo, el salto se guarda
@@ -137,19 +137,23 @@ Si Coco muere después de cogerlos, se quedan cogidos.
 
 ## 🏆 Fin de la partida y ranking
 
-**Escribir el nombre**
+**Tu nombre (se pide al pulsar JUGAR)**
 
 | Tecla | Acción |
 |---|---|
 | Letras, números, espacio, `-` `_` `.` | Escribir el nombre (máx. 12 caracteres) |
 | **RETROCESO** | Borrar el último carácter |
-| **ENTER** o botón **GUARDAR** | Guardar la puntuación en el ranking |
+| **ENTER** o botón **¡A JUGAR!** | Empezar la partida |
+| **ESC** | Volver al menú |
+
+Al terminar la partida tu resultado se guarda solo con ese nombre. **ENTER** o **VER RANKING** abre la tabla.
+Al completar cada nivel verás el **TOP 5 de ese nivel** debajo de CONTINUAR y MENÚ.
 
 **Tabla TOP 10**
 
 | Tecla | Acción |
 |---|---|
-| **←** / **→**, **A** / **D** o **TAB** | Cambiar de pestaña: GENERAL · NIVEL 1 · NIVEL 2 |
+| **←** / **→**, **A** / **D** o **TAB** | Cambiar de pestaña: GENERAL · NIVEL 1 · NIVEL 2 · NIVEL 3 |
 | Clic en una pestaña | Ir a esa pestaña |
 | **ENTER** / **ESC** o botón **MENÚ** | Volver al menú principal (listo para el siguiente jugador) |
 

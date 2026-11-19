@@ -18,7 +18,7 @@ public class Level1 extends Level {
     private static final int S = 18;  // fila del suelo
 
     public Level1() {
-        super(1, "Los primeros pasos por Córdoba", Tema.RIO, 104, 23);
+        super(1, NOMBRES[1], Tema.RIO, 104, 23);
 
         inicio(3, S);
 

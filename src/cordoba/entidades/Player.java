@@ -116,6 +116,11 @@ public class Player {
             vy *= Level.ROZAMIENTO_CORRIENTE;   // el aire frena
             if (vy < -2.5f) vy = -2.5f;
         }
+        // la brisa del pozo frena la caída
+        if (nivel.enBrisa(x + ANCHO / 2f, y + ALTO / 2f)) {
+            vy -= Level.FUERZA_BRISA;
+            if (vy > 0) vy *= Level.ROZAMIENTO_BRISA;
+        }
         if (vy > PhysicsConfig.CAIDA_MAXIMA) vy = PhysicsConfig.CAIDA_MAXIMA;
 
         // 4. moverse comprobando choques

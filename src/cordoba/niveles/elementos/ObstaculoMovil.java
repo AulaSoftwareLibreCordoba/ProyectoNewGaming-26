@@ -10,8 +10,8 @@ public class ObstaculoMovil {
 
     private final float x1, y1, x2, y2;
     private final int periodo, desfase;
-    private final float radio = 7;
-    private float cx, cy;
+    protected float radio = 7;
+    protected float cx, cy;
 
     // periodo = fotogramas en ir y volver · desfase = para que no vayan todas a la vez
     public ObstaculoMovil(float x1, float y1, float x2, float y2, int periodo, int desfase) {

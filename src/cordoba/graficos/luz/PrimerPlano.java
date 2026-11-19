@@ -23,7 +23,7 @@ public final class PrimerPlano {
     // opacidad normal y opacidad cuando Coco está detrás
     private static final float ALFA = 0.93f, ALFA_TAPANDO = 0.38f;
 
-    private enum Forma { PALMERA, MATORRAL, HOJAS_ARRIBA, NARANJO, LAMPARA }
+    private enum Forma { PALMERA, MATORRAL, HOJAS_ARRIBA, NARANJO, LAMPARA, MACETAS }
 
     // dentro = forma que la sustituye dentro de la Mezquita (null = ninguna)
     private static final class Pieza {
@@ -55,14 +55,13 @@ public final class PrimerPlano {
 
     // ---- dibujo ----
 
-    // después de Coco y antes del HUD
-    public static void dibujar(Graphics2D g, Level.Tema tema, int camX, Rectangle jugador, int frame) {
-        dibujar(g, tema, camX, 0f, jugador, frame);
-    }
-
-    // interior: 0 fuera, 1 dentro de la Mezquita
-    public static void dibujar(Graphics2D g, Level.Tema tema, int camX, float interior, Rectangle jugador, int frame) {
+    // después de Coco y antes del HUD. interior: 0 fuera, 1 dentro de la Mezquita
+    public static void dibujar(Graphics2D g, Level.Tema tema, int camX, int camY, float interior, Rectangle jugador, int frame) {
         dibujarBokeh(g, tema, camX, frame);
+        if (tema == Level.Tema.CALLEJA) {
+            dibujarMacetasCalleja(g, camY, jugador);
+            return;
+        }
         Pieza[] piezas = tema == Level.Tema.RIO ? RIO : MEZQUITA;
         Composite antes = g.getComposite();
         if (tema == Level.Tema.MEZQUITA && interior > 0f) dibujarArqueria(g, camX, jugador, interior);
@@ -73,6 +72,30 @@ public final class PrimerPlano {
                 if (interior < 1f) dibujarPieza(g, tema, p, p.forma, camX, jugador, 1f - interior);
                 if (interior > 0f && p.dentro != null) dibujarPieza(g, tema, p, p.dentro, camX, jugador, interior);
             }
+        }
+        g.setComposite(antes);
+    }
+
+    // Calleja (nivel vertical): racimos de macetas colgadas a los lados que pasan al subir
+    private static final int PERIODO_V = 560;
+    private static final int[][] MACETAS_CALLEJA = { { -38, 0, 0 }, { 560, 300, 1 } };   // x, y, espejo
+
+    private static void dibujarMacetasCalleja(Graphics2D g, int camY, Rectangle jugador) {
+        Composite antes = g.getComposite();
+        for (int[] m : MACETAS_CALLEJA) {
+            BufferedImage img = imagen(Level.Tema.CALLEJA, Forma.MACETAS, m[2] == 1);
+            int h = img.getHeight();
+            int y = Math.floorMod(Math.round(m[1] - camY * PARALLAX) + h, PERIODO_V + h) - h;
+            if (y > ALTO || y + h < 0) continue;
+            float alfa = ALFA;
+            if (jugador != null) {
+                Rectangle r = new Rectangle(m[0], y, img.getWidth(), h);
+                double dx = Math.max(0, Math.max(r.x - jugador.getMaxX(), jugador.x - r.getMaxX()));
+                double dy = Math.max(0, Math.max(r.y - jugador.getMaxY(), jugador.y - r.getMaxY()));
+                alfa = (float) (ALFA_TAPANDO + (ALFA - ALFA_TAPANDO) * Math.min(1, Math.hypot(dx, dy) / 40.0));
+            }
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alfa));
+            g.drawImage(img, m[0], y, null);
         }
         g.setComposite(antes);
     }
@@ -149,7 +172,7 @@ public final class PrimerPlano {
     // destellos desenfocados (bokeh)
     private static void dibujarBokeh(Graphics2D g, Level.Tema tema, int camX, int frame) {
         BufferedImage bokeh = BOKEH.computeIfAbsent(tema,
-                t -> crearBokeh(t == Level.Tema.RIO ? 0xFFECB0 : 0xFFBE6E));
+                t -> crearBokeh(t == Level.Tema.MEZQUITA ? 0xFFBE6E : 0xFFECB0));
         Composite antes = g.getComposite();
         for (int i = 0; i < 7; i++) {
             float par = 1.3f + (i % 3) * 0.25f;
@@ -195,8 +218,38 @@ public final class PrimerPlano {
             case MATORRAL:     return matorral();
             case HOJAS_ARRIBA: return hojasArriba();
             case NARANJO:      return naranjo();
+            case MACETAS:      return macetasColgadas();
             default:           return lampara();
         }
+    }
+
+    // racimo de macetas azules con geranios colgadas de la pared (muy cerca de la cámara)
+    private static BufferedImage macetasColgadas() {
+        BufferedImage img = new BufferedImage(130, 250, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = lapiz(img);
+        int[][] macetas = { { 40, 30 }, { 70, 95 }, { 30, 160 } };   // x, y de cada maceta
+        Color[] flores = { new Color(0xE8344A), new Color(0xFF6FA8), new Color(0xD81B60) };
+        for (int i = 0; i < macetas.length; i++) {
+            int x = macetas[i][0], y = macetas[i][1];
+            // hojas que cuelgan
+            g.setColor(new Color(0x2E7D32));
+            g.fillOval(x - 14, y - 22, 64, 30);
+            g.fillOval(x + 4, y + 18, 16, 34);
+            g.setColor(new Color(0x43A047));
+            g.fillOval(x - 6, y - 20, 30, 16);
+            // flores
+            g.setColor(flores[i % flores.length]);
+            for (int k = 0; k < 5; k++) g.fillOval(x - 10 + k * 11, y - 28 + (k % 2) * 8, 13, 13);
+            // la maceta
+            g.setColor(new Color(0x1E4FA8));
+            g.fillRoundRect(x - 4, y, 44, 30, 8, 8);
+            g.setColor(new Color(0x4C7FE0));
+            g.fillRect(x + 2, y + 4, 6, 20);
+            g.setColor(new Color(0x163C80));
+            g.fillRect(x - 6, y - 2, 48, 6);
+        }
+        g.dispose();
+        return img;
     }
 
     private static Graphics2D lapiz(BufferedImage img) {
@@ -426,7 +479,8 @@ public final class PrimerPlano {
     private static void tenir(BufferedImage img, Level.Tema tema) {
         Graphics2D g = img.createGraphics();
         g.setComposite(AlphaComposite.SrcAtop);
-        Color sombra = tema == Level.Tema.RIO ? new Color(14, 24, 18, 185) : new Color(24, 12, 6, 175);
+        Color sombra = tema == Level.Tema.RIO ? new Color(14, 24, 18, 185)
+                : tema == Level.Tema.CALLEJA ? new Color(20, 30, 54, 120) : new Color(24, 12, 6, 175);
         g.setColor(sombra);
         g.fillRect(0, 0, img.getWidth(), img.getHeight());
         // borde iluminado por arriba (luz que se cuela)

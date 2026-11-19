@@ -2,122 +2,153 @@ package cordoba.niveles;
 
 import cordoba.niveles.elementos.Coleccionable;
 import cordoba.niveles.elementos.Decoracion;
-import cordoba.niveles.elementos.ObstaculoMovil;
-import cordoba.niveles.plataformas.PlataformaMovil;
-import cordoba.niveles.plataformas.PlataformaTemporal;
-import cordoba.niveles.plataformas.PuenteDerrumbe;
+import cordoba.niveles.elementos.MacetaQueCae;
 
 /*
- * Nivel 2, la Mezquita. Ya no hay pistas: cada zona pide otros valores.
- *  A. calle con fosos (calentamiento)
- *  B. muro de 8 bloques        -> menos gravedad y/o más fuerzaSalto
- *  C. pasillo con pinchos arriba -> no saltar tanto (volver a lo normal)
- *  D. pozo con corriente de aire -> gravedad por encima de 12.5
- *  E. suelo que se hunde        -> velocidad alta (8 o más)
- *  F. columnas estrechas        -> velocidad baja para caer justo
- *  G. plataformas temporales, plataforma móvil y bolas de pinchos
- *  H. puerta de la Mezquita (meta)
+ * Nivel 2: la Calleja de las Flores. Se sube de abajo arriba entre paredes encaladas.
+ *  A. la calle con escalones de empedrado    -> salto normal
+ *  B. balcones cada 5 casillas               -> subir fuerzaSalto o bajar gravedad
+ *  C. balcones con macetas que caen          -> esperar a que caiga y saltar
+ *  D. pasillo con rejas de pinchos arriba    -> volver al salto normal (si no, te pinchas)
+ *  E. patio estrecho hasta la plazuela       -> salto normal
+ *  F. zaguán y patio cordobés con alberca     -> el puente de azulejos se hunde: subir velocidad (o saltar lejos)
+ *  G. el pozo del patio: hay que tirarse      -> bajar gravedad para caer despacio y esquivar los pinchos
+ *  H. el aljibe del fondo                     -> caer sobre un pilar (no al agua) y salir por la puerta (meta)
+ *
+ * Plano (80 x 96, fila 0 arriba). Paredes encaladas 'S', empedrado o piedra '#', fondo de piedra 'p'.
+ *   filas 0-25   plazuela abierta al cielo (suelo en la fila 26)
+ *   filas 26-48  patio estrecho (columnas 4-7) con repisas a un lado y a otro
+ *   filas 43-48  pasillo con pinchos en el techo (columnas 8-29), suelo en la fila 49
+ *   filas 52-90  la calleja: balcones en zigzag; suelo de la calle en la fila 91
+ *   columnas 40-75, filas 0-25: patio cordobés (suelo en la fila 26); el pozo baja por las columnas 50-59
+ *   filas 81-95: aljibe con agua y pilares; la salida está a la derecha
  */
 public class Level2 extends Level {
 
-    private static final int CALLE = 18;   // suelo de la calle
-    private static final int ALTO = 10;    // suelo del muro y del pasillo de arriba
-    private static final int BAJO = 31;    // suelo de la galería de abajo
-    private static final int COL = 29;     // altura de columnas y plataformas
-
     public Level2() {
-        super(2, "El desafío de la Mezquita", Tema.MEZQUITA, 162, 34);
+        super(2, NOMBRES[2], Tema.CALLEJA, 80, 96);
 
-        inicio(2, CALLE);
+        rellenar(0, 0, 79, 95, 'S');                 // todo pared y se van abriendo huecos
+        rellenar(40, 27, 79, 95, '#');               // bajo el patio, piedra
 
-        // A. calle con fosos
-        suelo(0, 20, CALLE);
-        foso(8, 10);
-        foso(14, 16);
+        // huecos
+        vaciar(4, 0, 35, 25);                        // plazuela
+        vaciar(4, 26, 7, 48);                        // patio estrecho
+        vaciar(8, 43, 29, 48);                       // pasillo
+        vaciar(30, 45, 35, 53);                      // hueco encima del último balcón
+        vaciar(4, 52, 35, 90);                       // la calleja
 
-        // B. muro de 8 bloques
-        rellenar(21, ALTO, 30, filas - 1, 'S');
+        // A. la calle y sus escalones (de 2 y 3 casillas: con el salto normal se suben)
+        inicio(6, 91);
+        rellenar(4, 91, 35, 95, '#');
+        rellenar(13, 89, 17, 90, '#');
+        rellenar(18, 86, 22, 90, '#');
+        rellenar(23, 83, 27, 90, '#');
+        rellenar(28, 80, 35, 90, '#');
 
-        // C. pasillo con pinchos en el techo
-        rellenar(31, 0, 60, 3, 'S');                  // techo
-        pinchosTecho(31, 56, 4);
-        rellenar(31, ALTO, 56, filas - 1, 'S');       // suelo del pasillo
-        for (int c : new int[] { 35, 42, 49 }) {      // fosos de pinchos
-            vaciar(c, ALTO, c + 2, ALTO);
-            pinchos(c, c + 2, ALTO + 1);
+        // B. balcones cada 5 casillas en zigzag (con el salto normal no se llega)
+        rellenar(21, 75, 25, 76, 'S');
+        rellenar(13, 70, 17, 71, 'S');
+        rellenar(5, 65, 10, 66, 'S');
+
+        // C. balcones cada 3-4 casillas con macetas que caen encima
+        rellenar(13, 61, 17, 62, 'S');
+        rellenar(21, 57, 25, 58, 'S');
+        rellenar(28, 54, 35, 55, 'S');
+        macetaQueCae(15, 52, 61, 160, 0, 0);
+        macetaQueCae(23, 52, 57, 160, 80, 1);
+        macetaQueCae(33, 45, 54, 170, 40, 3);
+
+        // D. pasillo: suelo en la fila 49 con tres huecos de pinchos y rejas de pinchos en el techo.
+        // Con el salto subido la cabeza llega a los pinchos de arriba
+        pinchosTecho(10, 29, 43);
+        for (int c : new int[] { 13, 19, 25 }) {
+            vaciar(c, 49, c + 2, 49);
+            pinchos(c, c + 2, 50);
         }
 
-        // D. pozo con corriente de aire
-        rellenar(61, 0, 64, BAJO - 4, 'S');           // pared derecha del pozo
-        rellenar(57, ALTO + 1, 60, BAJO - 1, 'u');    // corriente
-        rellenar(57, BAJO, 68, filas - 1, 'S');       // fondo del pozo
-        obstaculos.add(new ObstaculoMovil(57 * TILE + 8, 17 * TILE, 59 * TILE + 8, 17 * TILE, 110, 0));
-        obstaculos.add(new ObstaculoMovil(58 * TILE + 8, 23 * TILE, 60 * TILE + 8, 23 * TILE, 110, 55));
+        // E. patio estrecho: repisas alternas cada 3 casillas hasta la plazuela
+        int[] filas = { 46, 43, 40, 37, 34, 31, 28 };
+        for (int i = 0; i < filas.length; i++) {
+            int c = i % 2 == 0 ? 6 : 4;
+            rellenar(c, filas[i], c + 1, filas[i], 'S');
+        }
+        rellenar(8, 26, 35, 26, '#');                // suelo de la plazuela
 
-        // E. galería con suelo que se hunde
-        rellenar(65, 0, 88, BAJO - 4, 'S');           // techo bajo
-        plataformas.add(new PuenteDerrumbe(69 * TILE, BAJO * TILE, 18, 95));
-        pinchos(69, 86, filas - 1);
-        rellenar(87, BAJO, 89, filas - 1, 'S');
+        // F. zaguán (portal en la casa) y patio cordobés abierto al cielo
+        vaciar(36, 0, 39, 16);                       // sobre el zaguán, solo un dintel (filas 17-20)
+        vaciar(36, 21, 39, 25);                      // zaguán
+        vaciar(40, 0, 75, 25);                       // patio
+        // al fondo, a la derecha del pozo, la fachada del patio: pared blanca llena de macetas azules
+        rellenar(62, 6, 75, 25, 'S');
+        paredFlorida(62, 7, 75, 25);
+        rellenar(36, 26, 75, 26, '#');               // suelo del patio
+        // alberca de 8 casillas con un puente de azulejos que se hunde: hace falta velocidad (o un salto largo)
+        vaciar(42, 26, 49, 26);
+        rellenar(42, 27, 49, 28, '~');
+        plataformas.add(new cordoba.niveles.plataformas.PuenteDerrumbe(42 * TILE, 26 * TILE, 8, 45));
 
-        // F. columnas estrechas
-        rellenar(89, 0, 118, 21, 'S');                // techo de la sala
-        pinchos(90, 112, filas - 1);
-        for (int c = 93; c <= 108; c += 5) rellenar(c, BAJO, c + 1, filas - 1, 'S');   // columnas de 2 bloques
-        rellenar(113, BAJO, 118, filas - 1, 'S');
+        // G. el pozo: brocal en el patio y un tiro de piedra con repisas de pinchos alternas.
+        // Se baja cayendo; con poca gravedad da tiempo a esquivar
+        vaciar(53, 26, 56, 26);
+        rellenar(53, 26, 56, 31, 'p');               // cuello del pozo
+        rellenar(51, 32, 58, 80, 'p');               // el tiro: 8 casillas de ancho
+        brisa(53, 27, 56, 31);                       // brisa suave que sube por el pozo y frena la caída
+        brisa(51, 32, 58, 80);
+        decoraciones.add(new Decoracion(Decoracion.Tipo.POZO, 55 * TILE, 26 * TILE, 0));
+        // repisas de pinchos que dejan un hueco de 3 casillas, una vez a cada lado, cada 12 filas:
+        // para pasar de un hueco al otro hay que moverse 5 casillas mientras se cae, y con la gravedad
+        // normal no da tiempo. Con poca gravedad se cae despacio y sí.
+        repisa(51, 55, 38, true);                    // hueco a la derecha (56-58)
+        repisa(54, 58, 50, true);                    // hueco a la izquierda (51-53)
+        repisa(54, 56, 58, false);                   // repisa sin pinchos para descansar (farola)
+        repisa(51, 55, 64, true);                    // hueco a la derecha: bajar de la repisa por la derecha
+        obstaculos.add(new cordoba.niveles.elementos.ObstaculoMovil(52 * TILE, 70 * TILE, 58 * TILE, 70 * TILE, 120, 0));
+        repisa(54, 58, 76, true);                    // hueco a la izquierda, encima de un pilar del aljibe
 
-        // G. plataformas temporales y obstáculos
-        // todo va al mismo ritmo de 150 fotogramas (2,5 s): hay que fijarse
-        rellenar(119, 0, 150, 17, 'S');               // techo
-        pinchos(119, 148, filas - 1);
-        // azulejo A visible en [20,120) · B en [75,175) · C en [90,210)
-        // la plataforma móvil está a la izquierda en t=40 y a la derecha en t=115
-        plataformas.add(new PlataformaTemporal(121 * TILE, COL * TILE, 3, 150, 100, 130));
-        plataformas.add(new PlataformaTemporal(127 * TILE, COL * TILE, 3, 150, 100, 75));
-        plataformas.add(new PlataformaMovil(132 * TILE, 138 * TILE, COL * TILE, 3, 1.28f, 110));
-        plataformas.add(new PlataformaTemporal(144 * TILE, COL * TILE, 3, 150, 120, 60));
-        obstaculos.add(new ObstaculoMovil(125 * TILE + 8, 22 * TILE, 125 * TILE + 8, 31 * TILE, 150, 33));
-        obstaculos.add(new ObstaculoMovil(148 * TILE, 22 * TILE, 148 * TILE, 31 * TILE, 75, 40));
+        // H. aljibe: agua y pilares; el pozo cae justo encima del agua, hay que dirigirse a un pilar
+        rellenar(44, 81, 75, 92, 'p');
+        rellenar(44, 89, 63, 95, '~');
+        for (int c : new int[] { 50, 55, 60 }) rellenar(c, 86, c + 1, 95, '#');
+        rellenar(64, 86, 75, 95, '#');               // orilla con la salida
+        meta(72, 86, 2, 3);
 
-        // H. puerta de la Mezquita
-        rellenar(149, COL, 161, filas - 1, 'S');
-        rellenar(154, COL - 1, 161, COL - 1, 'S');
-        rellenar(156, COL - 2, 161, COL - 2, 'S');
-        meta(158, COL - 2, 2, 3);
+        // checkpoints (en el orden en que se llega)
+        farola(33, 80);
+        farola(7, 65);
+        farola(32, 54);
+        farola(29, 49);
+        farola(10, 26);
+        farola(38, 26);
+        farola(55, 58);
+        farola(67, 86);
 
-        // checkpoints
-        farola(3, CALLE);
-        farola(19, CALLE);
-        farola(29, ALTO);
-        farola(53, ALTO);
-        farola(66, BAJO);
-        farola(88, BAJO);
-        farola(115, BAJO);
-        farola(151, COL);
-
-
-        // comida
-        coleccionable(Coleccionable.Tipo.SALMOREJO, 15, CALLE - 7);   // encima del segundo foso
-        coleccionable(Coleccionable.Tipo.FLAMENQUIN, 151, COL - 8);   // en lo alto, antes de la puerta
+        // comida: hay que subir fuerzaSalto o bajar gravedad
+        coleccionable(Coleccionable.Tipo.SALMOREJO, 7, 84);     // encima de la calle
+        coleccionable(Coleccionable.Tipo.FLAMENQUIN, 20, 19);   // en lo alto de la plazuela
 
         // decoración
-        decoracion(Decoracion.Tipo.NARANJO, 1, CALLE, 0);
-        decoracion(Decoracion.Tipo.MACETA, 6, CALLE, 0);
-        decoracion(Decoracion.Tipo.MACETA, 12, CALLE, 1);
-        decoracion(Decoracion.Tipo.NARANJO, 18, CALLE, 0);
-        decoracion(Decoracion.Tipo.MACETA, 24, ALTO, 2);
-        decoracion(Decoracion.Tipo.MACETA, 27, ALTO, 1);
-        decoracion(Decoracion.Tipo.MACETA, 33, ALTO, 0);
-        decoracion(Decoracion.Tipo.MACETA, 117, BAJO, 1);
-        decoracion(Decoracion.Tipo.NARANJO, 150, COL, 0);
-        decoracion(Decoracion.Tipo.PALMERA, 153, COL, 0);
-        decoracion(Decoracion.Tipo.MACETA, 157, COL - 2, 2);
-        decoracion(Decoracion.Tipo.MACETA, 160, COL - 2, 0);
+        decoracion(Decoracion.Tipo.MACETA, 4, 91, 0);
+        decoracion(Decoracion.Tipo.MACETA, 11, 91, 1);
+        decoracion(Decoracion.Tipo.MACETA, 25, 75, 2);
+        decoracion(Decoracion.Tipo.MACETA, 13, 70, 3);
+        decoracion(Decoracion.Tipo.MACETA, 5, 65, 1);
+        decoracion(Decoracion.Tipo.MACETA, 21, 57, 0);
+        decoracion(Decoracion.Tipo.MACETA, 35, 54, 2);
+        decoracion(Decoracion.Tipo.NARANJO, 14, 26, 0);
+        decoracion(Decoracion.Tipo.MACETA, 24, 26, 0);
+        decoracion(Decoracion.Tipo.MACETA, 26, 26, 3);
     }
 
-    // hoyo de 2 de hondo con pinchos al fondo
-    private void foso(int c1, int c2) {
-        vaciar(c1, CALLE, c2, CALLE + 1);
-        pinchos(c1, c2, CALLE + 2);
+    // repisa de piedra dentro del pozo (de c1 a c2 en la fila f), con pinchos encima o sin ellos
+    private void repisa(int c1, int c2, int f, boolean conPinchos) {
+        rellenar(c1, f, c2, f, '#');
+        if (conPinchos) pinchos(c1, c2, f - 1);
+    }
+
+    // maceta colgada en la fila filaArriba de la columna col que cae hasta el suelo de filaSuelo
+    private void macetaQueCae(int col, int filaArriba, int filaSuelo, int periodo, int desfase, int variante) {
+        obstaculos.add(new MacetaQueCae(col * TILE + TILE / 2f, filaArriba * TILE + 8, filaSuelo * TILE - 6,
+                periodo, desfase, variante));
     }
 }

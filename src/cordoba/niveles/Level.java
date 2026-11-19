@@ -18,6 +18,7 @@ import java.util.List;
 /*
  * Base de los niveles. Un nivel es un mapa de caracteres:
  *   '.' vacío   '#' suelo   'S' piedra   '^' pinchos   'v' pinchos de techo   '~' agua   'u' corriente de aire
+ *   'p' fondo de piedra (no choca: el interior de un pozo o un aljibe)
  * más plataformas, obstáculos, farolas (checkpoints), decoración y la meta.
  * Level1 y Level2 lo montan en su constructor con suelo(), agua(), farola()...
  */
@@ -31,7 +32,27 @@ public abstract class Level {
     // rozamiento dentro de la corriente (frena la velocidad vertical)
     public static final float ROZAMIENTO_CORRIENTE = 0.92f;
 
-    public enum Tema { RIO, MEZQUITA }
+    // brisa del pozo: empuja un poco hacia arriba y frena la caída (no sube a Coco como la corriente).
+    // Con la gravedad normal se sigue cayendo rápido; con poca gravedad se cae muy despacio
+    public static final float FUERZA_BRISA = 0.08f;
+    public static final float ROZAMIENTO_BRISA = 0.96f;
+
+    public enum Tema { RIO, MEZQUITA, CALLEJA }
+
+    // número de niveles de la partida
+    public static final int TOTAL = 3;
+
+    public static final String[] NOMBRES = {
+        "", "Los primeros pasos por Córdoba", "La Calleja de las Flores", "El desafío de la Mezquita" };
+
+    // el nivel con ese número (1: río, 2: Calleja de las Flores, 3: Mezquita)
+    public static Level crear(int numero) {
+        switch (numero) {
+            case 1:  return new Level1();
+            case 2:  return new Level2();
+            default: return new Level3();
+        }
+    }
 
     protected final int numero;
     protected final String nombre;
@@ -44,6 +65,8 @@ public abstract class Level {
     protected final List<Farola> farolas = new ArrayList<>();
     protected final List<Decoracion> decoraciones = new ArrayList<>();
     protected final List<Coleccionable> coleccionables = new ArrayList<>();
+    protected final List<Rectangle> brisas = new ArrayList<>();          // en píxeles
+    protected final List<Rectangle> paredesFloridas = new ArrayList<>(); // en píxeles: pared con macetas
     protected Rectangle meta = new Rectangle();
 
     private float inicioX, inicioY;
@@ -134,6 +157,24 @@ public abstract class Level {
         if (c < 0 || c >= columnas || f < 0 || f >= filas) return '.';
         return mapa[f][c];
     }
+
+    // zona de brisa de las columnas c1..c2 y filas f1..f2
+    protected void brisa(int c1, int f1, int c2, int f2) {
+        brisas.add(new Rectangle(c1 * TILE, f1 * TILE, (c2 - c1 + 1) * TILE, (f2 - f1 + 1) * TILE));
+    }
+
+    // pared de patio llena de macetas (solo se dibuja; las casillas tienen que ser pared 'S')
+    protected void paredFlorida(int c1, int f1, int c2, int f2) {
+        paredesFloridas.add(new Rectangle(c1 * TILE, f1 * TILE, (c2 - c1 + 1) * TILE, (f2 - f1 + 1) * TILE));
+    }
+
+    public boolean enBrisa(float px, float py) {
+        for (Rectangle r : brisas) if (r.contains(px, py)) return true;
+        return false;
+    }
+
+    public List<Rectangle> getBrisas()          { return brisas; }
+    public List<Rectangle> getParedesFloridas() { return paredesFloridas; }
 
     public boolean esCorriente(float px, float py) {
         return tile((int) Math.floor(px / TILE), (int) Math.floor(py / TILE)) == 'u';

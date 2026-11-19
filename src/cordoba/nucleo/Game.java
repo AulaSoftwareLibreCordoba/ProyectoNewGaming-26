@@ -15,8 +15,6 @@ import cordoba.interfaz.GameMenu;
 import cordoba.interfaz.Introduccion;
 import cordoba.interfaz.PantallaRanking;
 import cordoba.interfaz.Ui;
-import cordoba.niveles.Level1;
-import cordoba.niveles.Level2;
 import cordoba.niveles.Level;
 import cordoba.niveles.elementos.Coleccionable;
 import cordoba.ranking.Puntuacion;
@@ -50,13 +48,16 @@ public class Game extends Canvas implements Runnable {
     private final PantallaOpciones opciones = new PantallaOpciones();
     private GameState volverDeOpciones = GameState.MENU;
 
-    // fantasma del récord del nivel 2
-    private static final Path FICHERO_FANTASMA = Path.of("fantasma.dat");
-    private Fantasma fantasma = Fantasma.cargar(FICHERO_FANTASMA);   // el guardado en disco
+    // nombre del jugador (se pide al empezar y se usa para el ranking al terminar)
+    private String nombreJugador = "";
+    private int nivelInicial = 1;   // 1 = con la cinemática; 2 o 3 = atajos de profesor
+
+    // un fantasma por nivel: el del récord de ese nivel, en fantasma_nivelN.dat
+    private final Fantasma[] fantasmas = new Fantasma[Level.TOTAL + 1];     // los guardados en disco
     private Fantasma fantasmaNivel;                // el que corre en este nivel (o null)
     private boolean fantasmaVisible = true;        // tecla G
     private Fantasma.Grabadora grabadora = new Fantasma.Grabadora();
-    private Fantasma grabacionN2;                  // tu partida en el nivel 2
+    private final Fantasma[] grabaciones = new Fantasma[Level.TOTAL + 1];   // tu partida en cada nivel
 
     private GameState estado = GameState.MENU;
     private Level nivel;
@@ -72,7 +73,7 @@ public class Game extends Canvas implements Runnable {
     // lo que resta la comida (framesNivel es el tiempo real)
     private int bonusNivel, timerBonus;
     private int framesTotal, muertesTotal, compilacionesTotal;
-    private final int[] framesPorNivel = new int[3];   // tiempo de cada nivel (se usan el 1 y el 2)
+    private final int[] framesPorNivel = new int[Level.TOTAL + 1];   // tiempo de cada nivel (índices 1..TOTAL)
 
     private volatile boolean ejecutando;
     private Runnable alSalir = () -> System.exit(0);
@@ -81,6 +82,7 @@ public class Game extends Canvas implements Runnable {
 
     public Game() {
         Volumen.cargar();
+        for (int n = 1; n <= Level.TOTAL; n++) fantasmas[n] = Fantasma.cargar(ficheroFantasma(n));
         setBackground(Color.BLACK);
         setFocusable(true);
         addKeyListener(input);
@@ -148,17 +150,15 @@ public class Game extends Canvas implements Runnable {
     public void actualizar() {
         frame++;
         // M silencia (menos al escribir el nombre, que puede llevar M)
-        if (estado != GameState.JUEGO_COMPLETADO && input.pulsada(KeyEvent.VK_M)) Sonido.alternarSilencio();
+        if (estado != GameState.NOMBRE && input.pulsada(KeyEvent.VK_M)) Sonido.alternarSilencio();
         if (input.pulsada(KeyEvent.VK_F11) && alPantallaCompleta != null) EventQueue.invokeLater(alPantallaCompleta);
 
         switch (estado) {
             case MENU:
                 switch (menu.actualizarInicio(input)) {
-                    case JUGAR:
-                        intro.reiniciar();
-                        estado = GameState.INTRO;
-                        break;
-                    case NIVEL2: empezarPartida(2); break;
+                    case JUGAR:  pedirNombre(1); break;
+                    case NIVEL2: pedirNombre(2); break;
+                    case NIVEL3: pedirNombre(3); break;
                     case RANKING:
                         pantallaRanking.verTabla();
                         estado = GameState.RANKING;
@@ -168,6 +168,19 @@ public class Game extends Canvas implements Runnable {
                     default: break;
                 }
                 break;
+            case NOMBRE: {
+                if (input.pulsada(KeyEvent.VK_ESCAPE)) { estado = GameState.MENU; break; }
+                String elegido = pantallaRanking.actualizarPedirNombre(input);
+                if (elegido == null) break;
+                nombreJugador = elegido;
+                if (nivelInicial == 1) {
+                    intro.reiniciar();
+                    estado = GameState.INTRO;
+                } else {
+                    empezarPartida(nivelInicial);
+                }
+                break;
+            }
             case INTRO:
                 if (intro.actualizar(input)) empezarPartida(1);
                 break;
@@ -194,12 +207,7 @@ public class Game extends Canvas implements Runnable {
                 }
                 break;
             case JUEGO_COMPLETADO:
-                Puntuacion guardada = pantallaRanking.actualizarNombre(input, framesTotal, muertesTotal,
-                        compilacionesTotal, framesPorNivel[1], framesPorNivel[2]);
-                if (guardada != null) {
-                    if (grabacionN2 != null && ranking.mejorNivel(2) == guardada) guardarFantasma(guardada);
-                    estado = GameState.RANKING;
-                }
+                if (pantallaRanking.actualizarFinal(input)) estado = GameState.RANKING;
                 break;
             case RANKING:
                 if (pantallaRanking.actualizarTabla(input)) estado = GameState.MENU;
@@ -214,6 +222,13 @@ public class Game extends Canvas implements Runnable {
         input.finFrame();
     }
 
+    // pantalla del nombre antes de jugar (empezando por el nivel indicado)
+    private void pedirNombre(int nivel) {
+        nivelInicial = nivel;
+        pantallaRanking.pedirNombre(input, nombreJugador);
+        estado = GameState.NOMBRE;
+    }
+
     private void abrirOpciones(GameState desde) {
         volverDeOpciones = desde;
         opciones.abrir(input);
@@ -226,6 +241,7 @@ public class Game extends Canvas implements Runnable {
         GameState e = estado == GameState.OPCIONES ? volverDeOpciones : estado;
         switch (e) {
             case MENU:
+            case NOMBRE:
             case RANKING:
                 Musica.reproducir("menu", false);
                 break;
@@ -364,12 +380,12 @@ public class Game extends Canvas implements Runnable {
     private void empezarPartida(int numero) {
         framesTotal = muertesTotal = compilacionesTotal = 0;
         java.util.Arrays.fill(framesPorNivel, 0);
-        grabacionN2 = null;
+        java.util.Arrays.fill(grabaciones, null);
         cargarNivel(numero);
     }
 
     public void cargarNivel(int numero) {
-        nivel = numero == 1 ? new Level1() : new Level2();
+        nivel = Level.crear(numero);
         nivel.configurarFisica(fisica);
         colisiones = new CollisionManager(nivel);
         jugador = new Player(nivel.getInicioX(), nivel.getInicioY());
@@ -377,7 +393,7 @@ public class Game extends Canvas implements Runnable {
         framesNivel = muertesNivel = compilacionesNivel = 0;
         bonusNivel = timerBonus = 0;
         grabadora = new Fantasma.Grabadora();
-        fantasmaNivel = numero == 2 ? fantasmaDelRecord() : null;
+        fantasmaNivel = fantasmaDelRecord(numero);
         estado = GameState.JUGANDO;
         moverCamara(true);
     }
@@ -394,9 +410,14 @@ public class Game extends Canvas implements Runnable {
         muertesTotal += muertesNivel;
         compilacionesTotal += compilacionesNivel;
         framesPorNivel[Math.min(nivel.getNumero(), framesPorNivel.length - 1)] = tiempoNivel();
-        if (nivel.getNumero() == 2) grabacionN2 = grabadora.crear("", tiempoNivel());
-        if (nivel.getNumero() >= 2) {
-            pantallaRanking.empezarNombre();
+        grabaciones[nivel.getNumero()] = grabadora.crear("", tiempoNivel());
+        if (nivel.getNumero() >= Level.TOTAL) {
+            // se guarda sola con el nombre que se dio al empezar
+            Puntuacion guardada = pantallaRanking.guardarDirecto(nombreJugador, framesTotal, muertesTotal,
+                    compilacionesTotal, framesPorNivel);
+            // en cada nivel donde esta partida es el récord, su grabación pasa a ser el fantasma
+            for (int n = 1; n <= Level.TOTAL; n++)
+                if (grabaciones[n] != null && ranking.mejorNivel(n) == guardada) guardarFantasma(n, guardada);
             estado = GameState.JUEGO_COMPLETADO;
         } else {
             menu.abrirVictoria(input);
@@ -404,19 +425,24 @@ public class Game extends Canvas implements Runnable {
         }
     }
 
-    // el fantasma solo vale si coincide con el récord actual
-    private Fantasma fantasmaDelRecord() {
-        Puntuacion record = ranking.mejorNivel(2);
-        if (fantasma == null || record == null) return null;
-        boolean coincide = record.framesN2() == fantasma.getFramesNivel()
-                && record.nombre().equals(fantasma.getNombre());
-        return coincide ? fantasma : null;
+    private static Path ficheroFantasma(int nivel) {
+        return Path.of("fantasma_nivel" + nivel + ".dat");
     }
 
-    private void guardarFantasma(Puntuacion record) {
-        fantasma = grabacionN2.conNombre(record.nombre());
+    // el fantasma de un nivel solo vale si coincide con el récord actual de ese nivel
+    private Fantasma fantasmaDelRecord(int nivel) {
+        Puntuacion record = ranking.mejorNivel(nivel);
+        Fantasma f = fantasmas[nivel];
+        if (f == null || record == null) return null;
+        boolean coincide = record.framesNivel(nivel) == f.getFramesNivel()
+                && record.nombre().equals(f.getNombre());
+        return coincide ? f : null;
+    }
+
+    private void guardarFantasma(int nivel, Puntuacion record) {
+        fantasmas[nivel] = grabaciones[nivel].conNombre(record.nombre());
         try {
-            fantasma.guardar(FICHERO_FANTASMA);
+            fantasmas[nivel].guardar(ficheroFantasma(nivel));
         } catch (IOException e) {
             System.err.println("No se pudo guardar el fantasma: " + e.getMessage());
         }
@@ -456,9 +482,12 @@ public class Game extends Canvas implements Runnable {
             case INTRO:
                 intro.dibujar(g);
                 break;
+            case NOMBRE:
+                pantallaRanking.dibujarPedirNombre(g, input, frame);
+                break;
             case JUEGO_COMPLETADO:
-                pantallaRanking.dibujarNombre(g, input, framesTotal, muertesTotal, compilacionesTotal,
-                        framesPorNivel[1], framesPorNivel[2], frame);
+                pantallaRanking.dibujarFinal(g, input, framesTotal, muertesTotal, compilacionesTotal,
+                        framesPorNivel, frame);
                 break;
             case RANKING:
                 pantallaRanking.dibujarTabla(g, input, frame);
@@ -476,8 +505,10 @@ public class Game extends Canvas implements Runnable {
                             framesTotal + tiempoNivel(), tiempoNivel(), fantasmaNivel, fantasmaVisible, timerBonus);
                 }
                 if (estado == GameState.PAUSA) menu.dibujarPausa(g, input);
-                if (estado == GameState.NIVEL_COMPLETADO)
+                if (estado == GameState.NIVEL_COMPLETADO) {
                     menu.dibujarVictoria(g, input, nivel, tiempoNivel(), muertesNivel, compilacionesNivel, frame);
+                    pantallaRanking.dibujarTop5Nivel(g, nivel.getNumero(), nombreJugador, tiempoNivel(), 216, frame);
+                }
                 break;
             }
         }

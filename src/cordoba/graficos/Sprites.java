@@ -222,7 +222,7 @@ public final class Sprites {
     }
 
     private static String nombreArchivo(String clave) {
-        return clave.toLowerCase().replace('#', 'T').replace('^', 'P').replace('~', 'A')
+        return clave.toLowerCase().replace('#', 'T').replace('^', 'P').replace('~', 'A').replace("_p_", "_F_")
                 .replace("true", "1").replace("false", "0");
     }
 
@@ -235,11 +235,16 @@ public final class Sprites {
         switch (tipo) {
             case '#':
                 if (tema == Level.Tema.RIO) tileTierra(g, r, arriba);
+                else if (tema == Level.Tema.CALLEJA) tileEmpedrado(g, r, arriba);
                 else tileAdoquin(g, r, arriba);
                 break;
             case 'S':
                 if (tema == Level.Tema.RIO) tileSillar(g, r, var, arriba, abajo);
+                else if (tema == Level.Tema.CALLEJA) tileEncalado(g, r, var, arriba, abajo);
                 else tileMezquita(g, r, var, arriba, abajo);
+                break;
+            case 'p':
+                tileFondoPiedra(g, r, var);
                 break;
             case '^':
                 tilePinchos(g, false);
@@ -305,6 +310,84 @@ public final class Sprites {
     }
 
     // sillares de piedra (puente, murallas)
+    // empedrado cordobés: cantos rodados en mortero, con una tira de granito arriba
+    private static void tileEmpedrado(Graphics2D g, Random r, boolean arriba) {
+        g.setColor(new Color(0x8A7A62));
+        g.fillRect(0, 0, 16, 16);
+        Color[] cantos = { new Color(0xB8AE9C), new Color(0xA49882), new Color(0xCFC6B4), new Color(0x8E8678) };
+        for (int y = 1; y < 16; y += 4) {
+            for (int x = ((y / 4) % 2) * 2; x < 16; x += 4) {
+                g.setColor(cantos[r.nextInt(cantos.length)]);
+                g.fillRect(x, y, 3, 2);
+                g.setColor(new Color(0x6E604C));
+                g.fillRect(x, y + 2, 3, 1);
+            }
+        }
+        if (arriba) {
+            g.setColor(new Color(0x9C968C));   // granito
+            g.fillRect(0, 0, 16, 4);
+            g.setColor(new Color(0xC4BEB2));
+            g.fillRect(0, 0, 16, 1);
+            g.setColor(new Color(0x6A645A));
+            g.fillRect(0, 4, 16, 1);
+            g.fillRect(7 + r.nextInt(2), 1, 1, 3);
+        }
+    }
+
+    // pared encalada; arriba, cornisa de teja (los balcones); abajo, la sombra del vuelo
+    private static void tileEncalado(Graphics2D g, Random r, int var, boolean arriba, boolean abajo) {
+        g.setColor(new Color(0xF3EFE6));
+        g.fillRect(0, 0, 16, 16);
+        // grumos de la cal
+        for (int i = 0; i < 6; i++) {
+            g.setColor(r.nextBoolean() ? new Color(0xE6E0D3) : new Color(0xFBF8F2));
+            g.fillRect(r.nextInt(15), r.nextInt(15), 2, 1);
+        }
+        if (var == 1 && !arriba) {   // alguna grieta fina
+            g.setColor(new Color(0xD8D0C0));
+            int x = 3 + r.nextInt(9);
+            g.fillRect(x, 4, 1, 3);
+            g.fillRect(x + 1, 7, 1, 3);
+        }
+        if (arriba) {
+            g.setColor(new Color(0xB5553C));   // teja
+            g.fillRect(0, 0, 16, 4);
+            g.setColor(new Color(0xD27A55));
+            for (int x = 0; x < 16; x += 4) g.fillRect(x, 0, 2, 1);
+            g.setColor(new Color(0x8E3E2B));
+            for (int x = 3; x < 16; x += 4) g.fillRect(x, 0, 1, 4);
+            g.fillRect(0, 4, 16, 1);
+            g.setColor(new Color(0xD9CFBC));   // sombra bajo la teja
+            g.fillRect(0, 5, 16, 1);
+        }
+        if (abajo) {
+            g.setColor(new Color(0xD6CDBB));
+            g.fillRect(0, 14, 16, 2);
+            g.setColor(new Color(0xE4B858));   // filete de albero
+            g.fillRect(0, 13, 16, 1);
+        }
+    }
+
+    // fondo de un pozo o un aljibe: sillería oscura con algo de musgo (no choca, va detrás de Coco)
+    private static void tileFondoPiedra(Graphics2D g, Random r, int var) {
+        g.setColor(new Color(0x2A241E));   // juntas
+        g.fillRect(0, 0, 16, 16);
+        for (int fila = 0; fila < 2; fila++) {
+            int desplaz = ((fila + var) % 2) * 8;
+            for (int x = -desplaz; x < 16; x += 16) {
+                int bx = x + 1, by = fila * 8 + 1;
+                g.setColor(new Color(0x4A4036 + r.nextInt(3) * 0x050403));
+                g.fillRect(bx, by, 14, 6);
+                g.setColor(new Color(0x5C5044));
+                g.fillRect(bx, by, 14, 1);
+            }
+        }
+        if (r.nextInt(3) == 0) {           // musgo de la humedad
+            g.setColor(new Color(0x3E5A2A));
+            g.fillRect(r.nextInt(12), 7 + r.nextInt(2), 4, 1);
+        }
+    }
+
     private static void tileSillar(Graphics2D g, Random r, int var, boolean arriba, boolean abajo) {
         g.setColor(new Color(0xA8864F)); // mortero
         g.fillRect(0, 0, 16, 16);
@@ -414,6 +497,57 @@ public final class Sprites {
             g.fillRect(3, 4, 2, 4);
             g.setColor(hierro);
             g.fillRect(5, 3, 2, 8);
+            g.dispose();
+            return img;
+        });
+    }
+
+    // brocal de pozo andaluz, 96x72: dos muretes encalados con azulejos y un arco de forja con polea y cubo.
+    // El hueco del centro (64 px = 4 casillas) es por donde se tira Coco
+    public static BufferedImage brocal() {
+        BufferedImage maceta0 = maceta(0), maceta1 = maceta(1);   // antes: también usan la caché
+        return CACHE_OBJETOS.computeIfAbsent("brocal", k -> {
+            BufferedImage desdePng = leerPng("tiles/" + k);
+            if (desdePng != null) return desdePng;
+            BufferedImage img = new BufferedImage(96, 72, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = img.createGraphics();
+            Color hierro = new Color(0x22252B);
+            // pilares de forja y arco
+            g.setColor(hierro);
+            g.fillRect(10, 8, 3, 50);
+            g.fillRect(83, 8, 3, 50);
+            g.fillRect(16, 2, 64, 3);
+            g.fillRect(12, 4, 6, 3);
+            g.fillRect(78, 4, 6, 3);
+            for (int x = 22; x < 76; x += 10) g.fillRect(x, 5, 2, 4);   // volutas
+            // polea, cuerda y cubo
+            g.setColor(new Color(0x6B4A2A));
+            g.fillOval(43, 3, 10, 10);
+            g.setColor(hierro);
+            g.fillRect(47, 7, 2, 2);
+            g.setColor(new Color(0xC9B08A));
+            g.fillRect(48, 12, 1, 22);
+            g.setColor(new Color(0x7A5A30));
+            g.fillRect(43, 34, 11, 9);
+            g.setColor(new Color(0x4A3A2A));
+            g.fillRect(43, 34, 11, 2);
+            g.fillRect(43, 41, 11, 2);
+            // muretes encalados con cenefa de azulejo y cornisa de ladrillo
+            for (int x : new int[] { 0, 80 }) {
+                g.setColor(new Color(0xF3EFE6));
+                g.fillRect(x, 50, 16, 22);
+                g.setColor(new Color(0xB5553C));
+                g.fillRect(x, 48, 16, 3);
+                g.setColor(new Color(0x1E4FA8));
+                g.fillRect(x, 58, 16, 4);
+                g.setColor(new Color(0xE8B32A));
+                for (int a = 2; a < 16; a += 5) g.fillRect(x + a, 59, 2, 2);
+                g.setColor(new Color(0xD9D0BE));
+                g.fillRect(x + 13, 50, 3, 22);
+            }
+            // maceta en cada murete
+            g.drawImage(maceta0, 2, 36, null);
+            g.drawImage(maceta1, 82, 36, null);
             g.dispose();
             return img;
         });

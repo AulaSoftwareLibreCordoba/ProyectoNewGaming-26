@@ -59,7 +59,7 @@ java -cp out cordoba.Main
 | R | Reintentar desde la última farola |
 | ESC | Pausa |
 | M | Activar / silenciar el sonido |
-| G | Mostrar / ocultar el fantasma del récord (nivel 2) |
+| G | Mostrar / ocultar el fantasma del récord del nivel |
 | F11 | Pantalla completa / volver a ventana |
 
 Con la consola abierta **Coco se queda quieto, pero el cronómetro sigue corriendo**. La consola usa
@@ -68,15 +68,18 @@ repetir), los **números** para escribirlo directamente y **ENTER** para guardar
 
 Todos los atajos, pantalla por pantalla, están en [ATAJOS.md](ATAJOS.md).
 
-> Atajo para profesores: en el menú principal pulsa **2** para ir directamente al nivel 2.
+> Atajos para profesores: en el menú principal pulsa **2** o **3** para ir directamente a ese nivel.
 
 ---
 
 ## 2.1. Modo competición: ranking TOP 10
 
-Al terminar la partida, el jugador **escribe su nombre** (máx. 12 caracteres) y su resultado se guarda
-en el ranking. La tabla con los **10 mejores** sale justo después y también se puede consultar desde el
-botón **RANKING** del menú principal.
+Al pulsar JUGAR, el jugador **escribe su nombre** (máx. 12 caracteres; viene relleno con el último usado).
+Al terminar la partida su resultado se guarda **solo** en el ranking con ese nombre, y la tabla con los
+**10 mejores** sale justo después. También se puede consultar desde el botón **RANKING** del menú principal.
+
+Al completar cada nivel, debajo de CONTINUAR y MENÚ aparece el **TOP 5 de ese nivel**, con tu tiempo
+metido en el puesto que le tocaría.
 
 | Columna | Significado |
 |---|---|
@@ -89,29 +92,30 @@ botón **RANKING** del menú principal.
 La tabla tiene tres pestañas (se cambian con **← / →** o con el ratón):
 
 * **GENERAL**: el ranking de la competición, con el criterio de abajo.
-* **NIVEL 1** y **NIVEL 2**: los mejores tiempos de cada nivel por separado (solo cuenta el tiempo).
-  Las partidas que empezaron con el atajo **2** no aparecen en el nivel 1.
+* **NIVEL 1**, **NIVEL 2** y **NIVEL 3**: los mejores tiempos de cada nivel por separado (solo cuenta el tiempo).
+  Las partidas que empezaron con los atajos **2** o **3** no aparecen en los niveles que se saltaron.
 
 * **Criterio:** gana quien tarde **menos**. Si hay empate, menos caídas; después, menos compilaciones;
   y si aun así empatan, queda delante quien lo consiguió antes.
 * Mientras juega, el **cronómetro** de la partida se ve arriba a la izquierda (también con la consola abierta).
 * Mientras escribe el nombre, el jugador ve el puesto provisional que va a conseguir y si ha batido algún récord de nivel.
 * Los resultados se guardan en `ranking.txt`, en la carpeta desde la que se ejecuta el juego, con una línea por
-  partida (`nombre;fotogramas;caídas;compilaciones;fotogramasNivel1;fotogramasNivel2`). Se guardan **todas**
+  partida (`nombre;fotogramas;caídas;compilaciones;fotogramasNivel1;fotogramasNivel2;fotogramasNivel3`). Se guardan **todas**
   las partidas, aunque solo se muestran las 10 mejores. Para empezar una competición nueva basta con borrar
-  ese fichero (y `fantasma.dat`).
+  ese fichero (y los `fantasma_nivel*.dat`).
 
 ### El fantasma del récord
 
-En el **nivel 2** aparece un Coco **semitransparente** con el nombre del récord encima: es la partida más
-rápida de ese nivel, repetida fotograma a fotograma. El HUD muestra el tiempo del nivel frente al récord
-(en rojo si vas por detrás). Con **G** se oculta o se muestra.
+En **cada nivel** aparece un Coco **semitransparente** con el nombre del récord de ese nivel encima: es la
+partida más rápida de ese nivel, repetida fotograma a fotograma. El HUD muestra el tiempo del nivel frente
+al récord, con la diferencia en segundos (`-` si vas por delante, `+` si vas por detrás). Con **G** se oculta o se muestra.
 
 * Se graba la **posición** de Coco en cada fotograma (no las teclas), así el fantasma es exacto aunque el
   récord cambiara la física a mitad de partida.
-* Cuando alguien bate el récord del nivel 2 y guarda su nombre, su partida pasa a ser el nuevo fantasma
-  (`fantasma.dat`). Si se borra `ranking.txt`, el fantasma antiguo deja de salir.
-* `ranking.txt` y `fantasma.dat` están en `.gitignore`: los récords de cada ordenador no se suben al repositorio.
+* Cuando una partida termina con el récord de un nivel, su recorrido de ese nivel pasa a ser el nuevo
+  fantasma (`fantasma_nivel1.dat`, `fantasma_nivel2.dat`, `fantasma_nivel3.dat`). Si se borra `ranking.txt`,
+  los fantasmas antiguos dejan de salir.
+* `ranking.txt` y los ficheros de fantasma están en `.gitignore`: los récords de cada ordenador no se suben al repositorio.
 
 ---
 
@@ -164,7 +168,22 @@ Ribera del Guadalquivir, bajo el Puente Romano, hasta la Torre de la Calahorra.
 4. Una pasarela bajo el puente se derrumba 1,25 s después de entrar → subir la **velocidad** a 6.5 o más.
 5. Pinchos y un último salto hasta la Calahorra.
 
-### Nivel 2 — El desafío de la Mezquita
+### Nivel 2 — La Calleja de las Flores
+Una calleja encalada llena de macetas azules que se sube **de abajo arriba**, hasta la plazuela desde
+la que se ve la torre de la Mezquita.
+
+| Zona | Reto | Qué hay que programar |
+|---|---|---|
+| Escalones de empedrado | Subir peldaños de 2 y 3 bloques | Nada: se suben con el salto normal |
+| Pared de balcones | Cada balcón está 5 bloques más alto | Subir `fuerzaSalto` (≈15) **o** bajar `gravedad` (≈6) |
+| Balcones con macetas | Caen macetas sobre los balcones | Mirar cuándo tiemblan y saltar después de que caigan |
+| Pasillo con rejas de pinchos | Con el salto subido te pinchas en el techo | **Volver al salto normal** (R en la consola) para saltar los huecos |
+| Patio estrecho | Repisas cada 3 bloques hasta la plazuela | Salto normal |
+| Patio cordobés | Alberca con un puente de azulejos que se hunde | Subir `velocidad` (≈7) o saltar lejos con poca gravedad |
+| El pozo | Hay que tirarse: repisas de pinchos con el hueco a un lado y al otro. Una brisa suave frena la caída | **Bajar `gravedad`** (5 o menos): con la brisa se cae muy despacio y da tiempo a esquivar |
+| El aljibe | Agua con pilares bajo el pozo | Caer sobre un pilar y saltar hasta la salida (meta) |
+
+### Nivel 3 — El desafío de la Mezquita
 Calles encaladas con macetas y el interior de la Mezquita-Catedral. Ya no se dan valores exactos.
 
 | Zona | Reto | Qué hay que programar |
@@ -190,7 +209,7 @@ CordobaCodigoSalvaje/
 │   ├── Main.java                   Punto de entrada; crea la ventana (y exporta assets con --exportar-assets)
 │   ├── nucleo/                     Bucle principal y entrada
 │   │   ├── Game.java               Bucle a 60 FPS fijos, máquina de estados, cámara, escalado a la ventana
-│   │   ├── GameState.java          MENU, JUGANDO, EDITOR, PAUSA, NIVEL_COMPLETADO, JUEGO_COMPLETADO, RANKING
+│   │   ├── GameState.java          MENU, NOMBRE, JUGANDO, EDITOR, PAUSA, NIVEL_COMPLETADO, JUEGO_COMPLETADO, RANKING, OPCIONES
 │   │   └── Input.java              Teclado y ratón (pulsada / mantenida)
 │   ├── fisica/                     Física y colisiones
 │   │   ├── PhysicsConfig.java      ★ Variables físicas centralizadas y su conversión a píxeles
@@ -198,11 +217,12 @@ CordobaCodigoSalvaje/
 │   │   └── CollisionManager.java   Colisiones por ejes separados + detección de peligros
 │   ├── entidades/
 │   │   ├── Player.java             Coco: movimiento, salto, gravedad, animaciones
-│   │   └── Fantasma.java           Graba, guarda y reproduce el fantasma del récord del nivel 2
+│   │   └── Fantasma.java           Graba, guarda y reproduce el fantasma del récord de cada nivel
 │   ├── niveles/                    Definición de niveles
 │   │   ├── Level.java              Clase base: mapa de tiles, objetos, farolas, decoración
 │   │   ├── Level1.java             Nivel 1
-│   │   ├── Level2.java             Nivel 2 (Mezquita)
+│   │   ├── Level2.java             Nivel 2 (Calleja de las Flores, vertical)
+│   │   ├── Level3.java             Nivel 3 (Mezquita)
 │   │   ├── plataformas/
 │   │   │   ├── PlataformaDinamica.java Base de plataformas no fijas
 │   │   │   ├── PuenteDerrumbe.java     Suelo que se derrumba tras una cuenta atrás
@@ -230,7 +250,7 @@ CordobaCodigoSalvaje/
 │   ├── interfaz/                   Menús y consola de código
 │   │   ├── CodeEditor.java         ★ La consola de código (IDE simulado, en vivo)
 │   │   ├── GameMenu.java           Pantallas de inicio, pausa y victoria
-│   │   ├── PantallaRanking.java    Final de partida (escribir nombre) y TOP 10 (general / nivel 1 / nivel 2)
+│   │   ├── PantallaRanking.java    Nombre al empezar, final de partida, TOP 5 de cada nivel y TOP 10 (general / nivel 1 / nivel 2 / nivel 3)
 │   │   ├── Andalusi.java           Motivos andalusíes: estrellas, dovelas, arquería, alicatado y botones
 │   │   └── Ui.java / Boton.java    Utilidades de interfaz
 │   ├── ranking/

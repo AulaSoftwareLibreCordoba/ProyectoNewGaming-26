@@ -33,7 +33,16 @@ public class Ranking {
     private void cargar() {
         if (!Files.exists(fichero)) return;
         try {
-            for (String linea : Files.readAllLines(fichero, StandardCharsets.UTF_8)) {
+            List<String> lineas = Files.readAllLines(fichero, StandardCharsets.UTF_8);
+            // ranking de cuando el juego tenía 2 niveles: los tiempos no se pueden comparar.
+            // Se guarda aparte y se empieza de cero
+            if (lineas.stream().anyMatch(l -> !l.isBlank() && l.split(";", -1).length != Puntuacion.CAMPOS)) {
+                Path antiguo = fichero.resolveSibling("ranking_antiguo.txt");
+                Files.move(fichero, antiguo, StandardCopyOption.REPLACE_EXISTING);
+                System.err.println("Ranking antiguo guardado en " + antiguo + "; se empieza de cero.");
+                return;
+            }
+            for (String linea : lineas) {
                 Puntuacion p = Puntuacion.desdeLinea(linea);
                 if (p != null) partidas.add(p);
             }
@@ -64,7 +73,7 @@ public class Ranking {
 
     // puesto (desde 1) que tendría una partida así
     public int posicionPara(int frames, int muertes, int compilaciones) {
-        Puntuacion nueva = new Puntuacion("?", frames, muertes, compilaciones, 0, 0);
+        Puntuacion nueva = new Puntuacion("?", frames, muertes, compilaciones, 0, 0, 0);
         int pos = 1;
         for (Puntuacion p : partidas) {
             if (ORDEN.compare(p, nueva) <= 0) pos++;   // en empate, la antigua va delante

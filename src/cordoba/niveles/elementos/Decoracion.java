@@ -7,7 +7,7 @@ import java.awt.image.BufferedImage;
 // Adorno sin colisión (macetas, palmeras, naranjos, cañas...).
 public class Decoracion {
 
-    public enum Tipo { MACETA, PALMERA, NARANJO, CANAS }
+    public enum Tipo { MACETA, PALMERA, NARANJO, CANAS, POZO }
 
     public final Tipo tipo;
     public final float x, ySuelo;   // centro y suelo
@@ -25,6 +25,7 @@ public class Decoracion {
             case MACETA:  return Sprites.maceta(variante);
             case PALMERA: return Sprites.palmera();
             case NARANJO: return Sprites.naranjo();
+            case POZO:    return Sprites.brocal();
             default:      return Sprites.canas();
         }
     }

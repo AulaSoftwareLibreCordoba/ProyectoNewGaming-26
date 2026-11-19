@@ -62,10 +62,10 @@ public final class Nubes {
 
     private static synchronized List<Nube> nubes(Level.Tema tema) {
         return NUBES.computeIfAbsent(tema, t -> {
-            boolean rio = t == Level.Tema.RIO;
+            boolean rio = t != Level.Tema.MEZQUITA;   // el río y la calleja son de día
             Capa[] capas = rio ? CAPAS_RIO : CAPAS_MEZQUITA;
             int[] tonos = rio ? TONOS_RIO : TONOS_MEZQUITA;
-            Random r = new Random(rio ? 7 : 19);
+            Random r = new Random(t == Level.Tema.RIO ? 7 : t == Level.Tema.CALLEJA ? 11 : 19);
             List<Nube> lista = new ArrayList<>();
             for (Capa c : capas) {               // primero las de lejos, para que queden detrás
                 for (int i = 0; i < c.cantidad; i++) {

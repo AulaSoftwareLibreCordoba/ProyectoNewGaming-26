@@ -22,7 +22,7 @@ public class PantallaRanking {
     private static final Color AZUL   = new Color(0x82AAFF);
     private static final Color APAGADO = Ui.GRIS;
 
-    private static final String[] PESTANAS = { "GENERAL", "NIVEL 1", "NIVEL 2" };
+    private static final String[] PESTANAS = { "GENERAL", "NIVEL 1", "NIVEL 2", "NIVEL 3" };
 
     private final GameRenderer renderer;
     private final Ranking ranking;
@@ -32,7 +32,8 @@ public class PantallaRanking {
     private int puesto;             // su puesto en el general
     private int pestana;            // pestaña activa (el foco va en navegacion)
 
-    private final Boton bGuardar = new Boton(255, 278, 130, 22, "GUARDAR", Andalusi.BOTON_VERDE).andalusi();
+    private final Boton bEmpezar = new Boton(240, 210, 160, 32, "¡A JUGAR!", Andalusi.BOTON_VERDE).grande();
+    private final Boton bVerRanking = new Boton(206, 270, 228, 32, "VER RANKING", Andalusi.BOTON_ALBERO).grande();
     private final Boton bMenu    = new Boton(255, 300, 130, 22, "MENÚ", Andalusi.BOTON_VERDE).andalusi();
     private final Boton[] bPestanas = new Boton[PESTANAS.length];
     private final GameMenu.NavegacionMenu navegacion;
@@ -42,19 +43,12 @@ public class PantallaRanking {
         this.renderer = renderer;
         this.ranking = ranking;
         for (int i = 0; i < PESTANAS.length; i++) {
-            bPestanas[i] = new Boton(170 + i * 102, 68, 96, 16, PESTANAS[i], new Color(0x5A6070)).andalusi();
+            bPestanas[i] = new Boton(320 - PESTANAS.length * 51 + 3 + i * 102, 68, 96, 16, PESTANAS[i], new Color(0x5A6070)).andalusi();
         }
         Boton[] opciones = new Boton[bPestanas.length + 1];
         System.arraycopy(bPestanas, 0, opciones, 0, bPestanas.length);
         opciones[bPestanas.length] = bMenu;
         navegacion = new GameMenu.NavegacionMenu(opciones);
-    }
-
-    // deja la pantalla lista para el siguiente jugador
-    public void empezarNombre() {
-        nombre.setLength(0);
-        resaltada = null;
-        puesto = -1;
     }
 
     // desde el menú: sin resaltar a nadie
@@ -65,10 +59,19 @@ public class PantallaRanking {
         reiniciarFoco();
     }
 
-    // ---- 1. escribir el nombre ----
+    // ---- 1. el nombre, al empezar la partida ----
 
-    // devuelve la partida guardada, o null si aún no se ha guardado
-    public Puntuacion actualizarNombre(Input in, int frames, int muertes, int compilaciones, int n1, int n2) {
+    // deja la caja con el nombre anterior (para que el mismo jugador solo tenga que pulsar ENTER)
+    public void pedirNombre(Input in, String anterior) {
+        nombre.setLength(0);
+        nombre.append(anterior == null ? "" : anterior);
+        in.tomarEscrito();   // lo que se tecleó antes (p. ej. el ENTER de JUGAR) no cuenta
+        resaltada = null;
+        puesto = -1;
+    }
+
+    // el nombre ya limpio cuando se confirma; null mientras se escribe
+    public String actualizarPedirNombre(Input in) {
         boolean confirmar = false;
         for (char c : in.tomarEscrito().toCharArray()) {
             if (c == '\b') {
@@ -81,26 +84,118 @@ public class PantallaRanking {
             }
         }
         String limpio = Puntuacion.limpiar(nombre.toString());
-        bGuardar.activo = !limpio.isEmpty();
-        if (bGuardar.clicado(in)) confirmar = true;
-
-        if (confirmar && bGuardar.activo) {
-            resaltada = new Puntuacion(limpio, frames, muertes, compilaciones, n1, n2);
-            puesto = ranking.registrar(resaltada);
-            pestana = 0;
-            reiniciarFoco();
+        bEmpezar.activo = !limpio.isEmpty();
+        if (bEmpezar.clicado(in)) confirmar = true;
+        if (confirmar && bEmpezar.activo) {
             Sonido.checkpoint();
-            return resaltada;
+            return limpio;
         }
         return null;
+    }
+
+    public void dibujarPedirNombre(Graphics2D g, Input in, int frame) {
+        dibujarFondo(g, frame);
+        Ui.panel(g, 150, 60, 340, 220, Ui.PANEL, Ui.BORDE);
+        g.setFont(Ui.FUENTE_GRANDE);
+        Ui.textoCentrado(g, "¿CÓMO TE LLAMAS?", 320, 96, Ui.BORDE);
+        BufferedImage coco = (frame / 20) % 2 == 0 ? Sprites.COCO_QUIETO : Sprites.COCO_PARPADEO;
+        g.drawImage(coco, 300, 106, 40, 40, null);
+        g.setFont(Ui.FUENTE);
+        Ui.textoCentrado(g, "Con este nombre saldrás en el ranking", 320, 166, Ui.TEXTO);
+        dibujarCaja(g, 220, 176, frame);
+        bEmpezar.dibujar(g, in);
+        g.setFont(Ui.FUENTE_PEQ);
+        Ui.textoCentrado(g, "ENTER: empezar  ·  RETROCESO: borrar  ·  ESC: volver", 320, 270, Ui.GRIS);
+    }
+
+    // caja de texto con el nombre, el cursor y la cuenta de letras
+    private void dibujarCaja(Graphics2D g, int bx, int by, int frame) {
+        int bw = 200, bh = 20;
+        g.setColor(new Color(0x101018));
+        g.fillRect(bx, by, bw, bh);
+        g.setColor(Ui.VERDE);
+        g.drawRect(bx, by, bw - 1, bh - 1);
+        g.setColor(Ui.VERDE.darker().darker());
+        g.drawRect(bx + 1, by + 1, bw - 3, bh - 3);
+        g.setFont(Ui.FUENTE_CODIGO);
+        int tx = bx + 8, ty = by + 14;
+        if (nombre.length() == 0) Ui.texto(g, "TU NOMBRE", tx, ty, APAGADO);
+        else Ui.texto(g, nombre.toString(), tx, ty, Ui.VERDE);
+        if ((frame / 30) % 2 == 0) {   // cursor parpadeando
+            int cx = tx + (nombre.length() == 0 ? 0 : g.getFontMetrics().stringWidth(nombre.toString()) + 1);
+            g.setColor(Ui.TEXTO);
+            g.fillRect(cx, by + 5, 2, 11);
+        }
+        g.setFont(Ui.FUENTE_PEQ);
+        String cuenta = nombre.length() + "/" + Ranking.MAX_NOMBRE;
+        Ui.texto(g, cuenta, bx + bw - 8 - g.getFontMetrics().stringWidth(cuenta), ty, Ui.GRIS);
+    }
+
+    // ---- TOP 5 del nivel al completarlo (con tu tiempo metido en su puesto) ----
+
+    public void dibujarTop5Nivel(Graphics2D g, int nivel, String nombreJugador, int tiempo, int y, int frame) {
+        List<Puntuacion> mejores = ranking.mejoresNivel(nivel);
+        int tuPuesto = 1;   // en empate va delante quien lo hizo antes
+        for (Puntuacion p : ranking.mejoresNivel(nivel)) if (p.framesNivel(nivel) <= tiempo) tuPuesto++;
+        g.setFont(Ui.FUENTE_HUD);
+        Ui.textoCentrado(g, "TOP 5 · NIVEL " + nivel, 320, y, Ui.AMARILLO);
+        final int cPos = 196, cNombre = 222, cTiempo = 412;
+        boolean parpadeo = (frame / 20) % 2 == 0;
+        for (int fila = 1, i = 0; fila <= 5; fila++) {
+            int fy = y + 6 + fila * 14;
+            String nombre, t;
+            Color color;
+            if (fila == tuPuesto) {
+                nombre = nombreJugador + "  (tú)";
+                t = Puntuacion.formatearTiempo(tiempo);
+                color = parpadeo ? Ui.VERDE : Ui.VERDE.brighter();
+            } else if (i < mejores.size()) {
+                Puntuacion p = mejores.get(i++);
+                nombre = p.nombre();
+                t = Puntuacion.formatearTiempo(p.framesNivel(nivel));
+                color = colorPuesto(fila, Ui.TEXTO);
+            } else {
+                nombre = "---";
+                t = "";
+                color = APAGADO;
+            }
+            g.setFont(Ui.FUENTE);
+            Ui.texto(g, fila + ".", cPos, fy, color);
+            Ui.texto(g, nombre, cNombre, fy, color);
+            g.setFont(Ui.FUENTE_MONO);
+            Ui.texto(g, t, cTiempo, fy, color);
+        }
+        if (tuPuesto > 5) {
+            g.setFont(Ui.FUENTE);
+            Ui.textoCentrado(g, "Tú (" + nombreJugador + "): puesto " + tuPuesto + "º con "
+                    + Puntuacion.formatearTiempo(tiempo), 320, y + 6 + 6 * 14 + 2, Ui.AMARILLO);
+        }
+    }
+
+    // ---- 2. final de la partida: se guarda sola con el nombre del principio ----
+
+    // t[1..3] = tiempo de cada nivel
+    public Puntuacion guardarDirecto(String nombreJugador, int frames, int muertes, int compilaciones, int[] t) {
+        resaltada = new Puntuacion(nombreJugador, frames, muertes, compilaciones, t[1], t[2], t[3]);
+        puesto = ranking.registrar(resaltada);
+        pestana = 0;
+        reiniciarFoco();
+        Sonido.checkpoint();
+        return resaltada;
+    }
+
+    // true cuando quiere ver el ranking (ENTER o el botón)
+    public boolean actualizarFinal(Input in) {
+        in.tomarEscrito();
+        return bVerRanking.clicado(in) || in.pulsada(KeyEvent.VK_ENTER) || in.pulsada(KeyEvent.VK_SPACE);
     }
 
     private static boolean esValido(char c) {
         return Character.isLetterOrDigit(c) || c == ' ' || c == '-' || c == '_' || c == '.';
     }
 
-    public void dibujarNombre(Graphics2D g, Input in, int frames, int muertes, int compilaciones,
-                              int n1, int n2, int frame) {
+    public void dibujarFinal(Graphics2D g, Input in, int frames, int muertes, int compilaciones,
+                              int[] t, int frame) {
         dibujarFondo(g, frame);
         Ui.panel(g, 130, 30, 380, 300, Ui.PANEL, Ui.BORDE);
         g.setFont(Ui.FUENTE_GRANDE);
@@ -115,55 +210,45 @@ public class PantallaRanking {
         // estadísticas (las mismas columnas que el ranking)
         Ui.datoCentrado(g, "Tiempo total: ", Puntuacion.formatearTiempo(frames), 320, 154, Ui.TEXTO);
         g.setFont(Ui.FUENTE_MONO);
-        Ui.textoCentrado(g, "Nivel 1: " + (n1 > 0 ? Puntuacion.formatearTiempo(n1) : "--")
-                + "   ·   Nivel 2: " + Puntuacion.formatearTiempo(n2), 320, 166, Ui.GRIS);
+        StringBuilder porNivel = new StringBuilder();
+        for (int i = 1; i <= Level.TOTAL; i++) {
+            if (i > 1) porNivel.append("  ·  ");
+            porNivel.append("N").append(i).append(": ").append(t[i] > 0 ? Puntuacion.formatearTiempo(t[i]) : "--");
+        }
+        Ui.textoCentrado(g, porNivel.toString(), 320, 166, Ui.GRIS);
         g.setFont(Ui.FUENTE);
         Ui.datoCentrado(g, "Caídas: ", String.valueOf(muertes), 320, 180, Ui.TEXTO);
         Ui.datoCentrado(g, "Cambios de código compilados: ", String.valueOf(compilaciones), 320, 193, AZUL);
 
-        // puesto provisional y récords de nivel
-        int pos = ranking.posicionPara(frames, muertes, compilaciones);
+        // puesto (la partida ya está guardada) y récords de nivel
+        int pos = puesto;
         if (pos <= Ranking.TOP)
             Ui.textoCentrado(g, "¡Entras en el TOP 10 en el puesto " + pos + "º!", 320, 209, colorPuesto(pos, Ui.VERDE));
         else
-            Ui.textoCentrado(g, "Puesto provisional: " + pos + "º", 320, 209, Ui.AMARILLO);
+            Ui.textoCentrado(g, "Has quedado en el puesto " + pos + "º", 320, 209, Ui.AMARILLO);
         g.setFont(Ui.FUENTE_PEQ);
-        if (ranking.esRecordNivel(2, n2))
-            Ui.textoCentrado(g, "¡RÉCORD DEL NIVEL 2! Serás el fantasma a batir", 320, 222,
-                    (frame / 20) % 2 == 0 ? ORO : AZUL);
-        else if (ranking.esRecordNivel(1, n1))
-            Ui.textoCentrado(g, "¡NUEVO RÉCORD DEL NIVEL 1!", 320, 222, ORO);
+        // niveles en los que esta partida es el récord: allí será el fantasma a batir
+        StringBuilder records = new StringBuilder();
+        for (int i = 1; i <= Level.TOTAL; i++)
+            if (resaltada != null && t[i] > 0 && ranking.mejorNivel(i) == resaltada)
+                records.append(records.length() == 0 ? "" : ", ").append(i);
+        if (records.length() > 0) {
+            boolean varios = records.indexOf(",") >= 0;
+            Ui.textoCentrado(g, "¡Récord en " + (varios ? "los niveles " : "el nivel ") + records
+                    + "! Serás su fantasma a batir", 320, 222, (frame / 20) % 2 == 0 ? ORO : AZUL);
+        }
 
-        // caja de texto
+        // guardada ya con el nombre del principio
         g.setFont(Ui.FUENTE);
-        Ui.textoCentrado(g, "Escribe tu nombre para el ranking:", 320, 240, Ui.TEXTO);
-        int bx = 220, by = 248, bw = 200, bh = 20;
-        g.setColor(new Color(0x101018));
-        g.fillRect(bx, by, bw, bh);
-        g.setColor(Ui.VERDE);
-        g.drawRect(bx, by, bw - 1, bh - 1);
-        g.setColor(Ui.VERDE.darker().darker());
-        g.drawRect(bx + 1, by + 1, bw - 3, bh - 3);
-
-        g.setFont(Ui.FUENTE_CODIGO);
-        int tx = bx + 8, ty = by + 14;
-        if (nombre.length() == 0) {
-            Ui.texto(g, "TU NOMBRE", tx, ty, APAGADO);
-        } else {
-            Ui.texto(g, nombre.toString(), tx, ty, Ui.VERDE);
+        if (resaltada != null) {
+            Ui.textoCentrado(g, "Guardado en el ranking como " + resaltada.nombre(), 320, 246, Ui.VERDE);
         }
-        if ((frame / 30) % 2 == 0) {   // cursor parpadeando
-            int cx = tx + (nombre.length() == 0 ? 0 : g.getFontMetrics().stringWidth(nombre.toString()) + 1);
-            g.setColor(Ui.TEXTO);
-            g.fillRect(cx, by + 5, 2, 11);
+        if (!ranking.isGuardadoOk()) {
+            Ui.textoCentrado(g, "¡Error! No se pudo guardar el fichero ranking.txt", 320, 262, Ui.ROJO);
         }
+        bVerRanking.dibujar(g, true);
         g.setFont(Ui.FUENTE_PEQ);
-        String cuenta = nombre.length() + "/" + Ranking.MAX_NOMBRE;
-        Ui.texto(g, cuenta, bx + bw - 8 - g.getFontMetrics().stringWidth(cuenta), ty, Ui.GRIS);
-
-        bGuardar.dibujar(g, in);
-        g.setFont(Ui.FUENTE_PEQ);
-        Ui.textoCentrado(g, "ENTER: guardar  ·  RETROCESO: borrar", 320, 316, Ui.GRIS);
+        Ui.textoCentrado(g, "ENTER: ver el ranking", 320, 318, Ui.GRIS);
     }
 
     // ---- 2. tabla TOP 10 ----
@@ -217,8 +302,7 @@ public class PantallaRanking {
         g.drawImage(Sprites.volteada(coco), 460, 22, 30, 30, null);
         g.setFont(Ui.FUENTE_PEQ);
         String sub = pestana == 0 ? "Menos tiempo gana · empate: menos caídas y compilaciones"
-                : pestana == 1 ? "Mejores tiempos del nivel 1"
-                : "Mejores tiempos del nivel 2 · el nº1 corre como FANTASMA";
+                : "Mejores tiempos del nivel " + pestana + " · el nº1 corre como FANTASMA";
         Ui.textoCentrado(g, sub, 320, 61, Ui.GRIS);
 
         // pestañas
@@ -280,7 +364,7 @@ public class PantallaRanking {
             g.setFont(Ui.FUENTE_MONO);
             Ui.textoCentrado(g, Puntuacion.formatearTiempo(p.framesNivel(nivel)), cTiempo, fy, color);
             Ui.textoCentrado(g, p.tiempo(), cTotal, fy, esNuevo ? Ui.VERDE : Ui.GRIS);
-            if (nivel == 2 && i == 0) {
+            if (i == 0) {
                 g.setFont(Ui.FUENTE_PEQ);
                 Ui.texto(g, "FANTASMA", cNombre + 112, fy, AZUL);
                 g.setFont(Ui.FUENTE);

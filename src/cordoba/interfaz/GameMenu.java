@@ -4,6 +4,7 @@ import cordoba.graficos.GameRenderer;
 import cordoba.graficos.Sprites;
 import cordoba.niveles.Level;
 import cordoba.nucleo.Input;
+import cordoba.ranking.Puntuacion;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -12,7 +13,7 @@ import java.awt.image.BufferedImage;
 // Menú de inicio, pausa y nivel completado. El final y el ranking están en PantallaRanking.
 public class GameMenu {
 
-    public enum Accion { NINGUNA, JUGAR, SALIR, CONTINUAR, REINICIAR, MENU, NIVEL2, RANKING, OPCIONES }
+    public enum Accion { NINGUNA, JUGAR, SALIR, CONTINUAR, REINICIAR, MENU, NIVEL2, NIVEL3, RANKING, OPCIONES }
 
     private final GameRenderer renderer;
 
@@ -94,8 +95,8 @@ public class GameMenu {
     }
 
     // victoria
-    private final Boton bSiguiente = new Boton(162, 258, 184, 36, "CONTINUAR", Andalusi.BOTON_VERDE).grande();
-    private final Boton bMenuVict  = new Boton(356, 258, 122, 36, "MENÚ", Andalusi.BOTON_AZUL).grande();
+    private final Boton bSiguiente = new Boton(162, 154, 184, 36, "CONTINUAR", Andalusi.BOTON_VERDE).grande();
+    private final Boton bMenuVict  = new Boton(356, 154, 122, 36, "MENÚ", Andalusi.BOTON_AZUL).grande();
     private final NavegacionMenu victoria = new NavegacionMenu(bSiguiente, bMenuVict);
 
     // valores que va "escribiendo" el panel de código del menú
@@ -118,7 +119,8 @@ public class GameMenu {
             case 3: return Accion.SALIR;
             default: break;
         }
-        if (in.pulsada(KeyEvent.VK_2)) return Accion.NIVEL2;   // atajo para profes
+        if (in.pulsada(KeyEvent.VK_2)) return Accion.NIVEL2;   // atajos para profes
+        if (in.pulsada(KeyEvent.VK_3)) return Accion.NIVEL3;
         return Accion.NINGUNA;
     }
 
@@ -351,27 +353,29 @@ public class GameMenu {
                                 int compilaciones, int frame) {
         g.setColor(new Color(0, 0, 0, 160));
         g.fillRect(0, 0, 640, 360);
-        Andalusi.marco(g, 150, 58, 340, 250, Ui.PANEL, true);
-        Andalusi.frisoArcos(g, 160, 66, 320, 20, new Color(0x141420));
+        // alto casi toda la pantalla: debajo de los botones va el TOP 5 del nivel (lo pinta PantallaRanking)
+        Andalusi.marco(g, 150, 6, 340, 348, Ui.PANEL, true);
+        Andalusi.frisoArcos(g, 160, 14, 320, 20, new Color(0x141420));
         g.setFont(Ui.FUENTE_GRANDE);
-        Ui.textoCentrado(g, "¡NIVEL COMPLETADO!", 320, 104, Ui.VERDE);
+        Ui.textoCentrado(g, "¡NIVEL COMPLETADO!", 320, 54, Ui.VERDE);
         g.setFont(Ui.FUENTE);
-        Ui.textoCentrado(g, "Nivel " + nivel.getNumero() + ": " + nivel.getNombre(), 320, 120, Ui.TEXTO);
+        Ui.textoCentrado(g, "Nivel " + nivel.getNumero() + ": " + nivel.getNombre(), 320, 70, Ui.TEXTO);
 
         BufferedImage coco = (frame / 15) % 2 == 0 ? Sprites.COCO_VICTORIA1 : Sprites.COCO_VICTORIA2;
-        int bote = (frame / 15) % 2 == 0 ? 0 : -6;
-        g.drawImage(coco, 290, 128 + bote, 60, 60, null);
+        int bote = (frame / 15) % 2 == 0 ? 0 : -4;
+        g.drawImage(coco, 300, 74 + bote, 40, 40, null);
 
-        dibujarEstadisticas(g, frames, muertes, compilaciones, 204);
-        Ui.textoCentrado(g, "Siguiente: Nivel 2 — El desafío de la Mezquita", 320, 248, Ui.AMARILLO);
+        dibujarEstadisticas(g, frames, muertes, compilaciones, 130);
+        int siguiente = Math.min(nivel.getNumero() + 1, Level.TOTAL);
+        Ui.textoCentrado(g, "Siguiente: Nivel " + siguiente + " — " + Level.NOMBRES[siguiente], 320, 146, Ui.AMARILLO);
         victoria.dibujar(g);
+        g.setColor(Andalusi.ORO_OSCURO);
+        g.fillRect(170, 200, 300, 1);
     }
 
     private void dibujarEstadisticas(Graphics2D g, int frames, int muertes, int compilaciones, int y) {
-        int seg = frames / 60;
         g.setFont(Ui.FUENTE);
-        Ui.datoCentrado(g, "Tiempo: ", String.format("%d:%02d", seg / 60, seg % 60), 320, y, Ui.TEXTO);
-        Ui.datoCentrado(g, "Caídas: ", String.valueOf(muertes), 320, y + 14, Ui.TEXTO);
-        Ui.datoCentrado(g, "Cambios de código compilados: ", String.valueOf(compilaciones), 320, y + 28, new Color(0x82AAFF));
+        Ui.textoCentrado(g, "Tiempo " + Puntuacion.formatearTiempo(frames) + "  ·  Caídas " + muertes
+                + "  ·  Compilaciones " + compilaciones, 320, y, Ui.TEXTO);
     }
 }

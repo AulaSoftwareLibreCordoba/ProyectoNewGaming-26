@@ -31,7 +31,9 @@ desktop.ini
 
 # Récords locales del modo competición
 ranking.txt
+ranking_antiguo.txt
 fantasma.dat
+fantasma_nivel*.dat
 
 # Volúmenes elegidos en OPCIONES (de cada ordenador)
 opciones.txt

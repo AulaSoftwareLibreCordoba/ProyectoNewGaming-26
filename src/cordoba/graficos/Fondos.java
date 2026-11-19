@@ -38,9 +38,145 @@ public final class Fondos {
     }
 
     public static BufferedImage[] generarCapas(Level.Tema tema) {
-        return tema == Level.Tema.RIO
-                ? new BufferedImage[] { cieloDia(), ciudadLejana(), puenteRomano(), palmerasCercanas() }
-                : new BufferedImage[] { cieloAtardecer(), mezquitaLejana(), casasEncaladas(), salaColumnas() };
+        switch (tema) {
+            case RIO:
+                return new BufferedImage[] { cieloDia(), ciudadLejana(), puenteRomano(), palmerasCercanas() };
+            case CALLEJA:
+                return new BufferedImage[] { cieloMediodia(), torreLejana(), fachadas(ALTO_FACHADAS_LEJOS, false),
+                                             fachadas(ALTO_FACHADAS_CERCA, true) };
+            default:
+                return new BufferedImage[] { cieloAtardecer(), mezquitaLejana(), casasEncaladas(), salaColumnas() };
+        }
+    }
+
+    // ---- Calleja de las Flores (nivel 2, vertical) ----
+    // Las dos capas de fachadas son más altas que la pantalla: al subir por la calleja se desplazan hacia
+    // abajo (GameRenderer reparte su altura entre lo que sube la cámara). Arriba asoman los tejados y la torre.
+
+    public static final int ALTO_FACHADAS_LEJOS = 720, ALTO_FACHADAS_CERCA = 1040;
+
+    private static BufferedImage cieloMediodia() {
+        BufferedImage img = nueva();
+        Graphics2D g = img.createGraphics();
+        bandas(g, new int[] { 0x3F94DA, 0x56A6E4, 0x6EB7EC, 0x8AC7F1, 0xA9D7F5 }, ALTO);
+        g.dispose();
+        return img;
+    }
+
+    // torre de la Mezquita-Catedral al fondo, con los tejados delante
+    private static BufferedImage torreLejana() {
+        BufferedImage img = nueva();
+        Graphics2D g = img.createGraphics();
+        Color piedra = new Color(0xE4CDA0), sombra = new Color(0xC6A877), hueco = new Color(0x7E6248);
+        int cx = 430;
+        g.setColor(piedra);
+        g.fillRect(cx - 24, 150, 48, 210);            // fuste
+        g.fillRect(cx - 19, 104, 38, 46);             // cuerpo de campanas
+        g.fillRect(cx - 14, 74, 28, 30);              // cuerpo del reloj
+        g.fillRect(cx - 9, 54, 18, 20);               // linterna
+        g.fillOval(cx - 10, 44, 20, 16);              // cúpula
+        g.setColor(sombra);
+        g.fillRect(cx + 14, 150, 10, 210);
+        g.fillRect(cx + 11, 104, 8, 46);
+        g.fillRect(cx + 8, 74, 6, 30);
+        g.fillRect(cx - 26, 148, 52, 3);              // impostas
+        g.fillRect(cx - 21, 102, 42, 3);
+        g.fillRect(cx - 16, 72, 32, 3);
+        g.setColor(hueco);
+        for (int k = 0; k < 3; k++) {                 // arcos de las campanas
+            int ax = cx - 15 + k * 11;
+            g.fillRect(ax, 116, 7, 26);
+            g.fillOval(ax, 112, 7, 8);
+        }
+        g.fillRect(cx - 4, 82, 8, 14);
+        g.fillRect(cx - 3, 58, 6, 12);
+        for (int y = 175; y < 340; y += 40) {         // ventanitas del fuste
+            g.fillRect(cx - 12, y, 6, 12);
+            g.fillRect(cx + 4, y, 6, 12);
+        }
+        g.setColor(new Color(0xB98A3C));              // San Rafael en lo alto
+        g.fillRect(cx - 1, 30, 2, 15);
+        g.fillRect(cx - 4, 33, 8, 2);
+        // tejados de las casas de delante
+        Random r = new Random(4);
+        for (int x = 0; x < ANCHO; ) {
+            int w = 50 + r.nextInt(60), top = 292 + r.nextInt(5) * 8;
+            g.setColor(new Color(0xE8E1D4));
+            g.fillRect(x, top + 6, w, ALTO - top);
+            g.setColor(new Color(0xB86A50));
+            g.fillRect(x - 2, top, w + 4, 7);
+            g.setColor(new Color(0x9A5440));
+            for (int tx = x; tx < x + w; tx += 3) g.fillRect(tx, top, 1, 7);
+            x += w;
+        }
+        g.dispose();
+        return img;
+    }
+
+    // fachadas encaladas de la calleja (cerca = más grandes, con más macetas y rejas)
+    private static BufferedImage fachadas(int alto, boolean cerca) {
+        BufferedImage img = new BufferedImage(ANCHO, alto, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        Random r = new Random(cerca ? 33 : 17);
+        int tejado = cerca ? 230 : 150;               // por encima: cielo (transparente)
+        int pasoV = cerca ? 72 : 52, pasoH = cerca ? 64 : 44;
+        Color cal = cerca ? new Color(0xEFEAE0) : new Color(0xE4DED2);
+        Color[] flores = { new Color(0xE8344A), new Color(0xFF6FA8), new Color(0xF2F2F2), new Color(0xC2185B) };
+        for (int x = 0; x < ANCHO; ) {
+            int w = (cerca ? 120 : 80) + r.nextInt(5) * 16;
+            if (x + w > ANCHO - 40) w = ANCHO - x;
+            int top = tejado + r.nextInt(4) * 10;
+            g.setColor(cal);
+            g.fillRect(x, top, w, alto - top);
+            g.setColor(Fondos.oscurecer(cal, 0.92f));
+            g.fillRect(x + w - 5, top, 5, alto - top);    // canto en sombra
+            g.setColor(new Color(0xB5553C));               // alero de teja
+            g.fillRect(x - 3, top - 6, w + 6, 7);
+            g.setColor(new Color(0x8E3E2B));
+            for (int tx = x - 3; tx < x + w + 3; tx += 4) g.fillRect(tx, top - 6, 1, 7);
+            // ventanas con reja y macetas, repetidas hacia abajo (así la capa casa al desplazarse)
+            int fase = r.nextInt(pasoV / 2);
+            for (int wy = top + 26 + fase; wy < alto - 30; wy += pasoV) {
+                for (int wx = x + 14; wx < x + w - 24; wx += pasoH) {
+                    int vw = cerca ? 18 : 12, vh = cerca ? 26 : 18;
+                    g.setColor(new Color(0x2E3446));
+                    g.fillRect(wx, wy, vw, vh);
+                    g.setColor(new Color(0x15161C));
+                    for (int k = 0; k < vw; k += 4) g.fillRect(wx + k, wy, 1, vh);
+                    g.fillRect(wx - 2, wy + vh, vw + 4, 2);
+                    // macetas azules colgadas alrededor de la ventana
+                    int n = cerca ? 4 : 2;
+                    for (int k = 0; k < n; k++) {
+                        int mx = wx - 8 + k * (vw + 10) / Math.max(1, n - 1);
+                        int my = wy + vh + 6 + (k % 2) * 8;
+                        maceta(g, mx, my, cerca, flores[r.nextInt(flores.length)]);
+                    }
+                    if (cerca && r.nextInt(3) == 0) maceta(g, wx + vw + 12, wy - 10, true, flores[r.nextInt(flores.length)]);
+                }
+            }
+            x += w;
+        }
+        g.dispose();
+        return img;
+    }
+
+    private static void maceta(Graphics2D g, int x, int y, boolean grande, Color flor) {
+        int s = grande ? 2 : 1;
+        g.setColor(new Color(0x2E7D32));
+        g.fillRect(x - s, y - 3 * s, 7 * s, 3 * s);
+        g.setColor(flor);
+        g.fillRect(x, y - 4 * s, 2 * s, 2 * s);
+        g.fillRect(x + 3 * s, y - 5 * s, 2 * s, 2 * s);
+        g.setColor(new Color(0x1E4FA8));
+        g.fillRect(x, y, 5 * s, 4 * s);
+        g.setColor(new Color(0x4C7FE0));
+        g.fillRect(x + s, y + s, s, 2 * s);
+        g.setColor(new Color(0x4A3A2A));
+        g.fillRect(x + 2 * s, y - s, s, s);           // el clavo de la pared
+    }
+
+    static Color oscurecer(Color c, float f) {
+        return new Color(Math.round(c.getRed() * f), Math.round(c.getGreen() * f), Math.round(c.getBlue() * f));
     }
 
     private static BufferedImage nueva() {

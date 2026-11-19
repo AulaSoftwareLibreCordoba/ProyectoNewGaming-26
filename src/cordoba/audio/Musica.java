@@ -11,7 +11,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-// Música de fondo. Los archivos van en assets/audio/musica/ (menu, intro, nivel1, nivel2, victoria .wav).
+// Música de fondo. Los archivos van en assets/audio/musica/ (menu, intro, nivel1, nivel2, nivel3, victoria .wav).
 // Si falta alguno, esa pantalla va sin música.
 public final class Musica {
 

@@ -62,12 +62,16 @@ public final class EstiloVisual {
     // esquinas de la pantalla más oscuras (viñeta)
     public float vineta;
 
-    private static final EstiloVisual RIO = rio(), MEZQUITA = mezquita();
+    private static final EstiloVisual RIO = rio(), MEZQUITA = mezquita(), CALLEJA = calleja();
 
     private EstiloVisual() { }
 
     public static EstiloVisual de(Level.Tema tema) {
-        return tema == Level.Tema.RIO ? RIO : MEZQUITA;
+        switch (tema) {
+            case RIO:     return RIO;
+            case CALLEJA: return CALLEJA;
+            default:      return MEZQUITA;
+        }
     }
 
     // nivel 1: mañana soleada en la ribera
@@ -137,6 +141,43 @@ public final class EstiloVisual {
         e.colorLampara = 0xFFC060; e.radioLampara = 44; e.brilloLampara = 0.35f;
 
         e.vineta = 0.30f;
+        return e;
+    }
+
+    // nivel 2: mediodía en la calleja, luz blanca que rebota en la cal
+    private static EstiloVisual calleja() {
+        EstiloVisual e = new EstiloVisual();
+        // neblina azulada (la sombra de la calle): así las fachadas del fondo quedan detrás y los
+        // balcones por los que se salta, blancos del todo, se distinguen bien
+        e.colorNiebla = 0x8FA6C8;
+        e.nieblaCapa = new float[] { 0f, 0.40f, 0.50f, 0.36f };
+
+        e.colorSombra = 0x3A4A6A;
+        e.alfaSombra = 0.26f;
+        e.sombraDx = -4;
+        e.sombraDy = 6;
+
+        e.volumenPaso = 0.05f;
+        e.volumenMax = 0.14f;
+        e.alfaSombraContacto = 0.28f;
+
+        e.colorAmbiente = 0x203050;
+        e.oscuridadExterior = 0f;
+        e.colorInterior = 0x100808;
+        e.oscuridadInterior = 0f;
+        e.nieblaSala = new float[] { 0f, 0f, 0f };
+        e.colorNieblaSala = 0x100808;
+
+        e.solX = 470; e.solY = 40; e.solRadio = 130; e.colorSol = 0xFFF6D0;
+        e.brilloSol = 0.28f;
+        e.solSigueCamara = true;
+
+        e.colorFarola = 0xFFD27A; e.radioFarola = 34; e.brilloFarola = 0.20f;
+        e.colorMeta = 0xFFE8A0;   e.radioMeta = 60;   e.brilloMeta = 0.22f;
+        e.radioJugador = 48;
+        e.colorLampara = 0xFFC860; e.radioLampara = 0; e.brilloLampara = 0f;
+
+        e.vineta = 0.20f;
         return e;
     }
 
