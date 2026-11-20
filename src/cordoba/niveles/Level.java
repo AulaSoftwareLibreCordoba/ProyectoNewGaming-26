@@ -57,6 +57,8 @@ public abstract class Level {
     protected final int numero;
     protected final String nombre;
     protected final Tema tema;
+    // paisaje del fondo (cielo, luz, primer plano); si es null, el mismo que el tema de los bloques
+    protected Tema fondo;
     protected final int columnas, filas;
     protected final char[][] mapa;
 
@@ -221,6 +223,7 @@ public abstract class Level {
     public int getNumero()           { return numero; }
     public String getNombre()        { return nombre; }
     public Tema getTema()            { return tema; }
+    public Tema getFondo()           { return fondo != null ? fondo : tema; }
     public int getColumnas()         { return columnas; }
     public int getFilas()            { return filas; }
     public int getAnchoPx()          { return columnas * TILE; }

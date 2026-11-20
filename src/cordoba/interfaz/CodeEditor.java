@@ -314,7 +314,7 @@ public class CodeEditor {
         g.setColor(new Color(0xFFBD2E)); g.fillRect(PX + 17, PY + 8, 6, 6);
         g.setColor(new Color(0x27C93F)); g.fillRect(PX + 26, PY + 8, 6, 6);
         g.setFont(Ui.FUENTE_PEQ);
-        Ui.texto(g, "PhysicsConfig.java  -  Nivel " + nivel.getNumero(), PX + 40, PY + 15, Ui.TEXTO);
+        Ui.texto(g, "PhysicsConfig.java  -  " + (nivel.getNumero() > 0 ? "Nivel " + nivel.getNumero() : nivel.getNombre()), PX + 40, PY + 15, Ui.TEXTO);
         // indicador "en vivo"
         int tx = PX + PW - 12 - Ui.ANCHO_TIEMPO;
         int vx = tx - 103;

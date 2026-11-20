@@ -1,0 +1,14 @@
+nombre: Ejemplo del patio
+tema: CALLEJA
+// I = Coco, M = meta, F = farola, C = salmorejo, G = maceta que cae, m = maceta
+mapa:
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+S......................................S
+S..............C...........G...........S
+S......................................S
+S.......................SSSSSS.........S
+S..............SSSSS...................S
+S......................................S
+S.I.....F.....m.....^^^......m.....M...S
+S######################################S
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS

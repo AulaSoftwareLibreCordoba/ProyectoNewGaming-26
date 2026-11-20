@@ -15,7 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public final class Sonido {
 
     private static final float FRECUENCIA_MUESTREO = 22050f;
-    private static final int TAM_BLOQUE = 512;   // ~23 ms de audio por vuelta
+    private static final int TAM_BLOQUE = 256;   // ~12 ms de audio por vuelta (poco retraso)
     private static final int MAX_VOCES = 8;      // sonidos a la vez como mucho
 
     // un sonido ya generado y por dónde va
@@ -29,8 +29,21 @@ public final class Sonido {
     private static volatile boolean disponible = true;
     private static volatile boolean silenciado = false;
     private static Thread hilo;   // protegido por synchronized
+    // la tarjeta de sonido tarda ~1 s en despertar la primera vez (las primeras escrituras se quedan
+    // esperando); hasta entonces lo que suene llega tarde
+    private static volatile boolean listo = false;
 
     private Sonido() { }
+
+    // abrir el audio cuanto antes (al arrancar el programa), para que el primer sonido no llegue tarde
+    public static void precalentar() {
+        iniciar();
+    }
+
+    // ¿ya suena sin retraso? (también true si no hay audio, para no esperar en balde)
+    public static boolean listo() {
+        return listo || !disponible;
+    }
 
     // arranca el hilo mezclador (solo la primera vez)
     private static synchronized void iniciar() {
@@ -49,10 +62,15 @@ public final class Sonido {
         try {
             AudioFormat formato = new AudioFormat(FRECUENCIA_MUESTREO, 8, 1, true, false);
             linea = AudioSystem.getSourceDataLine(formato);
-            linea.open(formato, TAM_BLOQUE * 2);   // búfer pequeño = poco retraso
+            linea.open(formato, TAM_BLOQUE * 3);   // búfer pequeño (~35 ms) = poco retraso
             linea.start();
+            int bloques = 0;
 
             while (!Thread.currentThread().isInterrupted()) {
+                if (!listo && ++bloques > 16) {
+                    listo = true;
+                    nuevas.clear();   // lo pedido mientras despertaba ya llegaría tarde
+                }
                 // Sin sonidos escribimos silencio en vez de dormir: así no hay "pops".
                 // linea.write espera a que haya hueco, así que no se come la CPU.
                 nuevas.drainTo(activas);
@@ -145,6 +163,90 @@ public final class Sonido {
         tono(523, 523, 120, 0.35f, false);
         tono(659, 659, 120, 0.35f, false, 120);
         tono(784, 1046, 300, 0.35f, false, 240);
+    }
+
+    // ---- teclado (animación de arranque) ----
+
+    private static final Random azarTeclas = new Random();
+    private static long ultimaTecla;
+
+    // ruido pasado por un filtro de banda (biquad): suena a golpe de plástico, no a pitido
+    private static final class Banda {
+        private final double b0, b2, a1, a2;
+        private double x1, x2, y1, y2;
+
+        Banda(double centro, double q) {
+            double w = 2 * Math.PI * centro / FRECUENCIA_MUESTREO, alfa = Math.sin(w) / (2 * q), a0 = 1 + alfa;
+            b0 = alfa / a0; b2 = -alfa / a0; a1 = -2 * Math.cos(w) / a0; a2 = (1 - alfa) / a0;
+        }
+
+        double paso(double x) {
+            double y = b0 * x + b2 * x2 - a1 * y1 - a2 * y2;
+            x2 = x1; x1 = x; y2 = y1; y1 = y;
+            return y;
+        }
+    }
+
+    // pulsación de una tecla de teclado de verdad:
+    //   "tac" = ruido filtrado a 2-3 kHz que se apaga en unos 10 ms (el plástico de la tecla)
+    //   golpe = un poco de ruido más grave al llegar al fondo (el cuerpo del teclado)
+    //   soltar (solo ENTER) = otro "tac" flojito
+    // Cada tecla cambia un poco de tono y fuerza, como al escribir de verdad
+    private static void golpeTecla(float volumen, int retrasoMs, boolean grande) {
+        if (!disponible || silenciado) return;
+        volumen *= Volumen.factorEfectos();
+        if (volumen <= 0f) return;
+        iniciar();
+        int ms = grande ? 140 : 45;
+        int n = (int) (FRECUENCIA_MUESTREO * ms / 1000);
+        int retraso = (int) (FRECUENCIA_MUESTREO * retrasoMs / 1000);
+        byte[] b = new byte[retraso + n];
+        Random r;
+        Banda tac, cuerpo, suelta;
+        double fondo;
+        synchronized (azarTeclas) {
+            r = new Random(azarTeclas.nextLong());
+            tac = new Banda((grande ? 1500 : 2200) + azarTeclas.nextInt(900), 1.4);
+            cuerpo = new Banda((grande ? 260 : 380) + azarTeclas.nextInt(120), 2.0);
+            suelta = new Banda(2600 + azarTeclas.nextInt(600), 1.6);
+            fondo = (grande ? 0.006 : 0.004) + azarTeclas.nextInt(3) / 1000.0;
+        }
+        for (int i = 0; i < n; i++) {
+            double s = i / FRECUENCIA_MUESTREO;
+            double ruido = r.nextDouble() * 2 - 1;
+            double ataque = Math.min(1.0, i / 6.0);
+            double golpeTac = tac.paso(ruido) * Math.exp(-s * (grande ? 160 : 240)) * 2.6;
+            double ds = s - fondo;
+            double golpeCuerpo = cuerpo.paso(ds < 0 ? 0 : ruido) * (ds < 0 ? 0 : Math.exp(-ds * 120)) * 3.2;
+            double soltar = 0;
+            if (grande && s > 0.095) soltar = suelta.paso(ruido) * Math.exp(-(s - 0.095) * 300) * 1.2;
+            double v = (golpeTac + golpeCuerpo + soltar) * ataque;
+            b[retraso + i] = (byte) Math.max(-127, Math.min(127, v * volumen * 100));
+        }
+        nuevas.offer(new Voz(b));
+    }
+
+    // una tecla (con un mínimo de separación para no saturar)
+    public static void tecla() {
+        long ahora = System.nanoTime();
+        synchronized (azarTeclas) {
+            if (ahora - ultimaTecla < 70_000_000L) return;
+            ultimaTecla = ahora;
+        }
+        golpeTecla(0.30f + azarTeclas.nextFloat() * 0.08f, 0, false);
+    }
+
+    // varias teclas seguidas, a ritmo de alguien escribiendo (unas 8 por segundo)
+    public static void rafagaTeclas(int teclas) {
+        int t = 0;
+        for (int i = 0; i < teclas; i++) {
+            golpeTecla(0.26f + azarTeclas.nextFloat() * 0.08f, t, false);
+            t += 95 + azarTeclas.nextInt(60);
+        }
+    }
+
+    public static void teclaEnter() {
+        golpeTecla(0.40f, 0, true);
     }
 
     public static void alternarSilencio() {

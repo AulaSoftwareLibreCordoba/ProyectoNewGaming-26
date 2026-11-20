@@ -43,8 +43,8 @@ public class GameRenderer {
     // igual, pero con el fantasma del récord detrás de Coco
     public void dibujarEscenario(Graphics2D g, Level nivel, Player p, Particulas part,
                                  Fantasma fantasma, int frameNivel, int camX, int camY, int frame) {
-        dibujarFondo(g, nivel.getTema(), camX, camY, nivel.getAltoPx());
-        iluminacion.fondo(g, nivel.getTema(), camX, camY);
+        dibujarFondo(g, nivel.getFondo(), camX, camY, nivel.getAltoPx());
+        iluminacion.fondo(g, nivel.getFondo(), camX, camY);
         dibujarCorrientes(g, nivel, camX, camY, frame);
         dibujarFondoPiedra(g, nivel, camX, camY);
         dibujarBrisas(g, nivel, camX, camY, frame);
@@ -63,8 +63,23 @@ public class GameRenderer {
         part.dibujar(g, camX, camY);
         // cosas entre Coco y la cámara (desenfocadas) para dar profundidad
         Rectangle coco = new Rectangle(Math.round(p.x) - camX, Math.round(p.y) - camY, Player.ANCHO, Player.ALTO);
-        PrimerPlano.dibujar(g, nivel.getTema(), camX, camY, interiorMezquita(nivel.getTema(), camY), coco, frame);
-        iluminacion.vineta(g, nivel.getTema());
+        PrimerPlano.dibujar(g, nivel.getFondo(), camX, camY, interiorMezquita(nivel.getFondo(), camY), coco, frame);
+        iluminacion.vineta(g, nivel.getFondo());
+    }
+
+    // el nivel tal cual para el creador de niveles: sin luces ni primer plano, para ver bien cada casilla.
+    // p = Coco en su sitio de salida (o null si todavía no se ha puesto)
+    public void dibujarVistaEditor(Graphics2D g, Level nivel, Player p, int camX, int camY, int frame) {
+        dibujarFondo(g, nivel.getFondo(), camX, camY, nivel.getAltoPx());
+        dibujarCorrientes(g, nivel, camX, camY, frame);
+        dibujarFondoPiedra(g, nivel, camX, camY);
+        dibujarBrisas(g, nivel, camX, camY, frame);
+        dibujarDecoracion(g, nivel.getDecoraciones(), nivel.getTema(), camX, camY);
+        if (nivel.getMeta().width > 0) dibujarMeta(g, nivel, camX, camY, frame);
+        dibujarTiles(g, nivel, camX, camY, frame);
+        for (Farola f : nivel.getFarolas()) dibujarFarola(g, f, nivel.getTema(), camX, camY, frame);
+        for (Coleccionable c : nivel.getColeccionables()) dibujarColeccionable(g, c, camX, camY, frame);
+        if (p != null) dibujarJugador(g, p, camX, camY, frame);
     }
 
     // 0 fuera de la Mezquita, 1 dentro

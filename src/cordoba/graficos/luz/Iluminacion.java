@@ -67,7 +67,7 @@ public class Iluminacion {
 
     // penumbra + halos; después del escenario y antes del HUD
     public void aplicar(Graphics2D g, Level nivel, Player p, int camX, int camY, int frame) {
-        Level.Tema tema = nivel.getTema();
+        Level.Tema tema = nivel.getFondo();   // la luz va con el paisaje del fondo
         EstiloVisual e = EstiloVisual.de(tema);
         float interior = EstiloVisual.factorInterior(tema, camY);
 

@@ -19,6 +19,10 @@ histórico hasta la Mezquita-Catedral. Para avanzar tendrás que abrir la consol
 
 Requisito: **JDK 17 o superior**.
 
+### Con doble clic (Windows, sin consola)
+Haz doble clic en **`jugar.vbs`**: compila y abre el juego sin que aparezca la ventana negra de la terminal.
+Si no se puede compilar, sale un aviso y los detalles quedan en `compilar.log`.
+
 ### Desde la terminal
 ```bash
 # Windows

@@ -4,15 +4,17 @@ import java.awt.event.*;
 
 // Teclado y ratón. abajo() = la tecla está pulsada ahora · pulsada() = se pulsó en ESTE fotograma.
 // Los eventos llegan del hilo de Swing y el juego lee desde el suyo, por eso todo es synchronized.
-public class Input implements KeyListener, MouseListener, MouseMotionListener {
+public class Input implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener {
 
     private final boolean[] teclas = new boolean[1024];
     private final boolean[] pulsadas = new boolean[1024];
 
     // ratón en coordenadas de pantalla (luego se pasan a 640x360)
     private int ratonX, ratonY;
-    private boolean clic;            // clic en este fotograma
-    private boolean botonPulsado;    // botón mantenido
+    private boolean clic;            // clic izquierdo en este fotograma
+    private boolean botonPulsado;    // botón izquierdo mantenido
+    private boolean clicDerecho, derechoPulsado;   // lo mismo con el derecho (editor: borrar)
+    private int rueda;               // pasos de la rueda en este fotograma (+ hacia abajo)
 
     // pantalla -> resolución interna (la pone Game)
     private double escala = 1;
@@ -64,12 +66,15 @@ public class Input implements KeyListener, MouseListener, MouseMotionListener {
         java.util.Arrays.fill(pulsadas, false);
         escrito.setLength(0);
         clic = false;
+        clicDerecho = false;
+        rueda = 0;
     }
 
     // suelta todo (al perder el foco de la ventana)
     public synchronized void soltarTodo() {
         java.util.Arrays.fill(teclas, false);
         botonPulsado = false;
+        derechoPulsado = false;
     }
 
     // ---- ratón ----
@@ -78,14 +83,29 @@ public class Input implements KeyListener, MouseListener, MouseMotionListener {
     public synchronized void mousePressed(MouseEvent e) {
         ratonX = e.getX();
         ratonY = e.getY();
-        clic = true;
-        botonPulsado = true;
+        if (e.getButton() == MouseEvent.BUTTON3) {
+            clicDerecho = true;
+            derechoPulsado = true;
+        } else if (e.getButton() == MouseEvent.BUTTON1) {
+            clic = true;
+            botonPulsado = true;
+        }
     }
 
     @Override
     public synchronized void mouseReleased(MouseEvent e) {
-        botonPulsado = false;
+        if (e.getButton() == MouseEvent.BUTTON3) derechoPulsado = false;
+        else if (e.getButton() == MouseEvent.BUTTON1) botonPulsado = false;
     }
+
+    @Override
+    public synchronized void mouseWheelMoved(MouseWheelEvent e) {
+        rueda += e.getWheelRotation();
+    }
+
+    public synchronized boolean clicDerecho()     { return clicDerecho; }
+    public synchronized boolean derechoPulsado()  { return derechoPulsado; }
+    public synchronized int getRueda()            { return rueda; }
 
     @Override
     public synchronized void mouseMoved(MouseEvent e) {

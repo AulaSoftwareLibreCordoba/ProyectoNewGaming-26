@@ -13,16 +13,17 @@ import java.awt.image.BufferedImage;
 // Menú de inicio, pausa y nivel completado. El final y el ranking están en PantallaRanking.
 public class GameMenu {
 
-    public enum Accion { NINGUNA, JUGAR, SALIR, CONTINUAR, REINICIAR, MENU, NIVEL2, NIVEL3, RANKING, OPCIONES }
+    public enum Accion { NINGUNA, JUGAR, SALIR, CONTINUAR, REINICIAR, MENU, NIVEL2, NIVEL3, RANKING, OPCIONES, CREADOS }
 
     private final GameRenderer renderer;
 
     // inicio
-    private final Boton bJugar    = new Boton(240, 157, 160, 32, "JUGAR", Andalusi.BOTON_VERDE).grande();
-    private final Boton bRanking  = new Boton(240, 193, 160, 32, "RANKING", Andalusi.BOTON_ALBERO).grande();
-    private final Boton bOpciones = new Boton(240, 229, 160, 32, "OPCIONES", Andalusi.BOTON_AZUL).grande();
-    private final Boton bSalir    = new Boton(240, 265, 160, 32, "SALIR", Andalusi.BOTON_GRANATE).grande();
-    private final Boton[] botonesInicio = { bJugar, bRanking, bOpciones, bSalir };
+    private final Boton bJugar    = new Boton(230, 154, 180, 28, "JUGAR", Andalusi.BOTON_VERDE).grande();
+    private final Boton bCreados  = new Boton(230, 184, 180, 28, "CREADOR", Andalusi.BOTON_VERDE).grande();
+    private final Boton bRanking  = new Boton(230, 214, 180, 28, "RANKING", Andalusi.BOTON_ALBERO).grande();
+    private final Boton bOpciones = new Boton(230, 244, 180, 28, "OPCIONES", Andalusi.BOTON_AZUL).grande();
+    private final Boton bSalir    = new Boton(230, 274, 180, 28, "SALIR", Andalusi.BOTON_GRANATE).grande();
+    private final Boton[] botonesInicio = { bJugar, bCreados, bRanking, bOpciones, bSalir };
     private final NavegacionMenu inicio = new NavegacionMenu(botonesInicio);
 
     // pausa
@@ -114,9 +115,10 @@ public class GameMenu {
         inicio.actualizar(in);
         switch (inicio.activado(in, true)) {
             case 0: return Accion.JUGAR;
-            case 1: return Accion.RANKING;
-            case 2: return Accion.OPCIONES;
-            case 3: return Accion.SALIR;
+            case 1: return Accion.CREADOS;
+            case 2: return Accion.RANKING;
+            case 3: return Accion.OPCIONES;
+            case 4: return Accion.SALIR;
             default: break;
         }
         if (in.pulsada(KeyEvent.VK_2)) return Accion.NIVEL2;   // atajos para profes

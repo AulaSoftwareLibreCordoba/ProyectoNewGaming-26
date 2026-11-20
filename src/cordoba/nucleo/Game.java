@@ -13,9 +13,13 @@ import cordoba.graficos.Particulas;
 import cordoba.interfaz.CodeEditor;
 import cordoba.interfaz.GameMenu;
 import cordoba.interfaz.Introduccion;
+import cordoba.interfaz.Arranque;
+import cordoba.interfaz.EditorNiveles;
+import cordoba.interfaz.PantallaNiveles;
 import cordoba.interfaz.PantallaRanking;
 import cordoba.interfaz.Ui;
 import cordoba.niveles.Level;
+import cordoba.niveles.NivelCreado;
 import cordoba.niveles.elementos.Coleccionable;
 import cordoba.ranking.Puntuacion;
 import cordoba.ranking.Ranking;
@@ -46,6 +50,9 @@ public class Game extends Canvas implements Runnable {
     private final Ranking ranking = new Ranking(Path.of("ranking.txt"));
     private final PantallaRanking pantallaRanking = new PantallaRanking(renderer, ranking);
     private final PantallaOpciones opciones = new PantallaOpciones();
+    private final PantallaNiveles pantallaNiveles = new PantallaNiveles(renderer);
+    private final EditorNiveles editorNiveles = new EditorNiveles(renderer);
+    private boolean probando;   // jugando un nivel desde el editor (ESC o la meta vuelven a él)
     private GameState volverDeOpciones = GameState.MENU;
 
     // nombre del jugador (se pide al empezar y se usa para el ranking al terminar)
@@ -59,7 +66,9 @@ public class Game extends Canvas implements Runnable {
     private Fantasma.Grabadora grabadora = new Fantasma.Grabadora();
     private final Fantasma[] grabaciones = new Fantasma[Level.TOTAL + 1];   // tu partida en cada nivel
 
-    private GameState estado = GameState.MENU;
+    private GameState estado = GameState.ARRANQUE;
+    private final Arranque arranque = new Arranque();
+    private BufferedImage menuArranque;   // el menú pintado aparte, para que el código se convierta en él
     private Level nivel;
     private Player jugador;
     private CollisionManager colisiones;
@@ -88,6 +97,7 @@ public class Game extends Canvas implements Runnable {
         addKeyListener(input);
         addMouseListener(input);
         addMouseMotionListener(input);
+        addMouseWheelListener(input);
         addFocusListener(new FocusAdapter() {
             @Override
             public void focusLost(FocusEvent e) {
@@ -154,6 +164,9 @@ public class Game extends Canvas implements Runnable {
         if (input.pulsada(KeyEvent.VK_F11) && alPantallaCompleta != null) EventQueue.invokeLater(alPantallaCompleta);
 
         switch (estado) {
+            case ARRANQUE:
+                if (arranque.actualizar(input)) estado = GameState.MENU;
+                break;
             case MENU:
                 switch (menu.actualizarInicio(input)) {
                     case JUGAR:  pedirNombre(1); break;
@@ -164,6 +177,7 @@ public class Game extends Canvas implements Runnable {
                         estado = GameState.RANKING;
                         break;
                     case OPCIONES: abrirOpciones(GameState.MENU); break;
+                    case CREADOS: abrirNivelesCreados(); break;
                     case SALIR:  salir(); break;
                     default: break;
                 }
@@ -194,8 +208,11 @@ public class Game extends Canvas implements Runnable {
                 switch (menu.actualizarPausa(input)) {
                     case CONTINUAR: estado = GameState.JUGANDO; break;
                     case OPCIONES:  abrirOpciones(GameState.PAUSA); break;
-                    case REINICIAR: cargarNivel(nivel.getNumero()); break;
-                    case MENU:      estado = GameState.MENU; break;
+                    case REINICIAR: reiniciarNivel(); break;
+                    case MENU:
+                        if (esCreado()) abrirNivelesCreados();
+                        else estado = GameState.MENU;
+                        break;
                     default: break;
                 }
                 break;
@@ -214,6 +231,41 @@ public class Game extends Canvas implements Runnable {
                 break;
             case OPCIONES:
                 if (opciones.actualizar(input)) estado = volverDeOpciones;
+                break;
+            case NIVELES_CREADOS:
+                switch (pantallaNiveles.actualizar(input)) {
+                    case JUGAR:
+                        probando = false;
+                        cargarNivelCreado(pantallaNiveles.getElegido());
+                        break;
+                    case EDITAR:
+                        try {
+                            editorNiveles.abrir(pantallaNiveles.getArchivoElegido());
+                            estado = GameState.CREANDO;
+                        } catch (IOException | IllegalArgumentException e) {
+                            pantallaNiveles.avisar("No se puede abrir: " + e.getMessage(), Ui.ROJO);
+                        }
+                        break;
+                    case NUEVO:
+                        editorNiveles.nuevo();
+                        estado = GameState.CREANDO;
+                        break;
+                    case VOLVER: estado = GameState.MENU; break;
+                    default: break;
+                }
+                break;
+            case CREANDO:
+                switch (editorNiveles.actualizar(input)) {
+                    case PROBAR:
+                        probando = true;
+                        cargarNivelCreado(editorNiveles.getPrueba());
+                        break;
+                    case SALIR:
+                        abrirNivelesCreados();
+                        if (editorNiveles.getArchivo() != null) pantallaNiveles.elegir(editorNiveles.getArchivo());
+                        break;
+                    default: break;
+                }
                 break;
             default:
                 break;
@@ -240,10 +292,17 @@ public class Game extends Canvas implements Runnable {
         // en opciones sigue la de antes
         GameState e = estado == GameState.OPCIONES ? volverDeOpciones : estado;
         switch (e) {
+            case ARRANQUE:
+                if (arranque.transformando()) Musica.reproducir("menu", false);   // entra al aparecer el menú
+                break;
             case MENU:
             case NOMBRE:
             case RANKING:
+            case NIVELES_CREADOS:
                 Musica.reproducir("menu", false);
+                break;
+            case CREANDO:
+                Musica.reproducir("nivel" + numeroMusica(editorNiveles.getFondo()), true);
                 break;
             case INTRO:
                 Musica.reproducir("intro", false);
@@ -252,7 +311,7 @@ public class Game extends Canvas implements Runnable {
             case EDITOR:
             case PAUSA:
                 // nivel1, nivel2... (más bajita en pausa)
-                Musica.reproducir("nivel" + nivel.getNumero(), e != GameState.JUGANDO);
+                Musica.reproducir("nivel" + numeroMusica(), e != GameState.JUGANDO);
                 break;
             case NIVEL_COMPLETADO:
             case JUEGO_COMPLETADO:
@@ -270,6 +329,10 @@ public class Game extends Canvas implements Runnable {
             estado = GameState.EDITOR;
             editor.abrir(fisica, nivel);
             Sonido.clic();
+            return;
+        }
+        if (input.pulsada(KeyEvent.VK_ESCAPE) && probando) {
+            volverAlEditor();   // probando un nivel del editor: ESC vuelve a editarlo
             return;
         }
         if (input.pulsada(KeyEvent.VK_ESCAPE)) {
@@ -385,7 +448,54 @@ public class Game extends Canvas implements Runnable {
     }
 
     public void cargarNivel(int numero) {
-        nivel = Level.crear(numero);
+        prepararNivel(Level.crear(numero));
+        fantasmaNivel = fantasmaDelRecord(numero);
+    }
+
+    private boolean esCreado() {
+        return nivel instanceof NivelCreado;
+    }
+
+    private void abrirNivelesCreados() {
+        pantallaNiveles.abrir(input);
+        estado = GameState.NIVELES_CREADOS;
+    }
+
+    // un nivel de niveles_creados/: sin ranking ni fantasma
+    private void cargarNivelCreado(NivelCreado creado) {
+        framesTotal = muertesTotal = compilacionesTotal = 0;
+        prepararNivel(creado);
+    }
+
+    // REINICIAR: los niveles creados se vuelven a leer del disco (así se ven los cambios del archivo)
+    private void reiniciarNivel() {
+        if (!esCreado()) { cargarNivel(nivel.getNumero()); return; }
+        NivelCreado otra = pantallaNiveles.recargar(((NivelCreado) nivel).getArchivo());
+        if (otra == null) abrirNivelesCreados();   // ahora el archivo tiene un error: se ve en la lista
+        else cargarNivelCreado(otra);
+    }
+
+    private void volverAlEditor() {
+        probando = false;
+        estado = GameState.CREANDO;
+        Sonido.clic();
+    }
+
+    // la música de un nivel creado va según su fondo
+    private int numeroMusica() {
+        return esCreado() ? numeroMusica(nivel.getFondo()) : nivel.getNumero();
+    }
+
+    private static int numeroMusica(Level.Tema tema) {
+        switch (tema) {
+            case CALLEJA:  return 2;
+            case MEZQUITA: return 3;
+            default:       return 1;
+        }
+    }
+
+    private void prepararNivel(Level nuevo) {
+        nivel = nuevo;
         nivel.configurarFisica(fisica);
         colisiones = new CollisionManager(nivel);
         jugador = new Player(nivel.getInicioX(), nivel.getInicioY());
@@ -393,7 +503,7 @@ public class Game extends Canvas implements Runnable {
         framesNivel = muertesNivel = compilacionesNivel = 0;
         bonusNivel = timerBonus = 0;
         grabadora = new Fantasma.Grabadora();
-        fantasmaNivel = fantasmaDelRecord(numero);
+        fantasmaNivel = null;
         estado = GameState.JUGANDO;
         moverCamara(true);
     }
@@ -406,6 +516,19 @@ public class Game extends Canvas implements Runnable {
     }
 
     private void completarNivel() {
+        if (probando) {
+            editorNiveles.avisar("¡Lo has superado!  Tiempo " + Puntuacion.formatearTiempo(tiempoNivel())
+                    + " · Caídas " + muertesNivel, Ui.VERDE);
+            volverAlEditor();
+            return;
+        }
+        if (esCreado()) {
+            pantallaNiveles.avisar("¡" + nivel.getNombre() + " completado!  Tiempo "
+                    + Puntuacion.formatearTiempo(tiempoNivel()) + " · Caídas " + muertesNivel
+                    + " · Compilaciones " + compilacionesNivel, Ui.VERDE);
+            abrirNivelesCreados();
+            return;
+        }
         framesTotal += tiempoNivel();
         muertesTotal += muertesNivel;
         compilacionesTotal += compilacionesNivel;
@@ -476,6 +599,19 @@ public class Game extends Canvas implements Runnable {
         // debajo de las opciones, la pantalla de antes
         GameState fondo = estado == GameState.OPCIONES ? volverDeOpciones : estado;
         switch (fondo) {
+            case ARRANQUE: {
+                BufferedImage debajo = null;
+                if (arranque.transformando()) {
+                    if (menuArranque == null) menuArranque = new BufferedImage(ANCHO, ALTO, BufferedImage.TYPE_INT_RGB);
+                    Graphics2D gm = menuArranque.createGraphics();
+                    Ui.preparar(gm);
+                    menu.dibujarInicio(gm, input, frame);
+                    gm.dispose();
+                    debajo = menuArranque;
+                }
+                arranque.dibujar(g, debajo);
+                break;
+            }
             case MENU:
                 menu.dibujarInicio(g, input, frame);
                 break;
@@ -492,6 +628,12 @@ public class Game extends Canvas implements Runnable {
             case RANKING:
                 pantallaRanking.dibujarTabla(g, input, frame);
                 break;
+            case NIVELES_CREADOS:
+                pantallaNiveles.dibujar(g, frame);
+                break;
+            case CREANDO:
+                editorNiveles.dibujar(g, input, frame);
+                break;
             default: {
                 int cx = Math.round(camX), cy = Math.round(camY);
                 Fantasma f = fantasmaVisible ? fantasmaNivel : null;
@@ -503,6 +645,14 @@ public class Game extends Canvas implements Runnable {
                     renderer.dibujarHUD(g, nivel, jugador, fisica, frame, muertesNivel,
                             framesNivel < 600 || estado == GameState.PAUSA,
                             framesTotal + tiempoNivel(), tiempoNivel(), fantasmaNivel, fantasmaVisible, timerBonus);
+                }
+                if (probando && estado == GameState.JUGANDO) {
+                    g.setFont(Ui.FUENTE);
+                    String s = "PROBANDO · ESC: volver al editor";
+                    int w = g.getFontMetrics().stringWidth(s) + 14;
+                    g.setColor(new Color(20, 12, 8, 200));
+                    g.fillRect(636 - w, 4, w, 17);
+                    Ui.texto(g, s, 643 - w, 16, Ui.AMARILLO);
                 }
                 if (estado == GameState.PAUSA) menu.dibujarPausa(g, input);
                 if (estado == GameState.NIVEL_COMPLETADO) {

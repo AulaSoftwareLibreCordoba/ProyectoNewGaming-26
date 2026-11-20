@@ -35,10 +35,47 @@ Referencia rápida de todas las teclas del juego, sacada directamente del códig
 | Tecla | Acción |
 |---|---|
 | **ENTER** o **ESPACIO** | Jugar (primero sale la cinemática de la alcantarilla y luego el nivel 1) |
+| **ENTER**, **ESPACIO**, **ESC** o clic | Al abrir el juego: saltar la animación de la terminal que se convierte en el menú |
 | **ENTER**, **ESPACIO** o **ESC** | Durante la cinemática: saltarla e ir directo al nivel 1 |
 | **2** / **3** | Empezar directamente en el nivel 2 o 3 *(atajos para profesores)* |
+| Botón **CREADOR** | Creador de niveles: crea tus niveles con el ratón y juégalos |
 | Botón **RANKING** | Ver el TOP 10 (general y de cada nivel) |
 | Botón **SALIR** | Cerrar el juego |
+
+---
+
+## 🧱 Creador de niveles
+
+Los niveles se construyen dentro del juego con el ratón y se guardan en `niveles_creados/`.
+Se juegan sin ranking ni fantasma.
+
+**Lista de niveles**
+
+| Tecla | Acción |
+|---|---|
+| **↑** / **↓** (o rueda) | Elegir nivel |
+| Doble clic / botón **JUGAR** | Jugar el nivel (si le falta Coco o la meta, sale en rojo: pulsa EDITAR) |
+| **E** / botón **EDITAR** | Abrir el nivel elegido en el editor |
+| **N** / botón **NUEVO** | Empezar un nivel nuevo |
+| **ESC** | Volver al menú |
+
+**Editor**
+
+| Tecla / ratón | Acción |
+|---|---|
+| **Clic izquierdo** (y arrastrar) | Poner la pieza elegida |
+| **Clic derecho** (y arrastrar) | Borrar |
+| Clic en la **paleta** de abajo, **Q** / **E** o **0**–**9** | Elegir pieza (al pasar el ratón se ve qué es cada una) |
+| **Rueda** / **A** **D** / **←** **→** | Moverse a los lados (**MAYÚS** + rueda: arriba y abajo) |
+| **W** **S** / **↑** **↓** | Moverse arriba y abajo |
+| **CTRL+Z** / **DESHACER** | Deshacer |
+| **CTRL+S** / **GUARDAR** | Guardar (al probar y al salir se guarda solo) |
+| **G** | Mostrar / ocultar la cuadrícula |
+| Clic en el **nombre** | Cambiarle el nombre al nivel |
+| Botón del **tema** | Cambiar el escenario (río, Mezquita, Calleja) |
+| **−** / **+** | Ancho (crece por la derecha) y alto (crece por arriba) |
+| **PROBAR** | Jugarlo ahora: **ESC** o llegar a la meta te devuelve al editor |
+| **ESC** / **SALIR** | Volver a la lista (se guarda solo) |
 
 ---
 

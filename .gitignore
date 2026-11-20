@@ -40,3 +40,7 @@ opciones.txt
 
 # Música original en alta calidad (en el juego van las versiones en mono)
 musica_original/
+
+# Música del juego: pesa mucho (~86 MB), cada uno la tiene en su ordenador y no se sube al repo.
+# Sin ella el juego funciona igual, solo que sin música de fondo.
+assets/audio/musica/

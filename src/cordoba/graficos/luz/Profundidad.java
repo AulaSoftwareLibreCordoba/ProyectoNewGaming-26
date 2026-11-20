@@ -44,7 +44,7 @@ public class Profundidad {
 
     // llamar ANTES de pintar los bloques para que la sombra quede detrás
     public void sombraTerreno(Graphics2D g, Level nivel, int camX, int camY) {
-        EstiloVisual e = EstiloVisual.de(nivel.getTema());
+        EstiloVisual e = EstiloVisual.de(nivel.getFondo());
         if (e.alfaSombra <= 0) return;
         g.setColor(conAlfa(new Color(e.colorSombra), e.alfaSombra));
         int c1 = Math.max(0, camX / T - 1), c2 = Math.min(nivel.getColumnas() - 1, (camX + ANCHO) / T + 1);
